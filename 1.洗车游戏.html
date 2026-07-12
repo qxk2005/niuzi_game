@@ -1043,6 +1043,7 @@
 
                 this.dirtyCtx.save();
                 this.dirtyCtx.globalCompositeOperation = 'destination-out';
+                this.dirtyCtx.fillStyle = '#000000'; // 确保填充色不透明，以防使用之前的渐变导致擦除无效
                 
                 const partsCount = 5;
                 let dirtRemoved = false;
