@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>快乐麦当劳 - 5岁儿童快乐外卖送餐大冒险</title>
+    <!-- 可爱圆润字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fef08a 100%);
+            --mc-red: #ff3b30;
+            --mc-yellow: #ffcc00;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --panel-border: rgba(255, 255, 255, 0.8);
+            --primary-shadow: 0 16px 40px rgba(234, 88, 12, 0.18);
+            --font-main: 'Fredoka', 'Quicksand', -apple-system, sans-serif;
+            --text-color: #7c2d12;
+            --radius-lg: 32px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 10px;
+            position: relative;
+        }
+
+        /* 主画框 */
+        .game-app {
+            width: 100%;
+            max-width: 960px;
+            height: auto;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 5px solid var(--panel-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--primary-shadow);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* 顶栏 */
+        .top-navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.75);
+            border-bottom: 3px solid rgba(251, 146, 60, 0.25);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            z-index: 10;
+        }
+
+        .brand-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ea580c, #dc2626);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .score-pill {
+            background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+            border: 3px solid #eab308;
+            padding: 4px 16px;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #854d0e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3);
+        }
+
+        .icon-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        /* 扩展为 5 步流水线指示器 */
+        .pipeline-bar {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(254, 215, 170, 0.4);
+            border-bottom: 2px dashed #fed7aa;
+        }
+
+        .pipe-step {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            color: #9a3412;
+            font-size: 14px;
+            font-weight: 700;
+            opacity: 0.5;
+            transition: all 0.3s;
+        }
+
+        .pipe-step.active {
+            opacity: 1;
+            background: linear-gradient(135deg, #ff3b30 0%, #dc2626 100%);
+            color: #ffffff;
+            transform: scale(1.08);
+            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
+        }
+
+        .pipe-arrow {
+            font-size: 14px;
+            color: #fdba74;
+            font-weight: 700;
+        }
+
+        /* 视口区域 */
+        .stage-viewport {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            min-height: 480px;
+        }
+
+        .stage-card {
+            width: 100%;
+            height: auto;
+            min-height: 480px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .stage-card.active {
+            display: flex;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        /* 聚光灯发光圈 */
+        .super-glow {
+            animation: super-pulse 1s infinite alternate !important;
+            box-shadow: 0 0 25px #f59e0b, 0 0 45px #ef4444, inset 0 0 15px rgba(255,255,255,0.8) !important;
+            border-color: #f97316 !important;
+            transform: scale(1.05) !important;
+        }
+
+        @keyframes super-pulse {
+            0% { transform: scale(1.02); box-shadow: 0 0 15px #f59e0b, 0 0 30px #ef4444; }
+            100% { transform: scale(1.08); box-shadow: 0 0 30px #fbbf24, 0 0 55px #dc2626; }
+        }
+
+        /* 跟随卡通手指 */
+        .floating-finger {
+            position: fixed;
+            font-size: 44px;
+            z-index: 999;
+            pointer-events: none;
+            transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: finger-bounce 0.6s infinite alternate;
+            filter: drop-shadow(0 6px 10px rgba(0,0,0,0.3));
+            display: none;
+        }
+
+        @keyframes finger-bounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-16px) scale(1.2); }
+        }
+
+        .big-guide-banner {
+            background: #fff7ed;
+            border: 2px solid #fed7aa;
+            padding: 6px 20px;
+            border-radius: 50px;
+            font-size: 17px;
+            font-weight: 700;
+            color: #c2410c;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            margin-bottom: 8px;
+        }
+
+        /* 蒸汽粒子 */
+        .steam-cloud {
+            position: absolute;
+            font-size: 24px;
+            pointer-events: none;
+            animation: rise-steam 1.5s infinite ease-out;
+            opacity: 0;
+        }
+
+        @keyframes rise-steam {
+            0% { transform: translateY(0) scale(0.6); opacity: 0.8; }
+            100% { transform: translateY(-40px) scale(1.4); opacity: 0; }
+        }
+
+        /* 阶段 1: 迎接顾客 */
+        .welcome-box {
+            background: radial-gradient(circle at 50% 40%, #ffffff 0%, #ffedd5 100%);
+            border-radius: 24px;
+            width: 100%;
+            min-height: 460px;
+            border: 4px solid #fed7aa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            padding: 16px;
+        }
+
+        .order-bubble-big {
+            background: #ffffff;
+            border: 4px solid #ea580c;
+            border-radius: 30px;
+            padding: 12px 24px;
+            box-shadow: 0 8px 24px rgba(234, 88, 12, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .order-icon-badge {
+            font-size: 38px;
+            background: #fff7ed;
+            padding: 6px;
+            border-radius: 18px;
+            border: 2px solid #ffedd5;
+        }
+
+        .customer-avatar-big {
+            width: 180px;
+            height: 180px;
+            filter: drop-shadow(0 10px 18px rgba(0,0,0,0.15));
+        }
+
+        .big-start-btn {
+            padding: 14px 42px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border: 4px solid #bbf7d0;
+            border-radius: 50px;
+            color: white;
+            font-family: var(--font-main);
+            font-size: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(22, 163, 74, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .big-start-btn:hover {
+            transform: scale(1.06);
+        }
+
+        /* 阶段 2: 做汉堡 */
+        .burger-workspace-linear {
+            width: 100%;
+            display: flex;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .burger-plate-area {
+            flex: 1;
+            background: radial-gradient(circle at 50% 50%, #ffffff 0%, #fff7ed 100%);
+            border-radius: 24px;
+            border: 4px solid #ffedd5;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            min-height: 460px;
+        }
+
+        .grill-box-linear {
+            width: 100%;
+            background: #334155;
+            border-radius: 18px;
+            border: 3px solid #475569;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            color: white;
+            position: relative;
+        }
+
+        .patty-slot-linear {
+            width: 100px;
+            height: 70px;
+            border: 3px dashed #94a3b8;
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: rgba(0,0,0,0.3);
+            transition: all 0.2s;
+        }
+
+        .plate-stack-container {
+            width: 250px;
+            height: 260px;
+            position: relative;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 25px;
+        }
+
+        .ceramic-plate-svg {
+            position: absolute;
+            bottom: -15px;
+            width: 240px;
+            height: 46px;
+            background: radial-gradient(ellipse at center, #ffffff 0%, #e2e8f0 100%);
+            border: 4px solid #cbd5e1;
+            border-radius: 50%;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+            z-index: 1;
+        }
+
+        .burger-stack-flex {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            width: 180px;
+            bottom: 20px;
+        }
+
+        .burger-layer-item {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            margin-bottom: -16px;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.12));
+            animation: drop-bounce 0.4s ease-out;
+        }
+
+        .ingredients-linear-picker {
+            width: 250px;
+            background: #ffffff;
+            border-radius: 24px;
+            border: 4px solid #fed7aa;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            justify-content: space-between;
+        }
+
+        .ingredient-item-card {
+            background: #fff7ed;
+            border: 2px solid #ffedd5;
+            border-radius: 14px;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ingredient-item-card.disabled {
+            opacity: 0.35;
+            pointer-events: none;
+            filter: grayscale(0.5);
+        }
+
+        .ing-big-icon { font-size: 26px; }
+        .ing-label-title { font-size: 15px; font-weight: 700; color: #7c2d12; }
+
+        /* 阶段 3: 做薯条 */
+        .fries-workspace-linear {
+            width: 100%;
+            min-height: 460px;
+            background: #ffffff;
+            border-radius: 24px;
+            border: 4px solid #ffedd5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            position: relative;
+        }
+
+        .fries-sub-step {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fries-sub-step.active {
+            display: flex;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .board-box {
+            width: 400px;
+            height: 220px;
+            background: #d97706;
+            border: 8px solid #b45309;
+            border-radius: 24px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 8px;
+            padding-bottom: 20px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+        }
+
+        .potato-strip-item {
+            background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+            border: 2px solid #eab308;
+            border-radius: 6px;
+            animation: pop-in 0.3s ease-out;
+        }
+
+        .fryer-vat-linear {
+            width: 380px;
+            height: 210px;
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+            border: 6px solid #78350f;
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 20px;
+            box-shadow: inset 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .ketchup-dish-big {
+            width: 110px;
+            height: 110px;
+            background: #ffffff;
+            border: 5px solid #cbd5e1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .ketchup-red-blob {
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, #ef4444 0%, #b91c1c 100%);
+            border-radius: 50%;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* ================= 阶段 4: 外卖送餐车 (Delivery Truck Stage) ================= */
+        .truck-workspace {
+            width: 100%;
+            min-height: 460px;
+            background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 60%, #4ade80 60%, #16a34a 100%);
+            border-radius: 24px;
+            border: 4px solid #7dd3fc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .road-strip {
+            width: 100%;
+            height: 90px;
+            background: #334155;
+            border-top: 4px solid #94a3b8;
+            position: absolute;
+            bottom: 30px;
+            display: flex;
+            align-items: center;
+        }
+
+        .road-line {
+            width: 100%;
+            height: 6px;
+            border-top: 4px dashed #fef08a;
+        }
+
+        .truck-anim-box {
+            position: absolute;
+            bottom: 40px;
+            left: 20px;
+            transition: left 2.5s cubic-bezier(0.45, 0, 0.55, 1);
+            z-index: 10;
+        }
+
+        .truck-anim-box.driving {
+            left: calc(100% - 220px);
+            animation: truck-vibrate 0.15s infinite alternate;
+        }
+
+        @keyframes truck-vibrate {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-3px); }
+        }
+
+        .wheel-rotate {
+            transform-origin: center;
+            animation: spin-wheel 0.3s linear infinite;
+        }
+
+        @keyframes spin-wheel {
+            100% { transform: rotate(360deg); }
+        }
+
+        .town-house {
+            position: absolute;
+            right: 20px;
+            bottom: 110px;
+            font-size: 65px;
+            filter: drop-shadow(0 6px 12px rgba(0,0,0,0.15));
+        }
+
+        /* 阶段 5: 卖给顾客 */
+        .serve-box-linear {
+            width: 100%;
+            min-height: 460px;
+            background: radial-gradient(circle at 50% 30%, #fff7ed 0%, #fed7aa 100%);
+            border-radius: 24px;
+            border: 4px solid #fdba74;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            padding: 16px;
+        }
+
+        .final-tray {
+            width: 320px;
+            height: 100px;
+            background: #ffffff;
+            border: 5px solid #eab308;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+
+        #confettiCanvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 99;
+        }
+
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes drop-bounce { 0% { transform: translateY(-40px) scale(1.1); opacity: 0; } 70% { transform: translateY(5px) scale(0.95); } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+        @keyframes pop-in { 0% { transform: scale(0); } 80% { transform: scale(1.15); } 100% { transform: scale(1); } }
+        @keyframes move-bubbles { 0% { background-position: 0 0; } 100% { background-position: 0 -40px; } }
+
+        @media (max-width: 680px) {
+            .burger-workspace-linear { flex-direction: column; }
+            .ingredients-linear-picker { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: center; }
+            .board-box, .fryer-vat-linear { width: 290px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="floatingFinger" class="floating-finger">👇</div>
+
+<div class="game-app">
+    <canvas id="confettiCanvas"></canvas>
+
+    <header class="top-navbar">
+        <div class="brand-title">
+            <span style="font-size: 28px; animation: bounce 2s infinite;">🍔</span>
+            <span>快乐麦当劳</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div class="score-pill">
+                <span>⭐</span>
+                <span id="scoreVal">0</span>
+            </div>
+            <button class="icon-btn" id="soundToggleBtn">🔊</button>
+        </div>
+    </header>
+
+    <!-- 5 步外卖送餐流水线 -->
+    <nav class="pipeline-bar">
+        <div class="pipe-step active" id="pipeStep1">
+            <span class="icon">📢</span>
+            <span>1. 点外卖</span>
+        </div>
+        <span class="pipe-arrow">➔</span>
+        <div class="pipe-step" id="pipeStep2">
+            <span class="icon">🍔</span>
+            <span>2. 做汉堡</span>
+        </div>
+        <span class="pipe-arrow">➔</span>
+        <div class="pipe-step" id="pipeStep3">
+            <span class="icon">🍟</span>
+            <span>3. 做薯条</span>
+        </div>
+        <span class="pipe-arrow">➔</span>
+        <div class="pipe-step" id="pipeStep4">
+            <span class="icon">🚗</span>
+            <span>4. 开送餐车</span>
+        </div>
+        <span class="pipe-arrow">➔</span>
+        <div class="pipe-step" id="pipeStep5">
+            <span class="icon">🎁</span>
+            <span>5. 送达+1分</span>
+        </div>
+    </nav>
+
+    <main class="stage-viewport">
+
+        <!-- 阶段 1: 点外卖 -->
+        <section class="stage-card active" id="stageOrder">
+            <div class="welcome-box">
+                <div class="order-bubble-big">
+                    <div class="order-icon-badge">🍔</div>
+                    <div class="order-icon-badge">🍟</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #ea580c;">
+                        小萌宠在家里点了汉堡外卖！
+                    </div>
+                </div>
+
+                <div class="customer-avatar-big" id="custAvatarContainer"></div>
+
+                <button class="big-start-btn super-glow" id="startCookBtn">
+                    <span>▶ 开始做餐！</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 阶段 2: 做汉堡 -->
+        <section class="stage-card" id="stageBurger">
+            <div class="big-guide-banner" id="burgerGuideText">
+                <span>👇 点击发光的按钮做汉堡！</span>
+            </div>
+
+            <div class="burger-workspace-linear">
+                <div class="burger-plate-area">
+                    <div class="grill-box-linear" id="grillContainer">
+                        <div style="font-size: 15px; font-weight: 700; color: #cbd5e1;">🔥 煎肉锅</div>
+                        <div class="patty-slot-linear super-glow" id="pattyGrillBtn">
+                            <div id="rawPattyIcon" style="font-size: 34px;">🥩</div>
+                            <span id="grillText" style="font-size: 11px; font-weight: 700; color: #ffd700;">点击煎肉</span>
+                        </div>
+                        <div class="steam-cloud" id="steam1" style="left: 60%; top: 10%;">♨️</div>
+                        <div class="steam-cloud" id="steam2" style="left: 75%; top: 20%;">☁️</div>
+                    </div>
+
+                    <div class="plate-stack-container">
+                        <div class="ceramic-plate-svg"></div>
+                        <div class="burger-stack-flex" id="burgerStackFlex"></div>
+                    </div>
+                </div>
+
+                <div class="ingredients-linear-picker">
+                    <div class="ingredient-item-card disabled" id="cardBottomBun" data-ing="bottom-bun">
+                        <span class="ing-big-icon">🍞</span>
+                        <span class="ing-label-title">1. 底部面包</span>
+                    </div>
+                    <div class="ingredient-item-card disabled" id="cardPatty" data-ing="cooked-patty">
+                        <span class="ing-big-icon">🍖</span>
+                        <span class="ing-label-title">2. 香煎牛排</span>
+                    </div>
+                    <div class="ingredient-item-card disabled" id="cardNori" data-ing="nori">
+                        <span class="ing-big-icon">⬛</span>
+                        <span class="ing-label-title">3. 脆紫菜</span>
+                    </div>
+                    <div class="ingredient-item-card disabled" id="cardLettuce" data-ing="lettuce">
+                        <span class="ing-big-icon">🥬</span>
+                        <span class="ing-label-title">4. 青菜/生菜</span>
+                    </div>
+                    <div class="ingredient-item-card disabled" id="cardTomato" data-ing="tomato">
+                        <span class="ing-big-icon">🍅</span>
+                        <span class="ing-label-title">5. 鲜红番茄</span>
+                    </div>
+                    <div class="ingredient-item-card disabled" id="cardCheese" data-ing="cheese">
+                        <span class="ing-big-icon">🧀</span>
+                        <span class="ing-label-title">6. 芝士片</span>
+                    </div>
+                    <div class="ingredient-item-card disabled" id="cardTopBun" data-ing="top-bun">
+                        <span class="ing-big-icon">🍔</span>
+                        <span class="ing-label-title">7. 盖上面包</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 阶段 3: 做薯条 -->
+        <section class="stage-card" id="stageFries">
+            <div class="fries-sub-step active" id="subPeel">
+                <div class="big-guide-banner">
+                    <span>🔪 在马铃薯上涂抹削去外皮！</span>
+                </div>
+                <div style="position: relative; width: 300px; height: 220px; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 210px; height: 150px; background: #fde047; border-radius: 50% 40% 50% 45%; border: 4px solid #eab308; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #854d0e;">
+                        干净土豆 ✨
+                    </div>
+                    <canvas id="peelCanvas" width="300" height="220" style="position: absolute; top:0; left:0; border-radius:20px; cursor:grab; touch-action:none;"></canvas>
+                </div>
+                <button class="big-start-btn super-glow" id="btnNextToChop" style="margin-top: 15px; font-size: 20px; padding: 10px 32px;">
+                    <span>去切薯条 ➔</span>
+                </button>
+            </div>
+
+            <div class="fries-sub-step" id="subChop">
+                <div class="big-guide-banner">
+                    <span>🔪 点击大刀切出长短不同、粗细大小不一的薯条！</span>
+                </div>
+                <div class="board-box" id="boardStripsBox"></div>
+                <button class="big-start-btn super-glow" id="btnChopAction" style="margin-top: 15px; font-size: 20px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-color: #fca5a5;">
+                    <span>🔪 切一刀！(<span id="chopNumText">0</span>/5)</span>
+                </button>
+            </div>
+
+            <div class="fries-sub-step" id="subFry">
+                <div class="big-guide-banner">
+                    <span>🔥 点击按钮把薯条推入油锅，炸至金黄！</span>
+                </div>
+                <div class="fryer-vat-linear" id="fryerVatLinear">
+                    <div style="position: absolute; width: 100%; height: 100%; background: radial-gradient(circle, rgba(254,240,138,0.4) 10%, transparent 10.5%); background-size: 20px 20px; animation: move-bubbles 1s linear infinite;"></div>
+                    <div id="fryingStripsFlex" style="display: flex; gap: 6px; align-items: flex-end; z-index: 2;"></div>
+                </div>
+                <button class="big-start-btn super-glow" id="btnStartFry" style="margin-top: 15px; font-size: 20px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                    <span>🍳 下锅炸薯条！</span>
+                </button>
+            </div>
+
+            <div class="fries-sub-step" id="subSauce">
+                <div class="big-guide-banner">
+                    <span>🥫 点击挤出红彤彤的番茄酱！</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 30px; margin: 15px 0;">
+                    <svg width="130" height="160" viewBox="0 0 100 120">
+                        <path d="M10,30 L90,30 L80,110 L20,110 Z" fill="#b91c1c"/>
+                        <rect x="25" y="10" width="8" height="50" fill="#fde047" rx="3"/>
+                        <rect x="36" y="5" width="9" height="55" fill="#fef08a" rx="3"/>
+                        <rect x="48" y="12" width="7" height="48" fill="#eab308" rx="3"/>
+                        <rect x="58" y="7" width="8" height="53" fill="#fde047" rx="3"/>
+                        <rect x="68" y="15" width="9" height="45" fill="#fef08a" rx="3"/>
+                        <path d="M10,40 Q50,55 90,40 L80,115 Q50,120 20,115 Z" fill="#dc2626"/>
+                        <path d="M38,65 Q44,50 50,65 Q56,50 62,65 L62,85 L56,85 L56,72 Q53,60 50,72 Q47,60 44,72 L44,85 L38,85 Z" fill="#ffcc00"/>
+                    </svg>
+
+                    <div class="ketchup-dish-big">
+                        <div class="ketchup-red-blob" id="ketchupRedBlob"></div>
+                    </div>
+                </div>
+
+                <button class="big-start-btn super-glow" id="btnSqueezeSauce" style="background: #dc2626; border-color: #fca5a5;">
+                    <span>🥫 挤番茄酱！</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 阶段 4: 开麦当劳外卖送餐车 (Delivery Truck Stage) -->
+        <section class="stage-card" id="stageTruck">
+            <div class="truck-workspace">
+                <div class="big-guide-banner">
+                    <span>🛵 点击启动外卖车，把美食开送给顾客！</span>
+                </div>
+
+                <!-- 顾客在小屋门口等外卖 -->
+                <div class="town-house">🏡</div>
+
+                <!-- 带有道路背景 -->
+                <div class="road-strip">
+                    <div class="road-line"></div>
+                </div>
+
+                <!-- 可爱的红色麦当劳外卖送餐卡车 SVG -->
+                <div class="truck-anim-box" id="truckAnimBox">
+                    <svg width="200" height="130" viewBox="0 0 200 130">
+                        <!-- 保温后备箱 -->
+                        <rect x="10" y="20" width="90" height="70" rx="12" fill="#ffcc00" stroke="#d97706" stroke-width="4"/>
+                        <!-- M 外卖标志 -->
+                        <path d="M40,55 Q47,40 55,55 Q63,40 70,55 L70,75 L63,75 L63,62 Q59,50 55,62 Q51,50 47,62 L47,75 L40,75 Z" fill="#dc2626"/>
+                        <!-- 车头 -->
+                        <path d="M100,40 L150,40 L185,70 L185,90 L100,90 Z" fill="#dc2626"/>
+                        <!-- 车窗与司机熊 -->
+                        <path d="M110,48 L145,48 L170,70 L110,70 Z" fill="#7dd3fc"/>
+                        <circle cx="135" cy="60" r="10" fill="#b45309"/>
+                        <!-- 车灯 -->
+                        <circle cx="180" cy="78" r="6" fill="#fef08a"/>
+                        <!-- 车轮 -->
+                        <g id="wheelLeftGroup" class="wheel-group">
+                            <circle cx="45" cy="95" r="18" fill="#1e293b" stroke="#cbd5e1" stroke-width="4"/>
+                            <circle cx="45" cy="95" r="6" fill="#ffffff"/>
+                        </g>
+                        <g id="wheelRightGroup" class="wheel-group">
+                            <circle cx="150" cy="95" r="18" fill="#1e293b" stroke="#cbd5e1" stroke-width="4"/>
+                            <circle cx="150" cy="95" r="6" fill="#ffffff"/>
+                        </g>
+                    </svg>
+                </div>
+
+                <button class="big-start-btn super-glow" id="btnDriveTruck" style="z-index: 20; font-size: 22px; padding: 14px 44px; background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); border-color: #ffedd5;">
+                    <span>🚗 启动外卖车开送！(轰轰轰)</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 阶段 5: 送达结算加分 -->
+        <section class="stage-card" id="stageServe">
+            <div class="serve-box-linear">
+                <div class="big-guide-banner">
+                    <span>🎉 外卖卡车送到家门口啦！多谢小大厨！</span>
+                </div>
+
+                <div class="customer-avatar-big" id="custAvatarServeContainer"></div>
+
+                <div class="final-tray">
+                    <div style="font-size: 50px;">🍔</div>
+                    <div style="font-size: 50px;">🍟</div>
+                </div>
+
+                <button class="big-start-btn super-glow" id="btnServeFinal">
+                    <span>🎁 卖给顾客 (+1分)</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<script>
+(function() {
+    const state = {
+        score: 0,
+        soundEnabled: true,
+        currentStage: 1, // 1: Order, 2: Burger, 3: Fries, 4: Truck, 5: Serve
+        burgerStep: 0,
+        pattyState: 'raw',
+        burgerStack: [],
+        friesStep: 1,
+        chopCount: 0,
+        strips: [],
+        customerIndex: 0
+    };
+
+    const customers = [
+        {
+            name: "小熊",
+            svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+                <circle cx="20" cy="20" r="14" fill="#b45309"/><circle cx="80" cy="20" r="14" fill="#b45309"/>
+                <circle cx="20" cy="20" r="8" fill="#fde047"/><circle cx="80" cy="20" r="8" fill="#fde047"/>
+                <circle cx="50" cy="50" r="38" fill="#d97706"/><ellipse cx="50" cy="62" rx="18" ry="14" fill="#fef3c7"/>
+                <circle cx="36" cy="45" r="5" fill="#1e293b"/><circle cx="64" cy="45" r="5" fill="#1e293b"/>
+                <ellipse cx="50" cy="56" rx="7" ry="5" fill="#78350f"/>
+                <path d="M 42 66 Q 50 74 58 66" fill="none" stroke="#78350f" stroke-width="3" stroke-linecap="round"/>
+            </svg>`
+        },
+        {
+            name: "兔兔",
+            svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+                <ellipse cx="30" cy="22" rx="10" ry="25" fill="#f472b6"/><ellipse cx="70" cy="22" rx="10" ry="25" fill="#f472b6"/>
+                <ellipse cx="30" cy="22" rx="5" ry="16" fill="#fbcfe8"/><ellipse cx="70" cy="22" rx="5" ry="16" fill="#fbcfe8"/>
+                <circle cx="50" cy="56" r="35" fill="#fce7f3"/><circle cx="36" cy="50" r="4" fill="#831843"/>
+                <circle cx="64" cy="50" r="4" fill="#831843"/><polygon points="50,58 45,64 55,64" fill="#db2777"/>
+                <path d="M 42 68 Q 50 74 58 68" fill="none" stroke="#db2777" stroke-width="3" stroke-linecap="round"/>
+            </svg>`
+        },
+        {
+            name: "猫咪",
+            svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+                <polygon points="15,15 35,35 15,45" fill="#fb923c"/><polygon points="85,15 65,35 85,45" fill="#fb923c"/>
+                <circle cx="50" cy="52" r="36" fill="#fdba74"/><ellipse cx="34" cy="48" rx="6" ry="8" fill="#15803d"/>
+                <ellipse cx="66" cy="48" rx="6" ry="8" fill="#15803d"/><polygon points="50,56 46,60 54,60" fill="#c2410c"/>
+                <path d="M 40 65 Q 50 72 60 65" fill="none" stroke="#7c2d12" stroke-width="3"/>
+            </svg>`
+        }
+    ];
+
+    let audioCtx = null;
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    // 引擎轰鸣声 Vroom Vroom
+    function playVroomSound() {
+        if (!state.soundEnabled) return;
+        initAudio(); if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(80, now);
+        osc.frequency.linearRampToValueAtTime(220, now + 1.2);
+        osc.frequency.linearRampToValueAtTime(140, now + 2.4);
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 600;
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 2.5);
+
+        osc.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now); osc.stop(now + 2.5);
+    }
+
+    // 汽车喇叭 Beep Beep
+    function playBeepSound() {
+        if (!state.soundEnabled) return;
+        initAudio(); if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        [440, 440].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine'; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.3, now + idx * 0.18);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.18 + 0.12);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.18); osc.stop(now + idx * 0.18 + 0.12);
+        });
+    }
+
+    function playContinuousSizzle(durationSec = 2) {
+        if (!state.soundEnabled) return;
+        initAudio(); if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const bufferSize = audioCtx.sampleRate * durationSec;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.45;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass'; filter.frequency.setValueAtTime(2500, now); filter.Q.setValueAtTime(2, now);
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.35, now + durationSec - 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+        noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+        noise.start(now);
+    }
+
+    function playDingSound() {
+        if (!state.soundEnabled) return;
+        initAudio(); if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(1400, now);
+        osc.frequency.exponentialRampToValueAtTime(1750, now + 0.15);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now); osc.stop(now + 0.5);
+    }
+
+    function playSound(type) {
+        if (!state.soundEnabled) return;
+        initAudio(); if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+
+        if (type === 'pop') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(450, now);
+            osc.frequency.exponentialRampToValueAtTime(850, now + 0.08);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.08);
+
+        } else if (type === 'chop') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(160, now);
+            osc.frequency.exponentialRampToValueAtTime(40, now + 0.05);
+            gain.gain.setValueAtTime(0.4, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.05);
+
+        } else if (type === 'squeeze') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(650, now);
+            osc.frequency.linearRampToValueAtTime(220, now + 0.15);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.15);
+
+        } else if (type === 'fanfare') {
+            [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle'; osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.25, now + idx * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.35);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now + idx * 0.08); osc.stop(now + idx * 0.08 + 0.35);
+            });
+        }
+    }
+
+    const floatingFinger = document.getElementById('floatingFinger');
+    function moveFingerTo(targetEl) {
+        if (!targetEl) {
+            floatingFinger.style.display = 'none';
+            return;
+        }
+        const rect = targetEl.getBoundingClientRect();
+        floatingFinger.style.display = 'block';
+        floatingFinger.style.left = (rect.left + rect.width / 2 - 22) + 'px';
+        floatingFinger.style.top = (rect.top - 45) + 'px';
+    }
+
+    const scoreVal = document.getElementById('scoreVal');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const pipeStep1 = document.getElementById('pipeStep1');
+    const pipeStep2 = document.getElementById('pipeStep2');
+    const pipeStep3 = document.getElementById('pipeStep3');
+    const pipeStep4 = document.getElementById('pipeStep4');
+    const pipeStep5 = document.getElementById('pipeStep5');
+
+    const stageOrder = document.getElementById('stageOrder');
+    const stageBurger = document.getElementById('stageBurger');
+    const stageFries = document.getElementById('stageFries');
+    const stageTruck = document.getElementById('stageTruck');
+    const stageServe = document.getElementById('stageServe');
+
+    const custAvatarContainer = document.getElementById('custAvatarContainer');
+    const custAvatarServeContainer = document.getElementById('custAvatarServeContainer');
+    const startCookBtn = document.getElementById('startCookBtn');
+
+    const burgerGuideText = document.getElementById('burgerGuideText');
+    const pattyGrillBtn = document.getElementById('pattyGrillBtn');
+    const rawPattyIcon = document.getElementById('rawPattyIcon');
+    const grillText = document.getElementById('grillText');
+    const burgerStackFlex = document.getElementById('burgerStackFlex');
+
+    const cardBottomBun = document.getElementById('cardBottomBun');
+    const cardPatty = document.getElementById('cardPatty');
+    const cardNori = document.getElementById('cardNori');
+    const cardLettuce = document.getElementById('cardLettuce');
+    const cardTomato = document.getElementById('cardTomato');
+    const cardCheese = document.getElementById('cardCheese');
+    const cardTopBun = document.getElementById('cardTopBun');
+
+    const subPeel = document.getElementById('subPeel');
+    const subChop = document.getElementById('subChop');
+    const subFry = document.getElementById('subFry');
+    const subSauce = document.getElementById('subSauce');
+
+    const peelCanvas = document.getElementById('peelCanvas');
+    const btnNextToChop = document.getElementById('btnNextToChop');
+    const boardStripsBox = document.getElementById('boardStripsBox');
+    const btnChopAction = document.getElementById('btnChopAction');
+    const chopNumText = document.getElementById('chopNumText');
+    const fryingStripsFlex = document.getElementById('fryingStripsFlex');
+    const btnStartFry = document.getElementById('btnStartFry');
+    const ketchupRedBlob = document.getElementById('ketchupRedBlob');
+    const btnSqueezeSauce = document.getElementById('btnSqueezeSauce');
+
+    const truckAnimBox = document.getElementById('truckAnimBox');
+    const btnDriveTruck = document.getElementById('btnDriveTruck');
+    const wheelLeftGroup = document.getElementById('wheelLeftGroup');
+    const wheelRightGroup = document.getElementById('wheelRightGroup');
+
+    const btnServeFinal = document.getElementById('btnServeFinal');
+    const steam1 = document.getElementById('steam1');
+    const steam2 = document.getElementById('steam2');
+
+    function setPipelineStage(stageNum) {
+        state.currentStage = stageNum;
+        [pipeStep1, pipeStep2, pipeStep3, pipeStep4, pipeStep5].forEach(p => p.classList.remove('active'));
+        [stageOrder, stageBurger, stageFries, stageTruck, stageServe].forEach(s => s.classList.remove('active'));
+
+        playSound('pop');
+
+        if (stageNum === 1) {
+            pipeStep1.classList.add('active');
+            stageOrder.classList.add('active');
+            setTimeout(() => moveFingerTo(startCookBtn), 300);
+        } else if (stageNum === 2) {
+            pipeStep2.classList.add('active');
+            stageBurger.classList.add('active');
+            initBurgerStep();
+        } else if (stageNum === 3) {
+            pipeStep3.classList.add('active');
+            stageFries.classList.add('active');
+            setFriesSubStep(1);
+        } else if (stageNum === 4) {
+            pipeStep4.classList.add('active');
+            stageTruck.classList.add('active');
+            initTruckStage();
+        } else if (stageNum === 5) {
+            pipeStep5.classList.add('active');
+            stageServe.classList.add('active');
+            setTimeout(() => moveFingerTo(btnServeFinal), 300);
+        }
+    }
+
+    soundToggleBtn.addEventListener('click', () => {
+        state.soundEnabled = !state.soundEnabled;
+        soundToggleBtn.textContent = state.soundEnabled ? '🔊' : '🔇';
+    });
+
+    function renderCustomer() {
+        const c = customers[state.customerIndex % customers.length];
+        custAvatarContainer.innerHTML = c.svg;
+        custAvatarServeContainer.innerHTML = c.svg;
+    }
+    renderCustomer();
+
+    startCookBtn.addEventListener('click', () => {
+        setPipelineStage(2);
+    });
+
+    const burgerCards = [
+        cardBottomBun, cardPatty, cardNori, cardLettuce, cardTomato, cardCheese, cardTopBun
+    ];
+
+    function initBurgerStep() {
+        state.burgerStep = 0;
+        state.pattyState = 'raw';
+        state.burgerStack = [];
+        burgerStackFlex.innerHTML = '';
+        rawPattyIcon.textContent = '🥩';
+        grillText.textContent = '点击煎肉';
+        grillText.style.color = '#ffd700';
+
+        pattyGrillBtn.classList.add('super-glow');
+        burgerCards.forEach(c => {
+            c.classList.add('disabled');
+            c.classList.remove('super-glow');
+        });
+
+        setTimeout(() => moveFingerTo(pattyGrillBtn), 300);
+    }
+
+    pattyGrillBtn.addEventListener('click', () => {
+        if (state.pattyState !== 'raw') return;
+        state.pattyState = 'cooking';
+
+        playContinuousSizzle(2.0);
+        grillText.textContent = '滋滋煎肉...';
+        pattyGrillBtn.classList.remove('super-glow');
+
+        steam1.style.opacity = '1';
+        steam2.style.opacity = '1';
+
+        setTimeout(() => {
+            state.pattyState = 'cooked';
+            playDingSound();
+
+            rawPattyIcon.textContent = '🍖';
+            grillText.textContent = '熟啦！';
+            grillText.style.color = '#4ade80';
+            steam1.style.opacity = '0';
+            steam2.style.opacity = '0';
+
+            state.burgerStep = 1;
+            updateBurgerGuide();
+        }, 2000);
+    });
+
+    burgerCards.forEach((card, index) => {
+        card.addEventListener('click', () => {
+            const stepNeeded = index + 1;
+            if (state.burgerStep !== stepNeeded) return;
+
+            playSound('pop');
+            const ingType = card.dataset.ing;
+            state.burgerStack.push(ingType);
+            renderBurgerStack();
+
+            state.burgerStep++;
+            updateBurgerGuide();
+        });
+    });
+
+    function updateBurgerGuide() {
+        burgerCards.forEach(c => {
+            c.classList.add('disabled');
+            c.classList.remove('super-glow');
+        });
+
+        if (state.burgerStep >= 1 && state.burgerStep <= 7) {
+            const activeCard = burgerCards[state.burgerStep - 1];
+            activeCard.classList.remove('disabled');
+            activeCard.classList.add('super-glow');
+            setTimeout(() => moveFingerTo(activeCard), 200);
+
+        } else if (state.burgerStep > 7) {
+            playDingSound();
+            playSound('fanfare');
+            moveFingerTo(null);
+            burgerGuideText.innerHTML = '<span>✨ 汉堡做好啦！自动准备做薯条...</span>';
+            setTimeout(() => {
+                setPipelineStage(3);
+            }, 1200);
+        }
+    }
+
+    function renderBurgerStack() {
+        burgerStackFlex.innerHTML = '';
+        state.burgerStack.forEach(ing => {
+            const layer = document.createElement('div');
+            layer.className = 'burger-layer-item';
+
+            let svgContent = '';
+            if (ing === 'bottom-bun') {
+                svgContent = `<svg width="180" height="30" viewBox="0 0 180 30"><path d="M 10 5 Q 90 0 170 5 Q 175 25 165 28 Q 90 30 15 28 Q 5 25 10 5 Z" fill="#ea580c"/></svg>`;
+            } else if (ing === 'cooked-patty') {
+                svgContent = `<svg width="170" height="24" viewBox="0 0 170 24"><rect x="0" y="0" width="170" height="24" rx="12" fill="#78350f"/></svg>`;
+            } else if (ing === 'nori') {
+                svgContent = `<svg width="160" height="12" viewBox="0 0 160 12"><rect x="0" y="0" width="160" height="12" rx="4" fill="#0f172a"/></svg>`;
+            } else if (ing === 'lettuce') {
+                svgContent = `<svg width="185" height="20" viewBox="0 0 185 20"><path d="M 0 10 Q 20 0 40 10 Q 60 20 80 10 Q 100 0 120 10 Q 140 20 160 10 Q 180 18 Z" fill="#22c55e"/></svg>`;
+            } else if (ing === 'tomato') {
+                svgContent = `<svg width="165" height="16" viewBox="0 0 165 16"><rect x="10" y="0" width="65" height="16" rx="8" fill="#ef4444"/><rect x="90" y="0" width="65" height="16" rx="8" fill="#ef4444"/></svg>`;
+            } else if (ing === 'cheese') {
+                svgContent = `<svg width="175" height="15" viewBox="0 0 175 15"><path d="M 0 0 L 175 0 L 165 10 L 140 15 L 120 8 L 80 14 Z" fill="#eab308"/></svg>`;
+            } else if (ing === 'top-bun') {
+                svgContent = `<svg width="180" height="50" viewBox="0 0 180 50"><path d="M 10 45 Q 90 -10 170 45 Z" fill="#f97316"/><circle cx="50" cy="20" r="2" fill="#fef08a"/><circle cx="110" cy="26" r="2" fill="#fef08a"/></svg>`;
+            }
+            layer.innerHTML = svgContent;
+            burgerStackFlex.appendChild(layer);
+        });
+    }
+
+    const ctx = peelCanvas.getContext('2d');
+    function initPeelCanvas() {
+        ctx.fillStyle = '#b45309';
+        ctx.beginPath(); ctx.ellipse(150, 110, 100, 70, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#78350f';
+        for (let i = 0; i < 20; i++) {
+            ctx.beginPath(); ctx.arc(70 + Math.random() * 150, 50 + Math.random() * 110, 3 + Math.random() * 4, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+    initPeelCanvas();
+
+    let isPeeling = false;
+    function scrubPeel(e) {
+        if (!isPeeling) return;
+        const rect = peelCanvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath(); ctx.arc(clientX - rect.left, clientY - rect.top, 24, 0, Math.PI * 2); ctx.fill();
+        playSound('chop');
+    }
+
+    peelCanvas.addEventListener('mousedown', () => isPeeling = true);
+    peelCanvas.addEventListener('mouseup', () => isPeeling = false);
+    peelCanvas.addEventListener('mousemove', scrubPeel);
+    peelCanvas.addEventListener('touchstart', (e) => { isPeeling = true; scrubPeel(e); });
+    peelCanvas.addEventListener('touchend', () => isPeeling = false);
+    peelCanvas.addEventListener('touchmove', scrubPeel);
+
+    btnNextToChop.addEventListener('click', () => {
+        playSound('pop');
+        setFriesSubStep(2);
+    });
+
+    btnChopAction.addEventListener('click', () => {
+        if (state.chopCount >= 5) return;
+        playSound('chop');
+        state.chopCount++;
+        chopNumText.textContent = state.chopCount;
+
+        const h = 45 + Math.floor(Math.random() * 65);
+        const w = 10 + Math.floor(Math.random() * 12);
+        const strip = document.createElement('div');
+        strip.className = 'potato-strip-item';
+        strip.style.width = w + 'px';
+        strip.style.height = h + 'px';
+        boardStripsBox.appendChild(strip);
+        state.strips.push({ width: w, height: h });
+
+        if (state.chopCount >= 5) {
+            playDingSound();
+            playSound('fanfare');
+            setTimeout(() => setFriesSubStep(3), 800);
+        }
+    });
+
+    btnStartFry.addEventListener('click', () => {
+        playContinuousSizzle(2.2);
+        btnStartFry.textContent = '⏳ 炸油中 (咕嘟咕嘟)...';
+        btnStartFry.style.pointerEvents = 'none';
+
+        fryingStripsFlex.innerHTML = '';
+        state.strips.forEach(s => {
+            const strip = document.createElement('div');
+            strip.className = 'potato-strip-item';
+            strip.style.width = s.width + 'px';
+            strip.style.height = s.height + 'px';
+            fryingStripsFlex.appendChild(strip);
+        });
+
+        setTimeout(() => {
+            document.querySelectorAll('#fryingStripsFlex .potato-strip-item').forEach(el => {
+                el.style.background = 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)';
+            });
+            playDingSound();
+            playSound('fanfare');
+            setTimeout(() => setFriesSubStep(4), 1000);
+        }, 2200);
+    });
+
+    btnSqueezeSauce.addEventListener('click', () => {
+        playSound('squeeze');
+        ketchupRedBlob.style.width = '65px';
+        ketchupRedBlob.style.height = '65px';
+        playDingSound();
+        playSound('fanfare');
+
+        setTimeout(() => {
+            setPipelineStage(4); // 薯条挤酱完成 ➔ 自动进入外卖送餐车环节！
+        }, 1200);
+    });
+
+    function setFriesSubStep(stepNum) {
+        state.friesStep = stepNum;
+        [subPeel, subChop, subFry, subSauce].forEach(s => s.classList.remove('active'));
+
+        if (stepNum === 1) {
+            subPeel.classList.add('active');
+            setTimeout(() => moveFingerTo(btnNextToChop), 300);
+        } else if (stepNum === 2) {
+            subChop.classList.add('active');
+            state.chopCount = 0;
+            boardStripsBox.innerHTML = '';
+            chopNumText.textContent = '0';
+            setTimeout(() => moveFingerTo(btnChopAction), 300);
+        } else if (stepNum === 3) {
+            subFry.classList.add('active');
+            btnStartFry.textContent = '🍳 下锅炸薯条！';
+            btnStartFry.style.pointerEvents = 'auto';
+            setTimeout(() => moveFingerTo(btnStartFry), 300);
+        } else if (stepNum === 4) {
+            subSauce.classList.add('active');
+            ketchupRedBlob.style.width = '0';
+            ketchupRedBlob.style.height = '0';
+            setTimeout(() => moveFingerTo(btnSqueezeSauce), 300);
+        }
+    }
+
+    // ------------------- 阶段 4: 外卖送餐车逻辑 -------------------
+    function initTruckStage() {
+        truckAnimBox.classList.remove('driving');
+        wheelLeftGroup.classList.remove('wheel-rotate');
+        wheelRightGroup.classList.remove('wheel-rotate');
+
+        setTimeout(() => moveFingerTo(btnDriveTruck), 300);
+    }
+
+    btnDriveTruck.addEventListener('click', () => {
+        playBeepSound(); // 嘟嘟喇叭
+        setTimeout(() => playVroomSound(), 300); // 轰轰轰引擎
+
+        btnDriveTruck.style.pointerEvents = 'none';
+        btnDriveTruck.textContent = '🛵 正在开车外卖送餐中...';
+
+        truckAnimBox.classList.add('driving');
+        wheelLeftGroup.classList.add('wheel-rotate');
+        wheelRightGroup.classList.add('wheel-rotate');
+
+        setTimeout(() => {
+            playDingSound();
+            playSound('fanfare');
+            btnDriveTruck.style.pointerEvents = 'auto';
+            btnDriveTruck.textContent = '🚗 启动外卖车开送！(轰轰轰)';
+            setPipelineStage(5); // 外卖车送到门口！自动进入阶段 5 胜利结算加分！
+        }, 2800);
+    });
+
+    // ------------------- 阶段 5: 送达加分 -------------------
+    btnServeFinal.addEventListener('click', () => {
+        state.score += 1;
+        scoreVal.textContent = state.score;
+
+        playSound('fanfare');
+        playDingSound();
+        triggerConfetti();
+
+        btnServeFinal.innerHTML = '<span>❤️ 外卖送到家！(+1分)</span>';
+        btnServeFinal.style.background = 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)';
+
+        setTimeout(() => {
+            btnServeFinal.innerHTML = '<span>🎁 卖给顾客 (+1分)</span>';
+            btnServeFinal.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+
+            state.customerIndex++;
+            renderCustomer();
+            initPeelCanvas();
+            setPipelineStage(1);
+        }, 2200);
+    });
+
+    const confettiCanvas = document.getElementById('confettiCanvas');
+    const cCtx = confettiCanvas.getContext('2d');
+    let particles = [];
+
+    function resizeConfetti() {
+        confettiCanvas.width = confettiCanvas.parentElement.clientWidth;
+        confettiCanvas.height = confettiCanvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeConfetti);
+    resizeConfetti();
+
+    function triggerConfetti() {
+        particles = [];
+        const colors = ['#ff3b30', '#ffcc00', '#4ade80', '#60a5fa', '#f472b6', '#a78bfa'];
+        for (let i = 0; i < 90; i++) {
+            particles.push({
+                x: confettiCanvas.width / 2,
+                y: confettiCanvas.height / 2,
+                vx: (Math.random() - 0.5) * 14,
+                vy: (Math.random() - 0.5) * 14 - 4,
+                size: Math.random() * 8 + 4,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rotation: Math.random() * 360,
+                rSpeed: (Math.random() - 0.5) * 10
+            });
+        }
+        animateConfetti();
+    }
+
+    function animateConfetti() {
+        cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        particles.forEach(p => {
+            p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.rotation += p.rSpeed;
+            cCtx.save();
+            cCtx.translate(p.x, p.y);
+            cCtx.rotate((p.rotation * Math.PI) / 180);
+            cCtx.fillStyle = p.color;
+            cCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            cCtx.restore();
+        });
+        particles = particles.filter(p => p.y < confettiCanvas.height);
+        if (particles.length > 0) requestAnimationFrame(animateConfetti);
+        else cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    }
+
+})();
+</script>
+</body>
+</html>
