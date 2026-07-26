@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>暗房大冒险 - 5岁小朋友的专属游戏</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: #1a1815;
+      font-family: 'Segoe UI', Microsoft YaHei, Arial, sans-serif;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #fff;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 1200px;
+      max-height: 800px;
+      background-color: #2b261f;
+      box-shadow: 0 0 40px rgba(0,0,0,0.8);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+    }
+
+    /* UI Layer Overlay */
+    .ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px;
+    }
+
+    .interactive {
+      pointer-events: auto;
+    }
+
+    /* HUD Top Bar */
+    .hud-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      padding: 12px 24px;
+      border-radius: 30px;
+      border: 2px solid rgba(255, 215, 0, 0.3);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    .hud-title {
+      font-size: 24px;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 12px #ff9800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-icon {
+      width: 32px;
+      height: 32px;
+      background: #ff9800;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #fff;
+      font-size: 18px;
+    }
+
+    .hud-info {
+      display: flex;
+      gap: 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .hud-pill {
+      background: rgba(255,255,255,0.15);
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Guidance Banner */
+    .guidance-banner {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 152, 0, 0.95);
+      color: #111;
+      font-weight: 900;
+      font-size: 22px;
+      padding: 14px 32px;
+      border-radius: 40px;
+      border: 4px solid #fff;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5), 0 0 20px #ffeb3b;
+      animation: pulse-banner 1.5s infinite alternate ease-in-out;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    @keyframes pulse-banner {
+      0% { transform: translateX(-50%) scale(0.98); }
+      100% { transform: translateX(-50%) scale(1.04); }
+    }
+
+    /* Modal Screens */
+    .screen-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(18, 14, 10, 0.85);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      pointer-events: auto;
+      z-index: 100;
+      transition: opacity 0.3s ease;
+    }
+
+    .screen-overlay.hidden,
+    .screen-overlay.hidden * {
+      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+
+    .game-card {
+      background: linear-gradient(135deg, #3a3227 0%, #201a14 100%);
+      border: 4px solid #ffd700;
+      border-radius: 28px;
+      padding: 40px 50px;
+      text-align: center;
+      max-width: 580px;
+      width: 90%;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7), inset 0 0 30px rgba(255, 215, 0, 0.1);
+      position: relative;
+    }
+
+    .game-title {
+      font-size: 42px;
+      font-weight: 900;
+      color: #ffeb3b;
+      text-shadow: 0 4px 10px rgba(0,0,0,0.6), 0 0 25px #ff9800;
+      margin-bottom: 12px;
+    }
+
+    .game-subtitle {
+      font-size: 18px;
+      color: #e0d0b0;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .big-btn {
+      background: linear-gradient(180deg, #ff9800 0%, #e65100 100%);
+      color: #fff;
+      font-size: 26px;
+      font-weight: 900;
+      padding: 16px 36px;
+      border: 4px solid #fff;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(230, 81, 0, 0.5), inset 0 4px 8px rgba(255,255,255,0.4);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .big-btn:hover {
+      transform: translateY(-4px) scale(1.03);
+      box-shadow: 0 12px 25px rgba(230, 81, 0, 0.7), inset 0 4px 8px rgba(255,255,255,0.6);
+      background: linear-gradient(180deg, #ffa726 0%, #f57c00 100%);
+    }
+
+    .big-btn:active {
+      transform: translateY(2px) scale(0.98);
+    }
+
+    .big-btn.secondary {
+      background: linear-gradient(180deg, #4caf50 0%, #1b5e20 100%);
+      box-shadow: 0 8px 20px rgba(27, 94, 32, 0.5), inset 0 4px 8px rgba(255,255,255,0.4);
+    }
+
+    .big-btn.secondary:hover {
+      background: linear-gradient(180deg, #66bb6a 0%, #2e7d32 100%);
+    }
+
+    /* Character Roster Preview */
+    .roster-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+      background: rgba(0,0,0,0.3);
+      padding: 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .roster-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #ffe082;
+    }
+
+    .roster-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #2a2219;
+      border: 3px solid #ffd700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+
+    /* Floating Control Tip */
+    .control-tip {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(33, 150, 243, 0.9);
+      color: #fff;
+      font-weight: bold;
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: 2px solid #fff;
+      font-size: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Level Selector Grid */
+    .level-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+
+    .level-btn {
+      background: #3e3225;
+      border: 2px solid #ffd700;
+      border-radius: 14px;
+      color: #fff;
+      font-size: 18px;
+      font-weight: bold;
+      padding: 12px 0;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .level-btn:hover {
+      background: #ff9800;
+      color: #000;
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <!-- HTML5 Canvas for Game Rendering -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- In-Game UI Overlay -->
+    <div class="ui-layer">
+      <!-- HUD Top Bar -->
+      <div class="hud-top">
+        <div class="hud-title">
+          <span class="badge-icon">👤</span>
+          <span id="hud-role-name">表哥 (实验室人员)</span>
+        </div>
+        <div class="hud-info">
+          <div class="hud-pill">🚩 关卡 <span id="hud-level-num" style="color:#ffeb3b">1</span> / 100</div>
+          <div class="hud-pill">🔑 钥匙 <span id="hud-key-count" style="color:#ffeb3b">0</span>/1</div>
+        </div>
+      </div>
+
+      <!-- Control Tip -->
+      <div class="control-tip">
+        <span>🖱️ 按住鼠标左键移动角色！</span>
+      </div>
+
+      <!-- Guidance Banner -->
+      <div class="guidance-banner" id="guidance-banner">
+        <span>💡</span> <span id="banner-text">跟着黄色脚印，去拿金钥匙逃出暗房！</span>
+      </div>
+    </div>
+
+    <!-- Start / Mode Select Screen -->
+    <div class="screen-overlay" id="start-screen">
+      <div class="game-card">
+        <div class="game-title">暗房大冒险 探险记</div>
+        <div class="game-subtitle">
+          🌟 专为 5 岁小探险家定制的游戏！<br>
+          在神奇暗房里，和表哥表弟一起避开怪物、寻找金钥匙逃出去吧！
+        </div>
+
+        <div class="roster-grid">
+          <div class="roster-card">
+            <div class="roster-avatar">👨‍🔬</div>
+            <span>表哥表弟</span>
+          </div>
+          <div class="roster-card">
+            <div class="roster-avatar">🦠</div>
+            <span>无眼细菌</span>
+          </div>
+          <div class="roster-card">
+            <div class="roster-avatar">🍑</div>
+            <span>屁屁嘴窃皮者</span>
+          </div>
+          <div class="roster-card">
+            <div class="roster-avatar">🎈</div>
+            <span>派对客</span>
+          </div>
+        </div>
+
+        <div class="btn-group interactive">
+          <button class="big-btn" id="btn-start-escape">
+            <span>🏃</span> 模式一：表哥逃出暗房
+          </button>
+          <button class="big-btn secondary" id="btn-start-monster">
+            <span>🎈</span> 模式二：怪物抓人游戏
+          </button>
+          <button class="big-btn" id="btn-select-level" style="background: linear-gradient(180deg, #9c27b0 0%, #4a148c 100%);">
+            <span>🗺️</span> 挑选关卡 (1-100关)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level Select Modal -->
+    <div class="screen-overlay hidden" id="level-screen">
+      <div class="game-card">
+        <div class="game-title" style="font-size: 32px;">选择探险关卡</div>
+        <div class="level-grid interactive" id="level-grid">
+          <!-- Dynamically populated buttons -->
+        </div>
+        <div class="btn-group interactive">
+          <button class="big-btn secondary" id="btn-back-main">
+            <span>🔙</span> 返回主菜单
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level Complete Screen -->
+    <div class="screen-overlay hidden" id="win-screen">
+      <div class="game-card">
+        <div class="game-title" style="color: #76ff03;">🎉 太棒啦！成功通关！</div>
+        <div class="game-subtitle" id="win-message" style="font-size: 22px; color: #fff;">
+          表哥顺利拿到了金钥匙，逃出了暗房！
+        </div>
+        <div style="font-size: 50px; margin: 15px 0;">⭐⭐⭐</div>
+        <div class="btn-group interactive">
+          <button class="big-btn" id="btn-next-level">
+            <span>🚀</span> 挑战下一关！
+          </button>
+          <button class="big-btn secondary" id="btn-win-home">
+            <span>🏠</span> 返回主菜单
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. WEB AUDIO SYNTHESIZER (音效与配乐合成器 - 零依赖、纯原生)
+       ========================================================================== */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.bgmTimer = null;
+        this.isMuted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, duration, type = 'sine', gainVal = 0.2) {
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      // 拾取金钥匙叮当声
+      playKeySound() {
+        this.init();
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          setTimeout(() => this.playTone(freq, 0.2, 'triangle', 0.3), idx * 80);
+        });
+      }
+
+      // 派对客小喇叭声音 (Toot Toot!)
+      playPartyHorn() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(350, now);
+        osc.frequency.linearRampToValueAtTime(600, now + 0.15);
+        osc.frequency.linearRampToValueAtTime(450, now + 0.3);
+
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(now + 0.35);
+      }
+
+      // 通关胜利欢呼音效
+      playWinFanfare() {
+        this.init();
+        const melody = [
+          { f: 523.25, d: 0.15 }, { f: 659.25, d: 0.15 }, { f: 783.99, d: 0.15 },
+          { f: 1046.50, d: 0.4 }
+        ];
+        melody.forEach((note, i) => {
+          setTimeout(() => this.playTone(note.f, note.d, 'square', 0.25), i * 150);
+        });
+      }
+
+      // 萌萌的脚步声
+      playStep() {
+        this.init();
+        this.playTone(180 + Math.random() * 40, 0.08, 'sine', 0.1);
+      }
+
+      // 开启大门音效
+      playDoorOpen() {
+        this.init();
+        this.playTone(300, 0.3, 'sine', 0.3);
+        setTimeout(() => this.playTone(450, 0.4, 'triangle', 0.3), 100);
+      }
+    }
+
+    const soundFX = new SoundEngine();
+
+    /* ==========================================================================
+       2. SPEECH SYNTHESIS GUIDANCE (儿童语音提示)
+       ========================================================================== */
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-CN';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.2; // 稍微清脆偏向儿童音
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    /* ==========================================================================
+       3. GAME ENGINE & CANVAS RENDERING
+       ========================================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Canvas Size Handling
+    const mapCols = 15;
+    const mapRows = 10;
+    let TILE_SIZE = 60;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    function updateTileMetrics() {
+      if (!canvas.width || !canvas.height) return;
+      TILE_SIZE = Math.min(canvas.width / mapCols, canvas.height / mapRows);
+      offsetX = (canvas.width - mapCols * TILE_SIZE) / 2;
+      offsetY = (canvas.height - mapRows * TILE_SIZE) / 2;
+    }
+
+    function resizeCanvas() {
+      const parent = canvas.parentElement;
+      if (parent) {
+        canvas.width = parent.clientWidth;
+        canvas.height = parent.clientHeight;
+        updateTileMetrics();
+      }
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Game Global State
+    let gameState = 'START'; // 'START', 'PLAYING', 'WIN', 'LEVEL_SELECT'
+    let gameMode = 'ESCAPE'; // 'ESCAPE' (表哥逃脱), 'MONSTER' (怪物抓人)
+    let currentLevel = 1;
+    let keysCollected = 0;
+    let keysRequired = 1;
+    let mouseIsDown = false;
+    let mousePos = { x: 0, y: 0 };
+
+    // Player Data
+    const player = {
+      x: 100,
+      y: 100,
+      radius: 22,
+      speed: 4.5,
+      angle: 0,
+      role: 'RESEARCHER', // 'RESEARCHER' or 'MONSTER'
+      subRole: 'COUSIN',   // 'COUSIN' (表哥), 'BACTERIA', 'SKIN_STEALER', 'PARTYGOER'
+      stepCooldown: 0
+    };
+
+    // Maze Grid & Map Data
+    let mazeGrid = []; // 0: floor, 1: wall
+    let keyItem = { x: 0, y: 0, collected: false, angle: 0 };
+    let exitDoor = { x: 0, y: 0, isOpen: false };
+    let monsters = [];
+    let researchersAI = []; // For Monster Mode
+    let particles = [];
+    let footprintTrail = [];
+
+    /* Helper to find a random open floor tile (never inside wall) */
+    function getRandomFloorTile(excludeRadius = 0, originX = 0, originY = 0) {
+      let validTiles = [];
+      for (let r = 1; r < mapRows - 1; r++) {
+        for (let c = 1; c < mapCols - 1; c++) {
+          if (mazeGrid && mazeGrid[r] && mazeGrid[r][c] === 0) {
+            const tileCenterX = offsetX + (c + 0.5) * TILE_SIZE;
+            const tileCenterY = offsetY + (r + 0.5) * TILE_SIZE;
+            if (excludeRadius > 0) {
+              const dist = Math.hypot(tileCenterX - originX, tileCenterY - originY);
+              if (dist < excludeRadius) continue;
+            }
+            validTiles.push({ r, c, x: tileCenterX, y: tileCenterY });
+          }
+        }
+      }
+      if (validTiles.length === 0) {
+        return { r: 1, c: 1, x: offsetX + 1.5 * TILE_SIZE, y: offsetY + 1.5 * TILE_SIZE };
+      }
+      return validTiles[Math.floor(Math.random() * validTiles.length)];
+    }
+
+    /* ==========================================================================
+       4. LEVEL GENERATOR & MAZE LOGIC
+       ========================================================================== */
+    function generateLevel(lvl) {
+      updateTileMetrics();
+      keysCollected = 0;
+      keysRequired = 1;
+      keyItem.collected = false;
+      exitDoor.isOpen = false;
+
+      // Initialize empty grid with outer walls
+      mazeGrid = Array(mapRows).fill(null).map(() => Array(mapCols).fill(0));
+      for (let r = 0; r < mapRows; r++) {
+        for (let c = 0; c < mapCols; c++) {
+          if (r === 0 || r === mapRows - 1 || c === 0 || c === mapCols - 1) {
+            mazeGrid[r][c] = 1;
+          }
+        }
+      }
+
+      // Add internal obstacle blocks (Child friendly, wide hallways!)
+      const obstacleDensity = Math.min(0.18 + lvl * 0.005, 0.28);
+      for (let r = 2; r < mapRows - 2; r += 2) {
+        for (let c = 2; c < mapCols - 2; c += 2) {
+          if (Math.random() < obstacleDensity) {
+            mazeGrid[r][c] = 1;
+            if (Math.random() < 0.5 && r + 1 < mapRows - 1) mazeGrid[r + 1][c] = 1;
+            else if (c + 1 < mapCols - 1) mazeGrid[r][c + 1] = 1;
+          }
+        }
+      }
+
+      // Ensure Spawn corner (1,1) is ALWAYS open floor
+      mazeGrid[1][1] = 0;
+      mazeGrid[1][2] = 0;
+      mazeGrid[2][1] = 0;
+
+      // Player Spawn (Top-Left Floor)
+      player.x = offsetX + 1.5 * TILE_SIZE;
+      player.y = offsetY + 1.5 * TILE_SIZE;
+      player.radius = TILE_SIZE * 0.35;
+      mousePos = { x: player.x, y: player.y };
+
+      // Key Spawn (Guaranteed Floor Tile away from player)
+      const keyTile = getRandomFloorTile(TILE_SIZE * 4, player.x, player.y);
+      keyItem.x = keyTile.x;
+      keyItem.y = keyTile.y;
+
+      // Exit Door Spawn (Guaranteed Floor Tile away from player & key)
+      const exitTile = getRandomFloorTile(TILE_SIZE * 3, player.x, player.y);
+      exitDoor.x = exitTile.x;
+      exitDoor.y = exitTile.y;
+
+      // Spawn Monsters on guaranteed open floor tiles
+      monsters = [];
+      const monsterTypes = ['BACTERIA', 'SKIN_STEALER', 'PARTYGOER'];
+      const monsterCount = Math.min(2 + Math.floor(lvl / 3), 6);
+
+      for (let i = 0; i < monsterCount; i++) {
+        const type = monsterTypes[i % monsterTypes.length];
+        const mTile = getRandomFloorTile(TILE_SIZE * 3.5, player.x, player.y);
+        monsters.push({
+          x: mTile.x,
+          y: mTile.y,
+          type: type,
+          radius: TILE_SIZE * 0.35,
+          speed: 1.8 + Math.random() * 0.8,
+          dirX: Math.random() < 0.5 ? 1 : -1,
+          dirY: Math.random() < 0.5 ? 1 : -1,
+          angle: Math.random() * Math.PI * 2
+        });
+      }
+
+      // Monster Hunt Mode AI Researchers Spawn (Guaranteed open floor tiles in hallways!)
+      researchersAI = [];
+      if (gameMode === 'MONSTER') {
+        for (let i = 0; i < 5; i++) {
+          const aiTile = getRandomFloorTile(TILE_SIZE * 2, player.x, player.y);
+          researchersAI.push({
+            x: aiTile.x,
+            y: aiTile.y,
+            radius: TILE_SIZE * 0.35,
+            speed: 2.2,
+            isCaught: false,
+            transformed: false
+          });
+        }
+      }
+
+      // Update HUD & Banner
+      const hudLvl = document.getElementById('hud-level-num');
+      if (hudLvl) hudLvl.innerText = lvl;
+      const hudKey = document.getElementById('hud-key-count');
+      if (hudKey) hudKey.innerText = `${keysCollected}/${keysRequired}`;
+
+      if (gameMode === 'ESCAPE') {
+        const roleName = document.getElementById('hud-role-name');
+        if (roleName) roleName.innerText = '表哥 (逃脱探险家)';
+        updateBanner("💡 跟着黄色脚印，去拿金钥匙逃出暗房！");
+        try { speakText(`第${lvl}关，跟着脚印拿钥匙！`); } catch(e){}
+      } else {
+        const roleName = document.getElementById('hud-role-name');
+        if (roleName) roleName.innerText = '派对客 (抓人大师)';
+        updateBanner("🎈 抓住所有的实验室人员，把他们变成派对客！");
+        try { speakText(`怪物抓人模式！把所有人都变成派对客！`); } catch(e){}
+      }
+    }
+
+    function updateBanner(text) {
+      document.getElementById('banner-text').innerText = text;
+    }
+
+    /* ==========================================================================
+       5. INPUT CONTROLS (MOUSE HOLD TO MOVE - 5-Year-Old Friendly)
+       ========================================================================== */
+    function getCanvasCoordinates(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: (clientX - rect.left) * (canvas.width / rect.width),
+        y: (clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    // Mouse Events
+    canvas.addEventListener('mousedown', (e) => {
+      mouseIsDown = true;
+      mousePos = getCanvasCoordinates(e);
+      soundFX.init();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (mouseIsDown) {
+        mousePos = getCanvasCoordinates(e);
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      mouseIsDown = false;
+    });
+
+    // Touch Events for Mobile / Tablet
+    canvas.addEventListener('touchstart', (e) => {
+      mouseIsDown = true;
+      mousePos = getCanvasCoordinates(e);
+      soundFX.init();
+    }, { passive: true });
+
+    canvas.addEventListener('touchmove', (e) => {
+      if (mouseIsDown) {
+        mousePos = getCanvasCoordinates(e);
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', () => {
+      mouseIsDown = false;
+    });
+
+    /* ==========================================================================
+       6. COLLISION & MOVEMENT UPDATE
+       ========================================================================== */
+    function canMoveTo(x, y, r) {
+      const col1 = Math.floor((x - offsetX - r) / TILE_SIZE);
+      const col2 = Math.floor((x - offsetX + r) / TILE_SIZE);
+      const row1 = Math.floor((y - offsetY - r) / TILE_SIZE);
+      const row2 = Math.floor((y - offsetY + r) / TILE_SIZE);
+
+      for (let row = row1; row <= row2; row++) {
+        for (let col = col1; col <= col2; col++) {
+          if (row >= 0 && row < mapRows && col >= 0 && col < mapCols) {
+            if (mazeGrid && mazeGrid[row] && mazeGrid[row][col] === 1) return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function updatePlayer() {
+      if (!mouseIsDown) return;
+
+      const dx = mousePos.x - player.x;
+      const dy = mousePos.y - player.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > 5) {
+        player.angle = Math.atan2(dy, dx);
+        const moveStep = Math.min(player.speed, dist);
+        const nextX = player.x + Math.cos(player.angle) * moveStep;
+        const nextY = player.y + Math.sin(player.angle) * moveStep;
+
+        if (canMoveTo(nextX, player.y, player.radius)) player.x = nextX;
+        if (canMoveTo(player.x, nextY, player.radius)) player.y = nextY;
+
+        // Footstep sounds & trails
+        player.stepCooldown++;
+        if (player.stepCooldown > 14) {
+          soundFX.playStep();
+          player.stepCooldown = 0;
+          footprintTrail.push({ x: player.x, y: player.y, alpha: 1.0 });
+          if (footprintTrail.length > 25) footprintTrail.shift();
+        }
+      }
+    }
+
+    function updateMonsters() {
+      monsters.forEach(m => {
+        let nextX = m.x + m.dirX * m.speed;
+        let nextY = m.y + m.dirY * m.speed;
+
+        if (!canMoveTo(nextX, m.y, m.radius)) m.dirX *= -1;
+        else m.x = nextX;
+
+        if (!canMoveTo(m.x, nextY, m.radius)) m.dirY *= -1;
+        else m.y = nextY;
+
+        // Random directional wiggle
+        if (Math.random() < 0.02) {
+          m.dirX = Math.random() < 0.5 ? 1 : -1;
+          m.dirY = Math.random() < 0.5 ? 1 : -1;
+        }
+
+        // Check player collision in Escape mode
+        if (gameMode === 'ESCAPE' && gameState === 'PLAYING') {
+          const distToPlayer = Math.hypot(m.x - player.x, m.y - player.y);
+          if (distToPlayer < m.radius + player.radius) {
+            // Friendly bounce back instead of scary death!
+            soundFX.playPartyHorn();
+            updateBanner("😅 哎呀！碰到怪物啦，表哥退后一步！");
+            player.x = offsetX + TILE_SIZE * 1.5;
+            player.y = offsetY + TILE_SIZE * 1.5;
+          }
+        }
+      });
+    }
+
+    function updateItemsAndLogic() {
+      if (gameState !== 'PLAYING') return;
+
+      // Key Collection
+      if (gameMode === 'ESCAPE' && !keyItem.collected) {
+        const distToKey = Math.hypot(keyItem.x - player.x, keyItem.y - player.y);
+        if (distToKey < player.radius + 20) {
+          keyItem.collected = true;
+          keysCollected = 1;
+          exitDoor.isOpen = true;
+          soundFX.playKeySound();
+          soundFX.playDoorOpen();
+          const hudKey = document.getElementById('hud-key-count');
+          if (hudKey) hudKey.innerText = `${keysCollected}/${keysRequired}`;
+          updateBanner("🎉 拿到金钥匙啦！绿色出口大门打开了！");
+          try { speakText("太棒了！拿到金钥匙，快跑向绿色出口！"); } catch(e){}
+
+          // Create Sparkle Particles
+          for (let i = 0; i < 20; i++) {
+            particles.push({
+              x: keyItem.x, y: keyItem.y,
+              vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8,
+              color: '#ffd700', life: 30
+            });
+          }
+        }
+      }
+
+      // Exit Door Win Condition
+      if (gameMode === 'ESCAPE' && exitDoor.isOpen) {
+        const distToExit = Math.hypot(exitDoor.x - player.x, exitDoor.y - player.y);
+        if (distToExit < player.radius + 30) {
+          triggerWinScreen();
+        }
+      }
+
+      // Monster Catch Mode Logic
+      if (gameMode === 'MONSTER') {
+        let uncaughtCount = 0;
+        researchersAI.forEach(ai => {
+          if (!ai.isCaught) {
+            uncaughtCount++;
+            // AI Flee from player
+            const dx = ai.x - player.x;
+            const dy = ai.y - player.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 150) {
+              const moveX = ai.x + (dx / dist) * ai.speed;
+              const moveY = ai.y + (dy / dist) * ai.speed;
+              if (canMoveTo(moveX, ai.y, ai.radius)) ai.x = moveX;
+              if (canMoveTo(ai.x, moveY, ai.radius)) ai.y = moveY;
+            }
+
+            // Catch AI Researcher!
+            if (dist < ai.radius + player.radius) {
+              ai.isCaught = true;
+              ai.transformed = true;
+              soundFX.playPartyHorn();
+              try { speakText("同化成功！变成派对客啦！"); } catch(e){}
+
+              for (let i = 0; i < 15; i++) {
+                particles.push({
+                  x: ai.x, y: ai.y,
+                  vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6,
+                  color: '#ffeb3b', life: 25
+                });
+              }
+            }
+          }
+        });
+
+        if (uncaughtCount === 0) {
+          triggerWinScreen();
+        }
+      }
+
+      // Update Particles
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+      });
+      particles = particles.filter(p => p.life > 0);
+    }
+
+    function triggerWinScreen() {
+      gameState = 'WIN';
+      soundFX.playWinFanfare();
+      document.getElementById('win-screen').classList.remove('hidden');
+
+      if (gameMode === 'ESCAPE') {
+        const msg = document.getElementById('win-message');
+        if (msg) msg.innerText = `表哥太厉害啦！第 ${currentLevel} 关顺利逃脱！`;
+        try { speakText(`太棒啦！成功逃出第${currentLevel}关！`); } catch(e){}
+      } else {
+        const msg = document.getElementById('win-message');
+        if (msg) msg.innerText = `派对客赢啦！成功把所有实验室人员都变成了派对伙伴！`;
+        try { speakText(`派对客太厉害啦！所有人都加入了派对！`); } catch(e){}
+      }
+    }
+
+    /* ==========================================================================
+       7. GRAPHICS & SPRITE RENDERING
+       ========================================================================== */
+    function render() {
+      try {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (gameState === 'PLAYING') {
+          updatePlayer();
+          updateMonsters();
+          updateItemsAndLogic();
+        }
+
+        // Render Darkroom Yellow Grid Floor (Classic Backrooms carpet theme)
+        ctx.fillStyle = '#bfa15f';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Grid Pattern
+        ctx.strokeStyle = '#a88a48';
+        ctx.lineWidth = 2;
+        for (let c = 0; c < mapCols; c++) {
+          for (let r = 0; r < mapRows; r++) {
+            ctx.strokeRect(offsetX + c * TILE_SIZE, offsetY + r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+          }
+        }
+
+        // Render Maze Walls (Nice 3D style dark blocks)
+        if (mazeGrid && mazeGrid.length) {
+          for (let r = 0; r < mapRows; r++) {
+            for (let c = 0; c < mapCols; c++) {
+              if (mazeGrid[r] && mazeGrid[r][c] === 1) {
+                const wx = offsetX + c * TILE_SIZE;
+                const wy = offsetY + r * TILE_SIZE;
+
+                ctx.fillStyle = '#3e3225';
+                ctx.fillRect(wx, wy, TILE_SIZE, TILE_SIZE);
+
+                // Wall Bevel
+                ctx.fillStyle = '#5c4b38';
+                ctx.fillRect(wx, wy, TILE_SIZE, 6);
+                ctx.fillRect(wx, wy, 6, TILE_SIZE);
+
+                ctx.fillStyle = '#251e16';
+                ctx.fillRect(wx, wy + TILE_SIZE - 6, TILE_SIZE, 6);
+              }
+            }
+          }
+        }
+
+        // Footprint Trail Guidance
+        footprintTrail.forEach(fp => {
+          ctx.fillStyle = `rgba(255, 235, 59, ${fp.alpha * 0.4})`;
+          ctx.beginPath();
+          ctx.arc(fp.x, fp.y, 6, 0, Math.PI * 2);
+          ctx.fill();
+          fp.alpha -= 0.01;
+        });
+
+        // Guidance Line to Key or Exit (Kid-friendly glowing footsteps path!)
+        if (gameMode === 'ESCAPE' && gameState === 'PLAYING') {
+          const targetX = keyItem.collected ? exitDoor.x : keyItem.x;
+          const targetY = keyItem.collected ? exitDoor.y : keyItem.y;
+
+          ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
+          ctx.lineWidth = 4;
+          ctx.setLineDash([8, 8]);
+          ctx.beginPath();
+          ctx.moveTo(player.x, player.y);
+          ctx.lineTo(targetX, targetY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Render Exit Door
+        if (gameMode === 'ESCAPE') {
+          ctx.save();
+          ctx.translate(exitDoor.x, exitDoor.y);
+          ctx.fillStyle = exitDoor.isOpen ? '#00e676' : '#757575';
+          ctx.shadowColor = exitDoor.isOpen ? '#00e676' : 'transparent';
+          ctx.shadowBlur = 20;
+          ctx.fillRect(-24, -24, 48, 48);
+
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(exitDoor.isOpen ? 'EXIT' : 'LOCK', 0, 0);
+          ctx.restore();
+        }
+
+        // Render Golden Key
+        if (gameMode === 'ESCAPE' && !keyItem.collected) {
+          ctx.save();
+          ctx.translate(keyItem.x, keyItem.y);
+          keyItem.angle += 0.05;
+          ctx.rotate(Math.sin(keyItem.angle) * 0.2);
+
+          ctx.shadowColor = '#ffd700';
+          ctx.shadowBlur = 15;
+          ctx.fillStyle = '#ffd700';
+
+          // Key Shape
+          ctx.beginPath();
+          ctx.arc(-8, 0, 10, 0, Math.PI * 2);
+          ctx.rect(-2, -3, 20, 6);
+          ctx.rect(10, 3, 4, 6);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Render Monsters
+        monsters.forEach(m => drawMonster(m));
+
+        // Render AI Researchers (in Monster Mode)
+        if (gameMode === 'MONSTER') {
+          researchersAI.forEach(ai => {
+            if (!ai.isCaught) drawResearcher(ai.x, ai.y, 0, false);
+            else drawPartygoer(ai.x, ai.y, 0);
+          });
+        }
+
+        // Render Player (表哥 or 派对客)
+        if (gameMode === 'ESCAPE') {
+          drawResearcher(player.x, player.y, player.angle, true);
+        } else {
+          drawPartygoer(player.x, player.y, player.angle);
+        }
+
+        // Render Dragging Target Line & Cursor Indicator
+        if (mouseIsDown) {
+          ctx.strokeStyle = 'rgba(33, 150, 243, 0.6)';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(player.x, player.y);
+          ctx.lineTo(mousePos.x, mousePos.y);
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(33, 150, 243, 0.3)';
+          ctx.beginPath();
+          ctx.arc(mousePos.x, mousePos.y, 25, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#2196f3';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // Render Particles
+        particles.forEach(p => {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } catch (err) {
+        console.error("Render loop caught error:", err);
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    /* --------------------------------------------------------------------------
+       Sprite Drawing Helpers
+       -------------------------------------------------------------------------- */
+    // 1. 实验室人员 (表哥 - Hazmat Suit with Human Icon Emblem)
+    function drawResearcher(x, y, angle, hasFlashlight) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Flashlight Beam
+      if (hasFlashlight) {
+        ctx.save();
+        ctx.rotate(angle);
+        const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, 180);
+        grad.addColorStop(0, 'rgba(255, 245, 157, 0.5)');
+        grad.addColorStop(1, 'rgba(255, 245, 157, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, 180, -Math.PI / 5, Math.PI / 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Body (Yellow Hazmat Suit)
+      ctx.fillStyle = '#ffb300';
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(0, 0, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#e65100';
+      ctx.stroke();
+
+      // Chest Badge Emblem (Human / Person Icon 👤)
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(0, -3, 6, 0, Math.PI * 2); // Head
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, 8, 9, Math.PI, 0); // Body
+      ctx.fill();
+
+      // Glass Visor Helmet
+      ctx.fillStyle = '#80deea';
+      ctx.beginPath();
+      ctx.arc(8 * Math.cos(angle), 8 * Math.sin(angle), 9, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // 2. 怪物绘制 (细菌, 屁屁嘴窃皮者, 派对客)
+    function drawMonster(m) {
+      ctx.save();
+      ctx.translate(m.x, m.y);
+
+      if (m.type === 'BACTERIA') {
+        // (a) 细菌：无眼黑色细长线条/丝状怪
+        ctx.fillStyle = '#111';
+        ctx.beginPath();
+        ctx.arc(0, 0, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Wiggling Wiry Arms
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 4;
+        const time = Date.now() * 0.008;
+        for (let i = 0; i < 6; i++) {
+          const a = (i * Math.PI / 3) + Math.sin(time + i) * 0.3;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(Math.cos(a) * 32, Math.sin(a) * 32);
+          ctx.stroke();
+        }
+      }
+      else if (m.type === 'SKIN_STEALER') {
+        // (b) 窃皮者：嘴巴像“屁屁侦探”屁屁脸轮廓！
+        ctx.fillStyle = '#d7ccc8';
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#8d6e63';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Butt-shaped Mouth (屁屁嘴造型)
+        ctx.fillStyle = '#ffab91';
+        ctx.beginPath();
+        ctx.arc(-5, 4, 7, 0, Math.PI * 2);
+        ctx.arc(5, 4, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cute Eyes
+        ctx.fillStyle = '#3e2723';
+        ctx.beginPath();
+        ctx.arc(-7, -5, 3, 0, Math.PI * 2);
+        ctx.arc(7, -5, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      else if (m.type === 'PARTYGOER') {
+        // (c) 派对客：黄身体，=)= 大笑脸与浮动气球
+        drawPartygoer(0, 0, m.angle, false);
+      }
+
+      ctx.restore();
+    }
+
+    // 派对客绘制 (Partygoer)
+    function drawPartygoer(x, y, angle, needsTranslate = true) {
+      if (needsTranslate) {
+        ctx.save();
+        ctx.translate(x, y);
+      }
+
+      // Yellow Body
+      ctx.fillStyle = '#ffee58';
+      ctx.beginPath();
+      ctx.arc(0, 0, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fbc02d';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Face =)=
+      ctx.fillStyle = '#212121';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('=)=', 0, 0);
+
+      // Swaying Red Balloon Above Head
+      const balloonWiggle = Math.sin(Date.now() * 0.005) * 8;
+      ctx.strokeStyle = '#9e9e9e';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -20);
+      ctx.lineTo(balloonWiggle, -45);
+      ctx.stroke();
+
+      ctx.fillStyle = '#e91e63';
+      ctx.beginPath();
+      ctx.arc(balloonWiggle, -55, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (needsTranslate) ctx.restore();
+    }
+
+    /* ==========================================================================
+       8. UI EVENT HANDLERS & MODAL MANAGEMENT
+       ========================================================================== */
+    // Start Mode 1: Human Escape
+    document.getElementById('btn-start-escape').onclick = (e) => {
+      if (e) e.stopPropagation();
+      soundFX.init();
+      gameMode = 'ESCAPE';
+      currentLevel = 1;
+      gameState = 'PLAYING';
+      document.getElementById('start-screen').classList.add('hidden');
+      generateLevel(currentLevel);
+    };
+
+    // Start Mode 2: Monster Hunt
+    document.getElementById('btn-start-monster').onclick = (e) => {
+      if (e) e.stopPropagation();
+      soundFX.init();
+      gameMode = 'MONSTER';
+      currentLevel = 1;
+      gameState = 'PLAYING';
+      document.getElementById('start-screen').classList.add('hidden');
+      generateLevel(currentLevel);
+    };
+
+    // Level Select Modal
+    document.getElementById('btn-select-level').onclick = (e) => {
+      if (e) e.stopPropagation();
+      soundFX.init();
+      document.getElementById('start-screen').classList.add('hidden');
+      document.getElementById('level-screen').classList.remove('hidden');
+
+      const grid = document.getElementById('level-grid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= 100; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'level-btn';
+        btn.innerText = `第 ${i} 关`;
+        btn.onclick = (ev) => {
+          if (ev) ev.stopPropagation();
+          soundFX.init();
+          currentLevel = i;
+          gameState = 'PLAYING';
+          document.getElementById('level-screen').classList.add('hidden');
+          generateLevel(currentLevel);
+        };
+        grid.appendChild(btn);
+      }
+    };
+
+    document.getElementById('btn-back-main').onclick = () => {
+      document.getElementById('level-screen').classList.add('hidden');
+      document.getElementById('start-screen').classList.remove('hidden');
+    };
+
+    // Next Level Button
+    document.getElementById('btn-next-level').onclick = () => {
+      currentLevel++;
+      gameState = 'PLAYING';
+      document.getElementById('win-screen').classList.add('hidden');
+      generateLevel(currentLevel);
+    };
+
+    // Home Button
+    document.getElementById('btn-win-home').onclick = () => {
+      gameState = 'START';
+      document.getElementById('win-screen').classList.add('hidden');
+      document.getElementById('start-screen').classList.remove('hidden');
+    };
+
+    // Initialize default level 1 map and start loop
+    generateLevel(1);
+    render();
+  </script>
+</body>
+</html>

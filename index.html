@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>5岁小探险家 · 奇妙游戏乐园</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background: linear-gradient(135deg, #18122b 0%, #0f0a1e 50%, #291244 100%);
+      font-family: 'Segoe UI', Microsoft YaHei, Arial, sans-serif;
+      min-height: 100vh;
+      color: #fff;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 20px 60px;
+    }
+
+    /* Floating Particles Background */
+    .bg-particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.15;
+      animation: floatUp 12s infinite linear;
+    }
+
+    @keyframes floatUp {
+      0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      20% { opacity: 0.2; }
+      80% { opacity: 0.2; }
+      100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* Header Container */
+    .header-box {
+      text-align: center;
+      margin-bottom: 40px;
+      position: relative;
+      z-index: 10;
+      max-width: 800px;
+    }
+
+    .main-title {
+      font-size: 46px;
+      font-weight: 900;
+      background: linear-gradient(90deg, #ffeb3b, #ff9800, #ff4081, #76ff03);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 20px rgba(255, 235, 59, 0.4);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .subtitle {
+      font-size: 20px;
+      color: #e0d0fc;
+      font-weight: 500;
+      line-height: 1.6;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 10px 24px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: inline-block;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+
+    /* Game Showcase Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      width: 100%;
+      max-width: 1100px;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Game Card Style */
+    .game-card {
+      background: rgba(35, 25, 60, 0.7);
+      backdrop-filter: blur(16px);
+      border: 3px solid rgba(255, 215, 0, 0.4);
+      border-radius: 28px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.5), inset 0 0 20px rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .game-card:hover {
+      transform: translateY(-10px) scale(1.02);
+      border-color: #ffd700;
+      box-shadow: 0 25px 50px rgba(255, 215, 0, 0.3), inset 0 0 30px rgba(255, 215, 0, 0.15);
+    }
+
+    .card-badge {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: linear-gradient(90deg, #ff9800, #f57c00);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 5px 14px;
+      border-radius: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      border: 1.5px solid #fff;
+    }
+
+    .card-icon-wrapper {
+      width: 80px;
+      height: 80px;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin-bottom: 18px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.4);
+      border: 3px solid #fff;
+    }
+
+    .card-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    .card-desc {
+      font-size: 15px;
+      color: #d1c4e9;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      flex-grow: 1;
+    }
+
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 8px 14px;
+      border-radius: 14px;
+    }
+
+    .stars {
+      font-size: 16px;
+      letter-spacing: 2px;
+    }
+
+    .play-btn {
+      width: 100%;
+      background: linear-gradient(180deg, #76ff03 0%, #388e3c 100%);
+      color: #0d3b00;
+      font-size: 22px;
+      font-weight: 900;
+      padding: 14px;
+      border: 3px solid #fff;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(56, 142, 60, 0.5), inset 0 3px 6px rgba(255,255,255,0.6);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .play-btn:hover {
+      transform: scale(1.04);
+      background: linear-gradient(180deg, #b2ff59 0%, #43a047 100%);
+      box-shadow: 0 12px 25px rgba(56, 142, 60, 0.7), inset 0 3px 6px rgba(255,255,255,0.8);
+    }
+
+    .play-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* Iframe Game Player Screen Modal */
+    .game-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(10, 8, 16, 0.95);
+      backdrop-filter: blur(15px);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.35s ease;
+    }
+
+    .game-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-header {
+      height: 64px;
+      background: rgba(25, 20, 40, 0.9);
+      border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .modal-title {
+      font-size: 22px;
+      font-weight: 900;
+      color: #ffeb3b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .header-btn {
+      background: linear-gradient(180deg, #ff9800 0%, #e65100 100%);
+      color: #fff;
+      font-weight: 800;
+      font-size: 16px;
+      padding: 8px 20px;
+      border-radius: 30px;
+      border: 2px solid #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-btn:hover {
+      transform: scale(1.05);
+      background: linear-gradient(180deg, #ffa726 0%, #f57c00 100%);
+    }
+
+    .header-btn.secondary {
+      background: linear-gradient(180deg, #2196f3 0%, #0d47a1 100%);
+    }
+
+    .header-btn.secondary:hover {
+      background: linear-gradient(180deg, #42a5f5 0%, #1565c0 100%);
+    }
+
+    .iframe-container {
+      flex: 1;
+      width: 100%;
+      height: calc(100vh - 64px);
+      position: relative;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Floating Particles -->
+  <div id="particles-root"></div>
+
+  <!-- Main Header -->
+  <div class="header-box">
+    <div class="main-title">
+      <span>🌈</span> 5岁小探险家 · 奇妙游戏乐园 <span>🚀</span>
+    </div>
+    <div class="subtitle">
+      ✨ 挑选你最喜欢的游戏，点击“立即开玩”就能快乐探索啦！
+    </div>
+  </div>
+
+  <!-- Game Cards Grid -->
+  <div class="cards-grid">
+
+    <!-- Card 1: 暗房大冒险 -->
+    <div class="game-card">
+      <div class="card-badge">👑 热门推荐 · 5岁专属</div>
+      <div class="card-icon-wrapper" style="background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);">
+        👨‍🔬
+      </div>
+      <div class="card-title">🌟 暗房大冒险</div>
+      <div class="card-desc">
+        在神奇暗房迷宫里，和表哥表弟一起拿金钥匙逃出大门！躲避无眼细菌、屁屁嘴窃皮者与派对客！还支持怪物抓人玩法！
+      </div>
+      <div class="card-meta">
+        <span style="font-size: 14px; font-weight: bold; color: #ffe082;">🎮 双模式 · 100关</span>
+        <span class="stars">⭐⭐⭐⭐⭐</span>
+      </div>
+      <button class="play-btn" onclick="openGame('3.暗房大冒险.html', '🌟 暗房大冒险 (5岁探险家定制版)')">
+        <span>▶️</span> 立即开玩
+      </button>
+    </div>
+
+    <!-- Card 2: 快乐洗车大作战 -->
+    <div class="game-card">
+      <div class="card-badge">🧼 解压清洗 · 酷炫小车</div>
+      <div class="card-icon-wrapper" style="background: linear-gradient(135deg, #2196f3 0%, #00bcd4 100%);">
+        🚗
+      </div>
+      <div class="card-title">🚗 快乐洗车大作战</div>
+      <div class="card-desc">
+        帮脏兮兮的汽车洗个舒服的澡！喷高压泡沫、刷擦车身、用强力水枪冲洗干干净净，给小车抛光蜡打磨！
+      </div>
+      <div class="card-meta">
+        <span style="font-size: 14px; font-weight: bold; color: #80d8ff;">🚙 洗车小能手</span>
+        <span class="stars">⭐⭐⭐⭐⭐</span>
+      </div>
+      <button class="play-btn" onclick="openGame('1.洗车游戏.html', '🚗 快乐洗车大作战')">
+        <span>▶️</span> 立即开玩
+      </button>
+    </div>
+
+    <!-- Card 3: 超级洗车工 (升级版) -->
+    <div class="game-card">
+      <div class="card-badge">🚀 豪华升级 · 更多车型</div>
+      <div class="card-icon-wrapper" style="background: linear-gradient(135deg, #4caf50 0%, #009688 100%);">
+        🚘
+      </div>
+      <div class="card-title">🧼 超级洗车工 (升级版)</div>
+      <div class="card-desc">
+        全新高清画质升级版！拥有超酷跑车与豪华SUV，体验更多专业清洗喷雾、轮胎打磨与炫彩车漆保养！
+      </div>
+      <div class="card-meta">
+        <span style="font-size: 14px; font-weight: bold; color: #b9f6ca;">🏎️ 豪华汽车工坊</span>
+        <span class="stars">⭐⭐⭐⭐⭐</span>
+      </div>
+      <button class="play-btn" onclick="openGame('1.洗车游戏new.html', '🧼 超级洗车工 (升级版)')">
+        <span>▶️</span> 立即开玩
+      </button>
+    </div>
+
+    <!-- Card 4: 汉堡薯条美食厨师 -->
+    <div class="game-card">
+      <div class="card-badge">👨‍🍳 萌趣厨房 · 美食制作</div>
+      <div class="card-icon-wrapper" style="background: linear-gradient(135deg, #e91e63 0%, #ff4081 100%);">
+        🍔
+      </div>
+      <div class="card-title">🍔 汉堡薯条厨师</div>
+      <div class="card-desc">
+        欢迎来到萌趣厨师美食小镇！制作多层美味大汉堡、炸出金黄香脆薯条，搭配甜甜冰可乐，享受美食快乐！
+      </div>
+      <div class="card-meta">
+        <span style="font-size: 14px; font-weight: bold; color: #ff80ab;">🍟 美食小小厨师</span>
+        <span class="stars">⭐⭐⭐⭐⭐</span>
+      </div>
+      <button class="play-btn" onclick="openGame('2.汉堡薯条游戏.html', '🍔 汉堡薯条美食厨师')">
+        <span>▶️</span> 立即开玩
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Iframe Game Player Screen Modal -->
+  <div class="game-modal" id="game-modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-game-title">
+        <span>🎮</span> 正在游玩游戏...
+      </div>
+      <div class="header-actions">
+        <button class="header-btn secondary" onclick="reloadGame()">
+          <span>🔄</span> 重新开始
+        </button>
+        <button class="header-btn secondary" onclick="toggleFullscreen()">
+          <span>⛶</span> 全屏模式
+        </button>
+        <button class="header-btn" onclick="closeGame()">
+          <span>🔙</span> 返回大厅
+        </button>
+      </div>
+    </div>
+    <div class="iframe-container" id="iframe-container">
+      <iframe id="game-frame" src="about:blank" allow="autoplay; fullscreen"></iframe>
+    </div>
+  </div>
+
+  <script>
+    // Create Floating Background Particles
+    const root = document.getElementById('particles-root');
+    const colors = ['#ffeb3b', '#ff9800', '#2196f3', '#76ff03', '#ff4081'];
+    for (let i = 0; i < 20; i++) {
+      const p = document.createElement('div');
+      p.className = 'bg-particle';
+      const size = Math.random() * 30 + 15;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDelay = (Math.random() * 10) + 's';
+      p.style.animationDuration = (Math.random() * 8 + 8) + 's';
+      root.appendChild(p);
+    }
+
+    // Voice Greeting
+    function speakWelcome() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance("欢迎来到奇妙游戏乐园！选一个喜欢的游戏开玩吧！");
+        msg.lang = 'zh-CN';
+        msg.pitch = 1.2;
+        msg.rate = 1.0;
+        window.speechSynthesis.speak(msg);
+      }
+    }
+    window.addEventListener('click', () => { speakWelcome(); }, { once: true });
+
+    // Open Game Modal & Load Iframe
+    function openGame(url, title) {
+      document.getElementById('modal-game-title').innerHTML = `<span>🎮</span> ${title}`;
+      const frame = document.getElementById('game-frame');
+      const safeUrl = encodeURI(url.startsWith('./') ? url : './' + url);
+      frame.src = safeUrl;
+      document.getElementById('game-modal').classList.add('active');
+    }
+
+    // Close Game & Reset Iframe
+    function closeGame() {
+      document.getElementById('game-modal').classList.remove('active');
+      const frame = document.getElementById('game-frame');
+      setTimeout(() => { frame.src = 'about:blank'; }, 300);
+    }
+
+    // Reload Active Game
+    function reloadGame() {
+      const frame = document.getElementById('game-frame');
+      const currentSrc = frame.src;
+      frame.src = 'about:blank';
+      setTimeout(() => { frame.src = currentSrc; }, 100);
+    }
+
+    // Toggle Fullscreen Mode
+    function toggleFullscreen() {
+      const container = document.getElementById('iframe-container');
+      if (!document.fullscreenElement) {
+        if (container.requestFullscreen) container.requestFullscreen();
+        else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+  </script>
+</body>
+</html>
