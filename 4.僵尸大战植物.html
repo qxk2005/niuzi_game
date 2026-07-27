@@ -912,8 +912,8 @@ class BrainDrop {
   }
   
   hitTest(mx, my){
-    if(this.collected || this.falling) return false;
-    return Math.hypot(mx-this.x, my-this.y) < 25;
+    if(this.collected) return false;
+    return Math.hypot(mx-this.x, my-this.y) < 30;
   }
 }
 
@@ -1061,6 +1061,7 @@ class Game {
     this.mouseY = 0;
     this.frame = 0;
     this.waveTimer = 0;
+    this.waveCompleted = false; // 标记当前波次是否已完成并正在等待下一波
     this.spawnQueue = [];
     this.spawnTimer = 0;
     this.announceTimer = 0;
@@ -1129,6 +1130,7 @@ class Game {
     this.spawnQueue = [];
     this.spawnTimer = 0;
     this.selectedZombie = -1;
+    this.waveCompleted = false;
     this.brainDropTimer = 0;
     this.carsLost = 0;
     particles = [];
@@ -1325,10 +1327,8 @@ class Game {
             SFX.place();
             spawnParticles(z.x, z.y, 8, ['#5a8a3c','#8ac','#fff'], [2,5],[1,2],[10,20]);
             
-            // 一次性僵尸不保持选中
-            if(ZOMBIE_TYPES[zombieType].id === 'cherry' || ZOMBIE_TYPES[zombieType].id === 'puppet' || ZOMBIE_TYPES[zombieType].id === 'miner'){
-              this.selectedZombie = -1;
-            }
+            // 放置成功后取消选中状态，避免僵尸幽灵继续跟随鼠标
+            this.selectedZombie = -1;
             
             // 教程推进
             if(this.tutorial.active && this.tutorial.step === 1){
@@ -1385,6 +1385,28 @@ class Game {
   handleMouseMove(mx, my){
     this.mouseX = mx;
     this.mouseY = my;
+    
+    // 鼠标悬停收集脑子（不需要点击）
+    if(this.state === STATES.PLAYING){
+      for(let b of this.brainDrops){
+        if(!b.collected && !b.dead && Math.hypot(mx-b.x, my-b.y) < 30){
+          b.collected = true;
+          this.brains += b.value;
+          SFX.collect();
+          spawnBrainCollect(b.x, b.y);
+        }
+      }
+      // 悬停收集墓碑脑子
+      for(let t of this.tombstones){
+        if(t.brainReady && t.hitTest(mx, my)){
+          t.brainReady = false;
+          t.brainTimer = 0;
+          this.brains += 25;
+          SFX.collect();
+          spawnBrainCollect(t.x, t.y-38);
+        }
+      }
+    }
   }
   
   // ─── 主更新循环 ───
@@ -1536,20 +1558,20 @@ class Game {
     }
     
     // 检查波次完成
-    if(this.spawnQueue.length === 0 && this.plants.filter(p=>!p.dying).length === 0){
+    if(this.spawnQueue.length === 0 && this.plants.filter(p=>!p.dying).length === 0 && !this.waveCompleted){
       const levelDef = LEVELS[this.level];
       if(this.wave < levelDef.waves.length - 1){
+        // 标记波次已完成，防止重复触发
+        this.waveCompleted = true;
+        const nextWaveIdx = this.wave + 1;
         // 下一波
         setTimeout(() => {
           if(this.state === STATES.PLAYING){
-            this.startWave(this.wave + 1);
+            this.waveCompleted = false;
+            this.startWave(nextWaveIdx);
           }
         }, 1500);
-        // 暂时暂停生成
-        this.state = STATES.PLAYING; // 保持 PLAYING 但不再生成
-        // 标记为已完成这一波
-        this.wave = -99; // 临时标记防止重复触发
-      } else if(this.wave !== -99){
+      } else {
         // 关卡完成！
         this.state = STATES.LEVEL_COMPLETE;
         SFX.win();
