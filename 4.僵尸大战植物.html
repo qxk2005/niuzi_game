@@ -1,0 +1,2299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>僵尸大战植物 - 反转大冒险</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#111;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{display:block;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+(()=>{
+'use strict';
+
+// ═══════════════════════════════════════════════════
+// 常量和配置
+// ═══════════════════════════════════════════════════
+const W = 960, H = 640;
+const GRID = { left: 45, top: 90, cols: 9, rows: 5, cw: 95, ch: 105 };
+const CARD_H = 75, CARD_W = 72, CARD_GAP = 4, CARD_Y = 5, CARD_X = 10;
+const STATES = { TITLE:0, LEVEL_SELECT:1, PLAYING:2, WAVE_ANNOUNCE:3, LEVEL_COMPLETE:4, GAME_OVER:5, ZOMBIE_INTRO:6 };
+
+// ═══════════════════════════════════════════════════
+// 音效系统 (Web Audio API)
+// ═══════════════════════════════════════════════════
+let audioCtx = null;
+function ensureAudio(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+function playTone(freq, dur, type='sine', vol=0.15){
+  const a = ensureAudio();
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, a.currentTime+dur);
+  o.connect(g); g.connect(a.destination);
+  o.start(); o.stop(a.currentTime+dur);
+}
+
+function playNoise(dur, vol=0.1){
+  const a = ensureAudio();
+  const buf = a.createBuffer(1, a.sampleRate*dur, a.sampleRate);
+  const d = buf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*vol;
+  const src = a.createBufferSource(); src.buffer = buf;
+  const g = a.createGain();
+  g.gain.setValueAtTime(vol, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, a.currentTime+dur);
+  src.connect(g); g.connect(a.destination);
+  src.start(); src.stop(a.currentTime+dur);
+}
+
+const SFX = {
+  place(){ playTone(200,0.15,'sine',0.2); playTone(300,0.1,'sine',0.15); },
+  shoot(){ playTone(800,0.08,'square',0.08); },
+  collect(){ playTone(880,0.08,'sine',0.15); setTimeout(()=>playTone(1100,0.12,'sine',0.15),80); },
+  explode(){ playNoise(0.4,0.25); playTone(80,0.3,'sawtooth',0.15); },
+  hit(){ playTone(200,0.06,'square',0.08); },
+  win(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,0.3,'sine',0.2),i*150)); },
+  lose(){ [400,350,300,200].forEach((f,i)=>setTimeout(()=>playTone(f,0.3,'sine',0.15),i*200)); },
+  wave(){ playTone(440,0.15,'square',0.12); setTimeout(()=>playTone(550,0.2,'square',0.12),150); },
+  click(){ playTone(600,0.05,'sine',0.1); },
+  somersault(){ playTone(400,0.1,'sine',0.1); setTimeout(()=>playTone(600,0.1,'sine',0.1),100); setTimeout(()=>playTone(800,0.15,'sine',0.1),200); },
+  brainDrop(){ playTone(500,0.1,'triangle',0.08); },
+};
+
+// ═══════════════════════════════════════════════════
+// 僵尸类型定义
+// ═══════════════════════════════════════════════════
+const ZOMBIE_TYPES = [
+  { id:'pea', name:'豌豆僵尸', cost:100, hp:300, atk:20, range:'lane', rate:1.5, desc:'发射豌豆', color:'#5b9b3c', emoji:'🫛' },
+  { id:'sun', name:'向日葵僵尸', cost:50, hp:200, atk:0, range:'none', rate:0, desc:'生产脑子', color:'#e8b830', emoji:'🌻' },
+  { id:'nut', name:'坚果僵尸', cost:50, hp:800, atk:0, range:'none', rate:0, desc:'超级坚硬', color:'#b87333', emoji:'🥜' },
+  { id:'cherry', name:'樱桃炸弹', cost:150, hp:1, atk:1800, range:'3x3', rate:0, desc:'范围爆炸', color:'#e74c3c', emoji:'🍒' },
+  { id:'baseball', name:'棒球僵尸', cost:175, hp:300, atk:15, range:'lane', rate:1.0, desc:'发射棒球', color:'#3498db', emoji:'⚾' },
+  { id:'miner', name:'矿工僵尸', cost:25, hp:200, atk:1800, range:'cell', rate:0, desc:'踩上爆炸', color:'#95a5a6', emoji:'⛏️' },
+  { id:'puppet', name:'玩偶侠僵尸', cost:150, hp:1, atk:1800, range:'cross', rate:0, desc:'十字爆炸', color:'#9b59b6', emoji:'🦸' },
+  { id:'king', name:'僵王', cost:300, hp:2000, atk:0, range:'none', rate:0, desc:'终极坦克', color:'#f39c12', emoji:'👑' },
+];
+
+// ═══════════════════════════════════════════════════
+// 植物（敌方）类型定义
+// ═══════════════════════════════════════════════════
+const PLANT_TYPES = [
+  { id:'peashooter', name:'豌豆射手', hp:200, speed:0.4, atk:15, shoots:true, color:'#27ae60', meleeDmg:30 },
+  { id:'wallnut', name:'坚果植物', hp:600, speed:0.25, atk:0, shoots:false, color:'#d4a056', meleeDmg:15 },
+  { id:'sunwarrior', name:'向日葵战士', hp:120, speed:0.7, atk:0, shoots:false, color:'#f1c40f', meleeDmg:25 },
+  { id:'torch', name:'火炬树桩', hp:300, speed:0.3, atk:25, shoots:true, color:'#e67e22', meleeDmg:35 },
+  { id:'iceshooter', name:'寒冰射手', hp:200, speed:0.35, atk:12, shoots:true, color:'#5dade2', meleeDmg:20 },
+];
+
+// ═══════════════════════════════════════════════════
+// 关卡定义
+// ═══════════════════════════════════════════════════
+const LEVELS = [
+  { name:'☀️ 白天草坪', theme:'day', zombiesAvail:[0,1], waves:[
+    { plants:[{t:0,n:4},{t:2,n:1}] },
+    { plants:[{t:0,n:5},{t:2,n:2}] },
+    { plants:[{t:0,n:6},{t:2,n:2}] },
+    { plants:[{t:0,n:7},{t:2,n:3},{t:1,n:1}] },
+  ]},
+  { name:'🌙 神秘夜晚', theme:'night', zombiesAvail:[0,1,2], waves:[
+    { plants:[{t:0,n:5},{t:2,n:2}] },
+    { plants:[{t:0,n:6},{t:1,n:2},{t:2,n:2}] },
+    { plants:[{t:0,n:7},{t:1,n:2},{t:2,n:3}] },
+    { plants:[{t:0,n:8},{t:1,n:3},{t:2,n:3}] },
+  ]},
+  { name:'🏊 泳池派对', theme:'pool', zombiesAvail:[0,1,2,3], waves:[
+    { plants:[{t:0,n:5},{t:1,n:2},{t:2,n:3}] },
+    { plants:[{t:0,n:6},{t:1,n:3},{t:2,n:3},{t:3,n:1}] },
+    { plants:[{t:0,n:7},{t:1,n:3},{t:3,n:2},{t:2,n:3}] },
+    { plants:[{t:0,n:8},{t:1,n:4},{t:3,n:2},{t:2,n:3}] },
+  ]},
+  { name:'🏠 屋顶大战', theme:'roof', zombiesAvail:[0,1,2,3,4,5], waves:[
+    { plants:[{t:0,n:5},{t:1,n:3},{t:3,n:2}] },
+    { plants:[{t:0,n:6},{t:1,n:3},{t:3,n:2},{t:4,n:1}] },
+    { plants:[{t:0,n:7},{t:1,n:4},{t:3,n:3},{t:4,n:2}] },
+    { plants:[{t:0,n:9},{t:1,n:4},{t:3,n:3},{t:4,n:3}] },
+  ]},
+  { name:'⛈️ 暴风骤雨', theme:'storm', zombiesAvail:[0,1,2,3,4,5,6], waves:[
+    { plants:[{t:0,n:6},{t:1,n:3},{t:3,n:3},{t:4,n:2}] },
+    { plants:[{t:0,n:7},{t:1,n:4},{t:3,n:3},{t:4,n:3}] },
+    { plants:[{t:0,n:8},{t:1,n:4},{t:3,n:4},{t:4,n:3}] },
+    { plants:[{t:0,n:10},{t:1,n:5},{t:3,n:4},{t:4,n:4}] },
+  ]},
+  { name:'👑 最终之战', theme:'final', zombiesAvail:[0,1,2,3,4,5,6,7], waves:[
+    { plants:[{t:0,n:7},{t:1,n:4},{t:3,n:3},{t:4,n:3}] },
+    { plants:[{t:0,n:8},{t:1,n:5},{t:3,n:4},{t:4,n:4}] },
+    { plants:[{t:0,n:10},{t:1,n:5},{t:3,n:5},{t:4,n:4},{t:2,n:3}] },
+    { plants:[{t:0,n:12},{t:1,n:6},{t:3,n:5},{t:4,n:5},{t:2,n:4}] },
+  ]},
+];
+
+// ═══════════════════════════════════════════════════
+// Canvas 初始化
+// ═══════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+canvas.width = W; canvas.height = H;
+
+function resizeCanvas(){
+  const r = W/H;
+  let cw = window.innerWidth, ch = window.innerHeight;
+  if(cw/ch > r){ cw = ch*r; } else { ch = cw/r; }
+  canvas.style.width = cw+'px';
+  canvas.style.height = ch+'px';
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// 坐标转换
+function canvasCoord(e){
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX||e.touches[0].clientX) - rect.left;
+  const y = (e.clientY||e.touches[0].clientY) - rect.top;
+  return { x: x * W / rect.width, y: y * H / rect.height };
+}
+
+// ═══════════════════════════════════════════════════
+// 辅助绘图函数
+// ═══════════════════════════════════════════════════
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+function fillRoundRect(x,y,w,h,r,c){ ctx.fillStyle=c; roundRect(x,y,w,h,r); ctx.fill(); }
+function strokeRoundRect(x,y,w,h,r,c,lw=2){ ctx.strokeStyle=c; ctx.lineWidth=lw; roundRect(x,y,w,h,r); ctx.stroke(); }
+
+function drawCircle(x,y,r,c){ ctx.fillStyle=c; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
+function drawEllipse(x,y,rx,ry,c){ ctx.fillStyle=c; ctx.beginPath(); ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2); ctx.fill(); }
+
+function drawText(text,x,y,size,color,align='center',bold=true,font=''){
+  ctx.fillStyle=color;
+  ctx.font=(bold?'bold ':'')+size+'px '+(font||'"Microsoft YaHei","PingFang SC",sans-serif');
+  ctx.textAlign=align; ctx.textBaseline='middle';
+  ctx.fillText(text,x,y);
+}
+
+function drawTextWithShadow(text,x,y,size,color,shadowColor='rgba(0,0,0,0.5)',offset=3){
+  drawText(text,x+offset,y+offset,size,shadowColor);
+  drawText(text,x,y,size,color);
+}
+
+// ═══════════════════════════════════════════════════
+// 粒子系统
+// ═══════════════════════════════════════════════════
+class Particle {
+  constructor(x,y,vx,vy,size,color,life,gravity=0,shrink=true){
+    this.x=x; this.y=y; this.vx=vx; this.vy=vy;
+    this.size=size; this.color=color;
+    this.life=life; this.maxLife=life;
+    this.gravity=gravity; this.shrink=shrink;
+    this.rotation = Math.random()*Math.PI*2;
+    this.rotSpeed = (Math.random()-0.5)*0.2;
+  }
+  update(){
+    this.x+=this.vx; this.y+=this.vy;
+    this.vy+=this.gravity;
+    this.life--;
+    this.rotation+=this.rotSpeed;
+  }
+  draw(){
+    const alpha = this.life/this.maxLife;
+    const s = this.shrink ? this.size*alpha : this.size;
+    ctx.globalAlpha=alpha;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    drawCircle(0,0,s,this.color);
+    ctx.restore();
+    ctx.globalAlpha=1;
+  }
+  get dead(){ return this.life<=0; }
+}
+
+let particles = [];
+function spawnParticles(x,y,count,colors,sizeRange=[3,8],speedRange=[1,4],lifeRange=[20,50],gravity=0.05){
+  for(let i=0;i<count;i++){
+    const angle = Math.random()*Math.PI*2;
+    const speed = sizeRange[0]+Math.random()*(speedRange[1]-speedRange[0]);
+    const size = sizeRange[0]+Math.random()*(sizeRange[1]-sizeRange[0]);
+    const life = lifeRange[0]+Math.random()*(lifeRange[1]-lifeRange[0])|0;
+    const color = colors[Math.random()*colors.length|0];
+    particles.push(new Particle(x,y, Math.cos(angle)*speed, Math.sin(angle)*speed, size, color, life, gravity));
+  }
+}
+
+function spawnExplosion(x,y){
+  spawnParticles(x,y,30,['#ff6b35','#ff4444','#ffaa00','#ffdd44','#fff'],[4,12],[2,6],[20,45],0.08);
+  SFX.explode();
+}
+
+function spawnBrainCollect(x,y){
+  spawnParticles(x,y,8,['#ff69b4','#ff88cc','#ffaadd'],[3,6],[1,3],[15,30],0.02);
+}
+
+// ═══════════════════════════════════════════════════
+// 绘制僵尸函数
+// ═══════════════════════════════════════════════════
+function drawZombieChar(type, cx, cy, w, h, frame, small=false){
+  const t = ZOMBIE_TYPES[type];
+  const bob = Math.sin(frame*0.08)*2;
+  const s = small ? 0.55 : 1;
+  
+  ctx.save();
+  ctx.translate(cx, cy+bob*s);
+  
+  const hw = w*0.5*s, hh = h*0.5*s;
+  
+  // 身体
+  const bodyColor = '#4a8a3c';
+  const bodyLight = '#5a9a4c';
+  fillRoundRect(-hw*0.6, -hh*0.1, hw*1.2, hh*0.9, 8*s, bodyColor);
+  
+  // 头部
+  const headR = hw*0.55;
+  drawCircle(0, -hh*0.35, headR, bodyLight);
+  
+  // 眼睛（红色发光）
+  const eyeY = -hh*0.4;
+  drawCircle(-hw*0.18, eyeY, headR*0.22, '#fff');
+  drawCircle(hw*0.18, eyeY, headR*0.22, '#fff');
+  drawCircle(-hw*0.18, eyeY, headR*0.13, '#e74c3c');
+  drawCircle(hw*0.18, eyeY, headR*0.13, '#e74c3c');
+  drawCircle(-hw*0.15, eyeY-headR*0.03, headR*0.05, '#fff');
+  drawCircle(hw*0.21, eyeY-headR*0.03, headR*0.05, '#fff');
+  
+  // 嘴巴（缝合线）
+  const mouthY = -hh*0.2;
+  ctx.strokeStyle='#2d5a1e'; ctx.lineWidth=2*s;
+  ctx.beginPath(); ctx.moveTo(-hw*0.2, mouthY); ctx.lineTo(hw*0.2, mouthY); ctx.stroke();
+  for(let i=-2;i<=2;i++){
+    const mx = i*hw*0.1;
+    ctx.beginPath(); ctx.moveTo(mx,mouthY-3*s); ctx.lineTo(mx,mouthY+3*s); ctx.stroke();
+  }
+  
+  // 手臂
+  fillRoundRect(-hw*0.85, -hh*0.05, hw*0.3, hh*0.15, 4*s, bodyColor);
+  fillRoundRect(hw*0.55, -hh*0.05, hw*0.3, hh*0.15, 4*s, bodyColor);
+  
+  // 腿
+  fillRoundRect(-hw*0.4, hh*0.65, hw*0.3, hh*0.25, 4*s, '#3a7a2c');
+  fillRoundRect(hw*0.1, hh*0.65, hw*0.3, hh*0.25, 4*s, '#3a7a2c');
+  
+  // 类型特征
+  switch(t.id){
+    case 'pea':
+      // 豌豆射手管道
+      fillRoundRect(hw*0.4, -hh*0.15, hw*0.6, hh*0.12, 3*s, '#6a6a6a');
+      drawCircle(hw*0.95, -hh*0.09, hh*0.08, '#555');
+      // 头盔
+      drawEllipse(0, -hh*0.58, headR*0.7, headR*0.35, '#6aaa4c');
+      break;
+    case 'sun':
+      // 向日葵花瓣
+      const petalR = headR*0.35;
+      for(let i=0;i<8;i++){
+        const a = i*Math.PI/4 + frame*0.02;
+        drawEllipse(Math.cos(a)*headR*0.9, -hh*0.35+Math.sin(a)*headR*0.9, petalR, petalR*0.6, '#f1c40f');
+      }
+      // 重画头
+      drawCircle(0, -hh*0.35, headR*0.8, bodyLight);
+      drawCircle(-hw*0.15, eyeY, headR*0.18, '#fff');
+      drawCircle(hw*0.15, eyeY, headR*0.18, '#fff');
+      drawCircle(-hw*0.15, eyeY, headR*0.1, '#e74c3c');
+      drawCircle(hw*0.15, eyeY, headR*0.1, '#e74c3c');
+      // 笑脸
+      ctx.strokeStyle='#2d5a1e'; ctx.lineWidth=2*s;
+      ctx.beginPath(); ctx.arc(0,-hh*0.22, hw*0.12, 0.1*Math.PI, 0.9*Math.PI); ctx.stroke();
+      break;
+    case 'nut':
+      // 坚果壳
+      drawEllipse(0, -hh*0.1, hw*0.7, hh*0.55, '#c0883a');
+      drawEllipse(0, -hh*0.1, hw*0.6, hh*0.45, '#d4a056');
+      // 裂纹
+      ctx.strokeStyle='#a07030'; ctx.lineWidth=2*s;
+      ctx.beginPath(); ctx.moveTo(-hw*0.1,-hh*0.4); ctx.lineTo(-hw*0.2,-hh*0.1); ctx.lineTo(-hw*0.05,hh*0.2); ctx.stroke();
+      // 眼睛
+      drawCircle(-hw*0.15, -hh*0.2, headR*0.18, '#fff');
+      drawCircle(hw*0.15, -hh*0.2, headR*0.18, '#fff');
+      drawCircle(-hw*0.15, -hh*0.2, headR*0.1, '#e74c3c');
+      drawCircle(hw*0.15, -hh*0.2, headR*0.1, '#e74c3c');
+      break;
+    case 'cherry':
+      // 樱桃炸弹外观
+      const cherryR = headR*0.7;
+      drawCircle(-hw*0.2, -hh*0.25, cherryR, '#c0392b');
+      drawCircle(hw*0.2, -hh*0.25, cherryR, '#c0392b');
+      drawCircle(-hw*0.2, -hh*0.25, cherryR*0.3, 'rgba(255,255,255,0.3)');
+      drawCircle(hw*0.2, -hh*0.25, cherryR*0.3, 'rgba(255,255,255,0.3)');
+      // 茎
+      ctx.strokeStyle='#2d5a1e'; ctx.lineWidth=3*s;
+      ctx.beginPath(); ctx.moveTo(-hw*0.2,-hh*0.5); ctx.quadraticCurveTo(0,-hh*0.75, hw*0.2,-hh*0.5); ctx.stroke();
+      // 闪烁引线
+      if(frame%20<10){
+        drawCircle(0, -hh*0.75, 5*s, '#ffaa00');
+        drawCircle(0, -hh*0.75, 3*s, '#fff');
+      }
+      // 愤怒表情
+      drawCircle(-hw*0.3, -hh*0.3, 4*s, '#fff');
+      drawCircle(hw*0.1, -hh*0.3, 4*s, '#fff');
+      drawCircle(-hw*0.3, -hh*0.3, 2*s, '#222');
+      drawCircle(hw*0.1, -hh*0.3, 2*s, '#222');
+      break;
+    case 'baseball':
+      // 棒球帽
+      fillRoundRect(-hw*0.5, -hh*0.7, hw*1.0, hh*0.25, 5*s, '#2980b9');
+      fillRoundRect(-hw*0.7, -hh*0.48, hw*1.4, hh*0.08, 3*s, '#2980b9');
+      // 棒球棒
+      ctx.save(); ctx.translate(hw*0.5, -hh*0.05); ctx.rotate(0.3+Math.sin(frame*0.1)*0.1);
+      fillRoundRect(-3*s, -hh*0.5, 6*s, hh*0.7, 3*s, '#d4a056');
+      ctx.restore();
+      break;
+    case 'miner':
+      // 矿工帽
+      fillRoundRect(-hw*0.45, -hh*0.7, hw*0.9, hh*0.2, 5*s, '#f39c12');
+      drawCircle(0, -hh*0.7, 6*s, '#ecf0f1');
+      if(frame%30<15) drawCircle(0, -hh*0.7, 4*s, '#f1c40f');
+      // 铲子
+      ctx.save(); ctx.translate(hw*0.6, 0);
+      fillRoundRect(-3*s, -hh*0.4, 6*s, hh*0.6, 2*s, '#7f8c8d');
+      fillRoundRect(-8*s, -hh*0.45, 16*s, hh*0.12, 2*s, '#95a5a6');
+      ctx.restore();
+      break;
+    case 'puppet':
+      // 披风
+      ctx.fillStyle='#8e44ad';
+      ctx.beginPath(); ctx.moveTo(-hw*0.5,-hh*0.1); ctx.lineTo(-hw*0.7,hh*0.7); ctx.lineTo(hw*0.7,hh*0.7); ctx.lineTo(hw*0.5,-hh*0.1); ctx.fill();
+      // 面具
+      fillRoundRect(-hw*0.35, -hh*0.55, hw*0.7, hh*0.3, 5*s, '#9b59b6');
+      drawCircle(-hw*0.15, -hh*0.42, 5*s, '#fff');
+      drawCircle(hw*0.15, -hh*0.42, 5*s, '#fff');
+      // 星星
+      if(frame%40<20){
+        drawText('⭐', hw*0.3, -hh*0.7, 14*s, '#f1c40f');
+      }
+      break;
+    case 'king':
+      // 王冠
+      ctx.fillStyle='#f1c40f';
+      ctx.beginPath();
+      ctx.moveTo(-hw*0.4,-hh*0.6); ctx.lineTo(-hw*0.5,-hh*0.85);
+      ctx.lineTo(-hw*0.2,-hh*0.7); ctx.lineTo(0,-hh*0.9);
+      ctx.lineTo(hw*0.2,-hh*0.7); ctx.lineTo(hw*0.5,-hh*0.85);
+      ctx.lineTo(hw*0.4,-hh*0.6); ctx.closePath(); ctx.fill();
+      // 宝石
+      drawCircle(-hw*0.2,-hh*0.72, 3*s, '#e74c3c');
+      drawCircle(0,-hh*0.77, 3*s, '#3498db');
+      drawCircle(hw*0.2,-hh*0.72, 3*s, '#2ecc71');
+      // 大体型
+      drawEllipse(0, hh*0.1, hw*0.7, hh*0.5, '#3a7a2c');
+      // 披风
+      ctx.fillStyle='rgba(128,0,0,0.6)';
+      ctx.beginPath(); ctx.moveTo(-hw*0.6,-hh*0.2); ctx.lineTo(-hw*0.8,hh*0.8);
+      ctx.lineTo(hw*0.8,hh*0.8); ctx.lineTo(hw*0.6,-hh*0.2); ctx.fill();
+      // 重画脸
+      drawCircle(0, -hh*0.35, headR*1.1, bodyLight);
+      drawCircle(-hw*0.2, eyeY, headR*0.22, '#fff');
+      drawCircle(hw*0.2, eyeY, headR*0.22, '#fff');
+      drawCircle(-hw*0.2, eyeY, headR*0.14, '#e74c3c');
+      drawCircle(hw*0.2, eyeY, headR*0.14, '#e74c3c');
+      break;
+  }
+  
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════
+// 绘制植物（敌方）函数
+// ═══════════════════════════════════════════════════
+function drawPlantChar(type, cx, cy, w, h, frame, walking=true){
+  const t = PLANT_TYPES[type];
+  const walkBob = walking ? Math.sin(frame*0.15)*3 : 0;
+  const legAnim = walking ? Math.sin(frame*0.15)*8 : 0;
+  
+  ctx.save();
+  ctx.translate(cx, cy+walkBob);
+  
+  const hw = w*0.45, hh = h*0.45;
+  
+  // 根脚（走路动画）
+  ctx.fillStyle='#1a6b1a';
+  if(walking){
+    fillRoundRect(-hw*0.5+legAnim, hh*0.6, hw*0.4, hh*0.35, 4, '#1a6b1a');
+    fillRoundRect(hw*0.1-legAnim, hh*0.6, hw*0.4, hh*0.35, 4, '#1a6b1a');
+  } else {
+    fillRoundRect(-hw*0.5, hh*0.6, hw*0.4, hh*0.35, 4, '#1a6b1a');
+    fillRoundRect(hw*0.1, hh*0.6, hw*0.4, hh*0.35, 4, '#1a6b1a');
+  }
+  
+  // 茎身
+  fillRoundRect(-hw*0.35, -hh*0.2, hw*0.7, hh*0.85, 6, t.color);
+  
+  // 叶子手臂
+  ctx.fillStyle='#27ae60';
+  ctx.save(); ctx.translate(-hw*0.35, hh*0.05); ctx.rotate(-0.3+Math.sin(frame*0.08)*0.1);
+  ctx.beginPath(); ctx.ellipse(0,0,hw*0.35,hh*0.1,0,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.save(); ctx.translate(hw*0.35, hh*0.05); ctx.rotate(0.3-Math.sin(frame*0.08)*0.1);
+  ctx.beginPath(); ctx.ellipse(0,0,hw*0.35,hh*0.1,0,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  
+  // 头部
+  const headR = hw*0.6;
+  
+  switch(t.id){
+    case 'peashooter':
+      drawCircle(0, -hh*0.45, headR, '#2ecc71');
+      // 张大嘴巴！
+      ctx.fillStyle='#c0392b';
+      ctx.beginPath();
+      ctx.arc(0, -hh*0.35, headR*0.7, 0.15*Math.PI, 0.85*Math.PI);
+      ctx.closePath(); ctx.fill();
+      // 牙齿
+      ctx.fillStyle='#fff';
+      for(let i=0;i<5;i++){
+        const ta = 0.15*Math.PI + i*(0.7*Math.PI/4);
+        drawCircle(Math.cos(ta)*headR*0.55, -hh*0.35+Math.sin(ta)*headR*0.55, 3, '#fff');
+      }
+      // 眼睛
+      drawCircle(-hw*0.15, -hh*0.6, headR*0.25, '#fff');
+      drawCircle(hw*0.15, -hh*0.6, headR*0.25, '#fff');
+      drawCircle(-hw*0.12, -hh*0.6, headR*0.12, '#222');
+      drawCircle(hw*0.18, -hh*0.6, headR*0.12, '#222');
+      break;
+    case 'wallnut':
+      drawEllipse(0, -hh*0.3, hw*0.7, hh*0.4, '#d4a056');
+      drawEllipse(0, -hh*0.3, hw*0.58, hh*0.33, '#e0b870');
+      // 愤怒脸
+      drawCircle(-hw*0.2, -hh*0.4, 5, '#fff');
+      drawCircle(hw*0.2, -hh*0.4, 5, '#fff');
+      drawCircle(-hw*0.2, -hh*0.4, 3, '#222');
+      drawCircle(hw*0.2, -hh*0.4, 3, '#222');
+      // 嘴
+      ctx.strokeStyle='#8a6030'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(0,-hh*0.2, hw*0.15, 0.1*Math.PI, 0.9*Math.PI); ctx.stroke();
+      break;
+    case 'sunwarrior':
+      // 花瓣
+      for(let i=0;i<8;i++){
+        const a = i*Math.PI/4+frame*0.03;
+        drawEllipse(Math.cos(a)*headR*0.8, -hh*0.45+Math.sin(a)*headR*0.8, headR*0.35, headR*0.18, '#f39c12');
+      }
+      drawCircle(0, -hh*0.45, headR*0.6, '#f1c40f');
+      // 愤怒眼
+      drawCircle(-hw*0.1, -hh*0.5, 4, '#222');
+      drawCircle(hw*0.1, -hh*0.5, 4, '#222');
+      ctx.strokeStyle='#222'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(-hw*0.2,-hh*0.55); ctx.lineTo(-hw*0.05,-hh*0.52); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(hw*0.2,-hh*0.55); ctx.lineTo(hw*0.05,-hh*0.52); ctx.stroke();
+      break;
+    case 'torch':
+      fillRoundRect(-hw*0.3, -hh*0.5, hw*0.6, hh*0.6, 5, '#8B4513');
+      // 火焰
+      for(let i=0;i<3;i++){
+        const fy = -hh*0.55 - i*6 + Math.sin(frame*0.2+i)*3;
+        const fr = (3-i)*5+Math.sin(frame*0.3)*2;
+        drawCircle(Math.sin(frame*0.15+i*2)*3, fy, fr, i<2?'#e67e22':'#f39c12');
+      }
+      drawCircle(0,-hh*0.7, 4, '#f1c40f');
+      // 眼
+      drawCircle(-hw*0.1, -hh*0.3, 4, '#ff6b35');
+      drawCircle(hw*0.1, -hh*0.3, 4, '#ff6b35');
+      break;
+    case 'iceshooter':
+      drawCircle(0, -hh*0.45, headR, '#5dade2');
+      // 冰嘴
+      ctx.fillStyle='#2980b9';
+      ctx.beginPath(); ctx.arc(0,-hh*0.35,headR*0.6,0.2*Math.PI,0.8*Math.PI); ctx.closePath(); ctx.fill();
+      // 冰晶
+      ctx.fillStyle='rgba(255,255,255,0.5)';
+      drawCircle(-hw*0.3,-hh*0.6, 5, 'rgba(255,255,255,0.6)');
+      drawCircle(hw*0.25,-hh*0.55, 4, 'rgba(255,255,255,0.4)');
+      // 眼
+      drawCircle(-hw*0.15,-hh*0.55, headR*0.2, '#fff');
+      drawCircle(hw*0.15,-hh*0.55, headR*0.2, '#fff');
+      drawCircle(-hw*0.15,-hh*0.55, headR*0.1, '#1a5276');
+      drawCircle(hw*0.15,-hh*0.55, headR*0.1, '#1a5276');
+      break;
+  }
+  
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════
+// 游戏实体类
+// ═══════════════════════════════════════════════════
+
+class ZombieUnit {
+  constructor(type, row, col){
+    this.type = type;
+    this.def = ZOMBIE_TYPES[type];
+    this.row = row; this.col = col;
+    this.hp = this.def.hp;
+    this.maxHp = this.def.hp;
+    this.x = GRID.left + col*GRID.cw + GRID.cw/2;
+    this.y = GRID.top + row*GRID.ch + GRID.ch/2;
+    this.shootTimer = 0;
+    this.brainTimer = 0;
+    this.armed = this.def.id !== 'miner'; // 矿工需要时间激活
+    this.armTimer = this.def.id === 'miner' ? 180 : 0; // 3秒激活
+    this.flash = 0;
+    this.dead = false;
+    this.frame = Math.random()*100|0;
+    
+    // 一次性爆炸类
+    if(this.def.id === 'cherry' || this.def.id === 'puppet'){
+      this.explodeDelay = 30; // 0.5秒后爆炸
+    }
+  }
+  update(game){
+    this.frame++;
+    if(this.flash>0) this.flash--;
+    
+    // 一次性爆炸
+    if(this.explodeDelay !== undefined){
+      this.explodeDelay--;
+      if(this.explodeDelay <= 0){
+        this.doExplode(game);
+        this.dead = true;
+        return;
+      }
+    }
+    
+    // 矿工激活
+    if(this.def.id === 'miner' && !this.armed){
+      this.armTimer--;
+      if(this.armTimer <= 0) this.armed = true;
+    }
+    
+    // 射击
+    if((this.def.id === 'pea' || this.def.id === 'baseball') && this.hp > 0){
+      // 检查行内是否有植物
+      const hasPlant = game.plants.some(p => p.row === this.row && !p.dead && p.x > this.x);
+      if(hasPlant){
+        this.shootTimer++;
+        if(this.shootTimer >= this.def.rate * 60){
+          this.shootTimer = 0;
+          this.shoot(game);
+        }
+      }
+    }
+    
+    // 生产脑子
+    if(this.def.id === 'sun' && this.hp > 0){
+      this.brainTimer++;
+      if(this.brainTimer >= 60*18){ // 18秒产一个
+        this.brainTimer = 0;
+        game.spawnBrain(this.x + 20 + Math.random()*30, this.y - 20, true);
+      }
+    }
+    
+    // 矿工检测
+    if(this.def.id === 'miner' && this.armed && this.hp > 0){
+      const nearby = game.plants.find(p => !p.dead && p.row === this.row && Math.abs(p.x - this.x) < GRID.cw*0.6);
+      if(nearby){
+        spawnExplosion(this.x, this.y);
+        // 炸死周围植物
+        game.plants.forEach(p => {
+          if(!p.dead && Math.abs(p.x-this.x)<GRID.cw*1.2 && Math.abs(p.row-this.row)<=1){
+            p.hp = 0;
+          }
+        });
+        this.dead = true;
+      }
+    }
+  }
+  
+  shoot(game){
+    SFX.shoot();
+    if(this.def.id === 'baseball'){
+      // 三发棒球
+      for(let i=-1;i<=1;i++){
+        game.projectiles.push({
+          x: this.x+GRID.cw*0.4, y: this.y+i*8,
+          vx: 5, vy: i*0.3,
+          damage: this.def.atk, fromZombie: true,
+          size: 6, color: '#fff', type:'baseball'
+        });
+      }
+    } else {
+      game.projectiles.push({
+        x: this.x+GRID.cw*0.4, y: this.y,
+        vx: 5, vy: 0,
+        damage: this.def.atk, fromZombie: true,
+        size: 5, color: '#7dce54', type:'pea'
+      });
+    }
+  }
+  
+  doExplode(game){
+    spawnExplosion(this.x, this.y);
+    if(this.def.id === 'cherry'){
+      // 3x3爆炸
+      game.plants.forEach(p => {
+        if(!p.dead && Math.abs(p.x-this.x)<GRID.cw*1.8 && Math.abs(p.row-this.row)<=1){
+          p.hp = 0;
+        }
+      });
+    } else if(this.def.id === 'puppet'){
+      // 十字爆炸（同行全部+上下一格）
+      game.plants.forEach(p => {
+        if(!p.dead){
+          if(p.row === this.row || (Math.abs(p.row-this.row)<=1 && Math.abs(p.x-this.x)<GRID.cw*1.2)){
+            p.hp = 0;
+          }
+        }
+      });
+      // 额外特效
+      for(let i=0;i<5;i++){
+        spawnParticles(this.x+i*GRID.cw, this.y, 5, ['#9b59b6','#8e44ad','#ff69b4'], [3,8],[1,3],[15,30]);
+      }
+    }
+  }
+  
+  takeDamage(dmg){
+    this.hp -= dmg;
+    this.flash = 8;
+    if(this.hp <= 0){
+      this.dead = true;
+      spawnParticles(this.x, this.y, 10, ['#5a8a3c','#4a7a2c','#3a6a1c'], [3,7],[1,3],[15,30],0.05);
+    }
+  }
+  
+  draw(){
+    if(this.dead) return;
+    ctx.save();
+    if(this.flash > 0 && this.flash%4 < 2){
+      ctx.globalAlpha = 0.5;
+    }
+    // 血条
+    if(this.hp < this.maxHp){
+      const bw = GRID.cw*0.7;
+      const bx = this.x - bw/2;
+      const by = this.y - GRID.ch*0.48;
+      fillRoundRect(bx, by, bw, 6, 3, 'rgba(0,0,0,0.5)');
+      fillRoundRect(bx, by, bw*(this.hp/this.maxHp), 6, 3, this.hp/this.maxHp > 0.3 ? '#2ecc71' : '#e74c3c');
+    }
+    // 矿工未激活标志
+    if(this.def.id === 'miner' && !this.armed){
+      ctx.globalAlpha = 0.6;
+    }
+    drawZombieChar(this.type, this.x, this.y, GRID.cw, GRID.ch, this.frame);
+    ctx.restore();
+  }
+}
+
+class PlantUnit {
+  constructor(type, row){
+    this.type = type;
+    this.def = PLANT_TYPES[type];
+    this.row = row;
+    this.x = GRID.left + GRID.cols * GRID.cw + 40; // 从右侧屏幕外
+    this.y = GRID.top + row*GRID.ch + GRID.ch/2;
+    this.hp = this.def.hp;
+    this.maxHp = this.def.hp;
+    this.speed = this.def.speed;
+    this.shootTimer = Math.random()*60|0;
+    this.attacking = false; // 正在攻击一个僵尸
+    this.attackTarget = null;
+    this.meleeCooldown = 0;
+    this.dead = false;
+    this.frame = Math.random()*100|0;
+    this.flash = 0;
+    this.slowed = 0;
+    // 翻跟斗死亡动画
+    this.dying = false;
+    this.deathTimer = 0;
+    this.deathRotation = 0;
+    this.deathY = 0;
+    this.deathVY = -5;
+  }
+  
+  update(game){
+    this.frame++;
+    if(this.flash>0) this.flash--;
+    if(this.slowed>0) this.slowed--;
+    
+    if(this.dying){
+      this.deathTimer++;
+      this.deathRotation += 0.15;
+      this.deathVY += 0.25;
+      this.deathY += this.deathVY;
+      if(this.deathTimer > 60){
+        this.dead = true;
+      }
+      return;
+    }
+    
+    if(this.hp <= 0){
+      // 开始翻跟斗！
+      this.dying = true;
+      this.deathVY = -5;
+      SFX.somersault();
+      return;
+    }
+    
+    // 检查前方是否有僵尸
+    const speed = this.slowed > 0 ? this.speed * 0.4 : this.speed;
+    const blockingZombie = game.zombies.find(z => !z.dead && z.row === this.row && z.x < this.x && this.x - z.x < GRID.cw*0.7);
+    
+    if(blockingZombie){
+      this.attacking = true;
+      this.attackTarget = blockingZombie;
+      this.meleeCooldown++;
+      if(this.meleeCooldown >= 30){ // 每0.5秒攻击一次
+        this.meleeCooldown = 0;
+        blockingZombie.takeDamage(this.def.meleeDmg);
+        SFX.hit();
+      }
+    } else {
+      this.attacking = false;
+      this.attackTarget = null;
+      this.x -= speed;
+    }
+    
+    // 射击（一边走一边射）
+    if(this.def.shoots){
+      this.shootTimer++;
+      if(this.shootTimer >= 90){
+        this.shootTimer = 0;
+        const projColor = this.def.id === 'torch' ? '#e67e22' : this.def.id === 'iceshooter' ? '#5dade2' : '#7dce54';
+        game.projectiles.push({
+          x: this.x - 30, y: this.y,
+          vx: -4, vy: 0,
+          damage: this.def.atk, fromZombie: false,
+          size: 5, color: projColor,
+          type: this.def.id === 'iceshooter' ? 'ice' : 'pea',
+        });
+      }
+    }
+  }
+  
+  takeDamage(dmg, isIce=false){
+    this.hp -= dmg;
+    this.flash = 6;
+    if(isIce) this.slowed = 120;
+  }
+  
+  draw(){
+    if(this.dead) return;
+    
+    ctx.save();
+    
+    if(this.dying){
+      // 翻跟斗动画！🤸
+      ctx.translate(this.x, this.y + this.deathY);
+      ctx.rotate(this.deathRotation);
+      const alpha = Math.max(0, 1 - this.deathTimer/60);
+      ctx.globalAlpha = alpha;
+      const scale = 1 - this.deathTimer/120;
+      ctx.scale(scale, scale);
+      drawPlantChar(this.type, 0, 0, GRID.cw*0.8, GRID.ch*0.8, this.frame, false);
+      ctx.restore();
+      return;
+    }
+    
+    if(this.flash > 0 && this.flash%4 < 2){
+      ctx.globalAlpha = 0.5;
+    }
+    
+    // 减速效果
+    if(this.slowed > 0){
+      ctx.globalAlpha = 0.8;
+      // 冰霜效果
+      drawCircle(this.x, this.y, GRID.cw*0.4, 'rgba(100,180,255,0.2)');
+    }
+    
+    // 血条
+    if(this.hp < this.maxHp && this.hp > 0){
+      const bw = GRID.cw*0.6;
+      const bx = this.x - bw/2;
+      const by = this.y - GRID.ch*0.45;
+      fillRoundRect(bx, by, bw, 5, 2, 'rgba(0,0,0,0.5)');
+      fillRoundRect(bx, by, bw*(this.hp/this.maxHp), 5, 2, '#e74c3c');
+    }
+    
+    drawPlantChar(this.type, this.x, this.y, GRID.cw*0.8, GRID.ch*0.8, this.frame, !this.attacking);
+    
+    // 攻击动画（张大嘴咬）
+    if(this.attacking && this.meleeCooldown > 20){
+      ctx.fillStyle='rgba(255,100,100,0.3)';
+      ctx.beginPath();
+      ctx.arc(this.x - GRID.cw*0.3, this.y, 15, 0, Math.PI*2);
+      ctx.fill();
+    }
+    
+    ctx.restore();
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// 脑子（资源）
+// ═══════════════════════════════════════════════════
+class BrainDrop {
+  constructor(x, y, fromSunflower=false){
+    this.x = x; this.y = fromSunflower ? y : -20;
+    this.targetY = y;
+    this.falling = !fromSunflower;
+    this.value = 25;
+    this.life = 600; // 10秒后消失
+    this.collected = false;
+    this.dead = false;
+    this.scale = fromSunflower ? 0 : 1;
+    this.growIn = fromSunflower;
+    this.frame = 0;
+    this.collectAnim = 0;
+  }
+  update(){
+    this.frame++;
+    if(this.collected){
+      this.collectAnim++;
+      if(this.collectAnim > 20) this.dead = true;
+      return;
+    }
+    if(this.growIn && this.scale < 1){
+      this.scale += 0.05;
+    }
+    if(this.falling){
+      this.y += 1.5;
+      if(this.y >= this.targetY){
+        this.y = this.targetY;
+        this.falling = false;
+      }
+    }
+    this.life--;
+    if(this.life <= 0) this.dead = true;
+  }
+  draw(){
+    if(this.dead) return;
+    ctx.save();
+    const bob = Math.sin(this.frame*0.08)*3;
+    const alpha = this.life < 120 ? this.life/120 : 1;
+    ctx.globalAlpha = alpha;
+    
+    if(this.collected){
+      // 收集动画：飞向右上角
+      const t = this.collectAnim/20;
+      ctx.globalAlpha = 1-t;
+      ctx.translate(this.x + t*(W-80-this.x), this.y+bob + t*(20-this.y-bob));
+      ctx.scale(1-t*0.5, 1-t*0.5);
+    } else {
+      ctx.translate(this.x, this.y+bob);
+      ctx.scale(this.scale, this.scale);
+    }
+    
+    // 脑子🧠
+    const r = 16;
+    // 发光
+    ctx.shadowColor = '#ff69b4';
+    ctx.shadowBlur = 10 + Math.sin(this.frame*0.1)*5;
+    drawCircle(0, 0, r, '#ff88aa');
+    ctx.shadowBlur = 0;
+    // 脑纹路
+    drawCircle(-3, -3, r*0.7, '#ff99bb');
+    ctx.strokeStyle='#dd5588'; ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.moveTo(-5,-8); ctx.quadraticCurveTo(0,-2, 5,-6);
+    ctx.moveTo(-8,0); ctx.quadraticCurveTo(-2,5, 6,1);
+    ctx.moveTo(-4,5); ctx.quadraticCurveTo(1,10, 7,6);
+    ctx.stroke();
+    
+    ctx.restore();
+  }
+  
+  hitTest(mx, my){
+    if(this.collected || this.falling) return false;
+    return Math.hypot(mx-this.x, my-this.y) < 25;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// 墓碑
+// ═══════════════════════════════════════════════════
+class Tombstone {
+  constructor(x, y){
+    this.x = x; this.y = y;
+    this.brainTimer = 0;
+    this.brainReady = false;
+    this.frame = 0;
+    this.collected = false;
+  }
+  update(){
+    this.frame++;
+    if(!this.brainReady){
+      this.brainTimer++;
+      if(this.brainTimer >= 300){ // 5秒
+        this.brainReady = true;
+        this.brainTimer = 0;
+        SFX.brainDrop();
+      }
+    }
+  }
+  draw(){
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    
+    // 墓碑
+    ctx.fillStyle='#7f8c8d';
+    roundRect(-18, -30, 36, 45, 8);
+    ctx.fill();
+    ctx.fillStyle='#95a5a6';
+    roundRect(-15, -27, 30, 39, 6);
+    ctx.fill();
+    
+    // RIP 文字
+    drawText('R.I.P', 0, -12, 10, '#bdc3c7');
+    
+    // 脑子准备好了
+    if(this.brainReady){
+      const pulse = 1 + Math.sin(this.frame*0.1)*0.15;
+      ctx.save();
+      ctx.translate(0, -38);
+      ctx.scale(pulse, pulse);
+      drawCircle(0,0,10,'#ff88aa');
+      ctx.shadowColor='#ff69b4'; ctx.shadowBlur=8;
+      drawCircle(0,0,8,'#ff99bb');
+      ctx.shadowBlur=0;
+      ctx.restore();
+    }
+    
+    ctx.restore();
+  }
+  
+  hitTest(mx, my){
+    if(!this.brainReady) return false;
+    return Math.hypot(mx-this.x, my-(this.y-38)) < 20;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// 弹弹车（割草机等价物）
+// ═══════════════════════════════════════════════════
+class BouncyCar {
+  constructor(row){
+    this.row = row;
+    this.x = GRID.left - 25;
+    this.y = GRID.top + row*GRID.ch + GRID.ch/2;
+    this.active = false;
+    this.activated = false; // 是否已被触发
+    this.used = false;
+    this.frame = 0;
+  }
+  update(game){
+    this.frame++;
+    if(this.activated){
+      this.x += 8;
+      // 推走路径上所有植物
+      game.plants.forEach(p => {
+        if(!p.dead && !p.dying && p.row === this.row && Math.abs(p.x - this.x) < 50){
+          p.hp = 0;
+        }
+      });
+      if(this.x > W + 50) this.used = true;
+    }
+  }
+  trigger(){
+    if(!this.activated && !this.used){
+      this.activated = true;
+      SFX.explode();
+    }
+  }
+  draw(){
+    if(this.used) return;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    
+    // 小车
+    const bounce = this.activated ? 0 : Math.sin(this.frame*0.05)*1;
+    ctx.translate(0, bounce);
+    
+    // 车身
+    fillRoundRect(-18, -12, 36, 20, 5, '#e74c3c');
+    fillRoundRect(-14, -20, 28, 12, 4, '#c0392b');
+    
+    // 轮子
+    drawCircle(-10, 10, 5, '#333');
+    drawCircle(10, 10, 5, '#333');
+    
+    // 弹簧
+    if(!this.activated){
+      ctx.strokeStyle='#f39c12'; ctx.lineWidth=2;
+      ctx.beginPath();
+      for(let i=0;i<3;i++){
+        ctx.moveTo(15+i*4, -5);
+        ctx.lineTo(17+i*4, 0);
+        ctx.lineTo(15+i*4, 5);
+      }
+      ctx.stroke();
+    }
+    
+    ctx.restore();
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// 主游戏类
+// ═══════════════════════════════════════════════════
+class Game {
+  constructor(){
+    this.state = STATES.TITLE;
+    this.level = 0;
+    this.wave = 0;
+    this.brains = 150;
+    this.zombies = [];
+    this.plants = [];
+    this.projectiles = [];
+    this.brainDrops = [];
+    this.tombstones = [];
+    this.bouncyCars = [];
+    this.selectedZombie = -1; // 选中的僵尸卡片索引（在当前关卡可用列表中）
+    this.mouseX = 0;
+    this.mouseY = 0;
+    this.frame = 0;
+    this.waveTimer = 0;
+    this.spawnQueue = [];
+    this.spawnTimer = 0;
+    this.announceTimer = 0;
+    this.announceText = '';
+    this.unlockedLevels = 1;
+    this.levelStars = [0,0,0,0,0,0];
+    this.grid = []; // 5x9 占位
+    this.brainDropTimer = 0;
+    this.tutorial = { active:false, step:0, arrowTarget:null };
+    this.titleAnim = 0;
+    this.transition = 0;
+    this.transitionTarget = -1;
+    this.carsLost = 0;
+    
+    // 雨滴（暴风雨关卡）
+    this.raindrops = [];
+    this.lightningTimer = 0;
+    this.lightningFlash = 0;
+    
+    // 云朵
+    this.clouds = [];
+    for(let i=0;i<5;i++){
+      this.clouds.push({ x: Math.random()*W, y: 15+Math.random()*40, w: 60+Math.random()*80, speed: 0.2+Math.random()*0.3 });
+    }
+    
+    // 标题屏僵尸行走
+    this.titleZombies = [];
+    for(let i=0;i<6;i++){
+      this.titleZombies.push({ x: -100+Math.random()*W, y: 380+Math.random()*150, type: i, speed: 0.3+Math.random()*0.5, frame: Math.random()*100|0 });
+    }
+    
+    // 保存/加载进度
+    this.loadProgress();
+  }
+  
+  saveProgress(){
+    try{
+      localStorage.setItem('zvp_progress', JSON.stringify({
+        unlocked: this.unlockedLevels,
+        stars: this.levelStars
+      }));
+    }catch(e){}
+  }
+  
+  loadProgress(){
+    try{
+      const d = JSON.parse(localStorage.getItem('zvp_progress'));
+      if(d){
+        this.unlockedLevels = d.unlocked || 1;
+        this.levelStars = d.stars || [0,0,0,0,0,0];
+      }
+    }catch(e){}
+  }
+  
+  // ─── 关卡初始化 ───
+  startLevel(levelIdx){
+    this.level = levelIdx;
+    this.wave = 0;
+    this.brains = 200;
+    this.zombies = [];
+    this.plants = [];
+    this.projectiles = [];
+    this.brainDrops = [];
+    this.tombstones = [];
+    this.bouncyCars = [];
+    this.spawnQueue = [];
+    this.spawnTimer = 0;
+    this.selectedZombie = -1;
+    this.brainDropTimer = 0;
+    this.carsLost = 0;
+    particles = [];
+    
+    // 初始化网格
+    this.grid = [];
+    for(let r=0;r<GRID.rows;r++){
+      this.grid[r] = [];
+      for(let c=0;c<GRID.cols;c++){
+        this.grid[r][c] = null;
+      }
+    }
+    
+    // 初始化弹弹车
+    for(let r=0;r<GRID.rows;r++){
+      this.bouncyCars.push(new BouncyCar(r));
+    }
+    
+    // 放置墓碑（夜晚和之后的关卡）
+    if(levelIdx >= 1){
+      const tombCount = Math.min(levelIdx + 1, 4);
+      for(let i=0;i<tombCount;i++){
+        const tx = GRID.left + (5+Math.random()*3|0)*GRID.cw + GRID.cw/2;
+        const ty = GRID.top + (Math.random()*5|0)*GRID.ch + GRID.ch*0.7;
+        this.tombstones.push(new Tombstone(tx, ty));
+      }
+    }
+    
+    // 初始化雨滴（暴风雨关卡）
+    this.raindrops = [];
+    if(LEVELS[levelIdx].theme === 'storm' || LEVELS[levelIdx].theme === 'final'){
+      for(let i=0;i<80;i++){
+        this.raindrops.push({ x: Math.random()*W, y: Math.random()*H, speed: 6+Math.random()*6, length: 10+Math.random()*15 });
+      }
+    }
+    
+    // 开始教程（第一关）
+    if(levelIdx === 0 && this.levelStars[0] === 0){
+      this.tutorial = { active:true, step:0, timer:0, arrowTarget:null };
+    } else {
+      this.tutorial = { active:false, step:0 };
+    }
+    
+    // 开始第一波
+    this.startWave(0);
+  }
+  
+  // ─── 波次控制 ───
+  startWave(waveIdx){
+    this.wave = waveIdx;
+    const levelDef = LEVELS[this.level];
+    const waveDef = levelDef.waves[waveIdx];
+    
+    // 构建生成队列
+    this.spawnQueue = [];
+    waveDef.plants.forEach(entry => {
+      for(let i=0;i<entry.n;i++){
+        this.spawnQueue.push({ type: entry.t, row: Math.random()*5|0 });
+      }
+    });
+    // 打乱顺序
+    for(let i=this.spawnQueue.length-1;i>0;i--){
+      const j = Math.random()*(i+1)|0;
+      [this.spawnQueue[i], this.spawnQueue[j]] = [this.spawnQueue[j], this.spawnQueue[i]];
+    }
+    
+    this.spawnTimer = 0;
+    
+    // 波次公告
+    const isLast = waveIdx === levelDef.waves.length - 1;
+    this.state = STATES.WAVE_ANNOUNCE;
+    this.announceText = isLast ? '🚨 最后一大波！！！' : `第 ${waveIdx+1} 波！`;
+    this.announceTimer = 120; // 2秒
+    SFX.wave();
+  }
+  
+  spawnBrain(x, y, fromSunflower=false){
+    this.brainDrops.push(new BrainDrop(x, y, fromSunflower));
+    if(!fromSunflower) SFX.brainDrop();
+  }
+  
+  // ─── 网格坐标转换 ───
+  getGridCell(mx, my){
+    const col = ((mx - GRID.left) / GRID.cw)|0;
+    const row = ((my - GRID.top) / GRID.ch)|0;
+    if(row >= 0 && row < GRID.rows && col >= 0 && col < GRID.cols){
+      return { row, col };
+    }
+    return null;
+  }
+  
+  getCardAtPos(mx, my){
+    if(my < CARD_Y || my > CARD_Y + CARD_H) return -1;
+    const avail = LEVELS[this.level].zombiesAvail;
+    for(let i=0; i<avail.length; i++){
+      const cx = CARD_X + i*(CARD_W+CARD_GAP);
+      if(mx >= cx && mx <= cx+CARD_W){
+        return i;
+      }
+    }
+    return -1;
+  }
+  
+  // ─── 点击处理 ───
+  handleClick(mx, my){
+    if(this.state === STATES.TITLE){
+      // 检查开始按钮
+      if(mx > W/2-120 && mx < W/2+120 && my > 460 && my < 520){
+        SFX.click();
+        this.state = STATES.LEVEL_SELECT;
+        return;
+      }
+    }
+    
+    if(this.state === STATES.LEVEL_SELECT){
+      // 检查关卡按钮
+      for(let i=0;i<6;i++){
+        const col = i%3, row = (i/3)|0;
+        const bx = W/2-330+col*220, by = 200+row*170;
+        if(mx>bx && mx<bx+200 && my>by && my<by+140){
+          if(i < this.unlockedLevels){
+            SFX.click();
+            this.startLevel(i);
+          }
+          return;
+        }
+      }
+      // 返回按钮
+      if(mx > 20 && mx < 120 && my > 20 && my < 60){
+        SFX.click();
+        this.state = STATES.TITLE;
+      }
+      return;
+    }
+    
+    if(this.state === STATES.PLAYING){
+      // 教程特殊处理
+      if(this.tutorial.active){
+        this.handleTutorialClick(mx, my);
+      }
+      
+      // 收集脑子
+      for(let b of this.brainDrops){
+        if(b.hitTest(mx, my)){
+          b.collected = true;
+          this.brains += b.value;
+          SFX.collect();
+          spawnBrainCollect(b.x, b.y);
+          return;
+        }
+      }
+      
+      // 收集墓碑脑子
+      for(let t of this.tombstones){
+        if(t.hitTest(mx, my)){
+          t.brainReady = false;
+          t.brainTimer = 0;
+          this.brains += 25;
+          SFX.collect();
+          spawnBrainCollect(t.x, t.y-38);
+          return;
+        }
+      }
+      
+      // 点击僵尸卡片
+      const cardIdx = this.getCardAtPos(mx, my);
+      if(cardIdx >= 0){
+        const avail = LEVELS[this.level].zombiesAvail;
+        const zombieType = avail[cardIdx];
+        const cost = ZOMBIE_TYPES[zombieType].cost;
+        if(this.brains >= cost){
+          if(this.selectedZombie === cardIdx){
+            this.selectedZombie = -1; // 取消选择
+          } else {
+            this.selectedZombie = cardIdx;
+            SFX.click();
+          }
+        }
+        return;
+      }
+      
+      // 点击网格放置僵尸
+      if(this.selectedZombie >= 0){
+        const cell = this.getGridCell(mx, my);
+        if(cell && !this.grid[cell.row][cell.col]){
+          const avail = LEVELS[this.level].zombiesAvail;
+          const zombieType = avail[this.selectedZombie];
+          const cost = ZOMBIE_TYPES[zombieType].cost;
+          if(this.brains >= cost){
+            this.brains -= cost;
+            const z = new ZombieUnit(zombieType, cell.row, cell.col);
+            this.zombies.push(z);
+            this.grid[cell.row][cell.col] = z;
+            SFX.place();
+            spawnParticles(z.x, z.y, 8, ['#5a8a3c','#8ac','#fff'], [2,5],[1,2],[10,20]);
+            
+            // 一次性僵尸不保持选中
+            if(ZOMBIE_TYPES[zombieType].id === 'cherry' || ZOMBIE_TYPES[zombieType].id === 'puppet' || ZOMBIE_TYPES[zombieType].id === 'miner'){
+              this.selectedZombie = -1;
+            }
+            
+            // 教程推进
+            if(this.tutorial.active && this.tutorial.step === 1){
+              this.tutorial.step = 2;
+              this.tutorial.timer = 0;
+            }
+          }
+        }
+        return;
+      }
+    }
+    
+    if(this.state === STATES.LEVEL_COMPLETE){
+      // 下一关或返回
+      if(mx > W/2-100 && mx < W/2+100 && my > 440 && my < 490){
+        SFX.click();
+        if(this.level < 5){
+          this.startLevel(this.level+1);
+        } else {
+          this.state = STATES.LEVEL_SELECT;
+        }
+      }
+      if(mx > W/2-100 && mx < W/2+100 && my > 500 && my < 550){
+        SFX.click();
+        this.state = STATES.LEVEL_SELECT;
+      }
+    }
+    
+    if(this.state === STATES.GAME_OVER){
+      // 重试
+      if(mx > W/2-100 && mx < W/2+100 && my > 400 && my < 450){
+        SFX.click();
+        this.startLevel(this.level);
+      }
+      if(mx > W/2-100 && mx < W/2+100 && my > 460 && my < 510){
+        SFX.click();
+        this.state = STATES.LEVEL_SELECT;
+      }
+    }
+  }
+  
+  handleTutorialClick(mx, my){
+    // 教程步骤处理
+    if(this.tutorial.step === 0){
+      // "点击向日葵僵尸卡片"
+      const cardIdx = this.getCardAtPos(mx, my);
+      if(cardIdx === 1){ // 向日葵僵尸
+        this.tutorial.step = 1;
+        this.tutorial.timer = 0;
+      }
+    }
+  }
+  
+  handleMouseMove(mx, my){
+    this.mouseX = mx;
+    this.mouseY = my;
+  }
+  
+  // ─── 主更新循环 ───
+  update(){
+    this.frame++;
+    
+    // 更新云朵
+    this.clouds.forEach(c => { c.x += c.speed; if(c.x > W+100) c.x = -c.w; });
+    
+    if(this.state === STATES.TITLE){
+      this.titleAnim++;
+      this.titleZombies.forEach(z => {
+        z.x += z.speed; z.frame++;
+        if(z.x > W+100) z.x = -80;
+      });
+      return;
+    }
+    
+    if(this.state === STATES.WAVE_ANNOUNCE){
+      this.announceTimer--;
+      if(this.announceTimer <= 0){
+        this.state = STATES.PLAYING;
+      }
+      return;
+    }
+    
+    if(this.state !== STATES.PLAYING) return;
+    
+    // 教程计时
+    if(this.tutorial.active){
+      this.tutorial.timer++;
+    }
+    
+    // 掉落脑子
+    this.brainDropTimer++;
+    const brainInterval = this.level === 0 ? 360 : 480; // 教学关更频繁
+    if(this.brainDropTimer >= brainInterval){
+      this.brainDropTimer = 0;
+      const bx = GRID.left + (1+Math.random()*7)*GRID.cw;
+      const by = GRID.top + Math.random()*4*GRID.ch + GRID.ch/2;
+      this.spawnBrain(bx, by);
+    }
+    
+    // 生成植物敌人
+    if(this.spawnQueue.length > 0){
+      this.spawnTimer++;
+      const interval = Math.max(40, 120 - this.level*10 - this.wave*5);
+      if(this.spawnTimer >= interval){
+        this.spawnTimer = 0;
+        const spawn = this.spawnQueue.shift();
+        this.plants.push(new PlantUnit(spawn.type, spawn.row));
+      }
+    }
+    
+    // 更新僵尸
+    this.zombies.forEach(z => z.update(this));
+    this.zombies = this.zombies.filter(z => {
+      if(z.dead){
+        if(this.grid[z.row] && this.grid[z.row][z.col] === z){
+          this.grid[z.row][z.col] = null;
+        }
+        return false;
+      }
+      return true;
+    });
+    
+    // 更新植物
+    this.plants.forEach(p => p.update(this));
+    
+    // 检查植物是否到达左边界
+    this.plants.forEach(p => {
+      if(!p.dead && !p.dying && p.x < GRID.left){
+        // 触发弹弹车
+        const car = this.bouncyCars.find(c => c.row === p.row && !c.activated && !c.used);
+        if(car){
+          car.trigger();
+          this.carsLost++;
+        } else {
+          // 游戏结束
+          this.state = STATES.GAME_OVER;
+          SFX.lose();
+        }
+      }
+    });
+    
+    this.plants = this.plants.filter(p => !p.dead);
+    
+    // 更新弹弹车
+    this.bouncyCars.forEach(c => c.update(this));
+    this.bouncyCars = this.bouncyCars.filter(c => !c.used);
+    
+    // 更新弹道
+    this.projectiles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+    });
+    
+    // 弹道碰撞检测
+    this.projectiles = this.projectiles.filter(p => {
+      if(p.x < -10 || p.x > W+10 || p.y < -10 || p.y > H+10) return false;
+      
+      if(p.fromZombie){
+        // 僵尸弹道 → 打植物
+        for(let plant of this.plants){
+          if(!plant.dead && !plant.dying && Math.hypot(p.x-plant.x, p.y-plant.y) < 25){
+            plant.takeDamage(p.damage, p.type === 'ice');
+            spawnParticles(p.x, p.y, 3, [p.color,'#fff'], [2,4],[1,2],[8,15]);
+            return false;
+          }
+        }
+      } else {
+        // 植物弹道 → 打僵尸
+        for(let z of this.zombies){
+          if(!z.dead && Math.hypot(p.x-z.x, p.y-z.y) < 30){
+            z.takeDamage(p.damage);
+            spawnParticles(p.x, p.y, 3, [p.color,'#fff'], [2,4],[1,2],[8,15]);
+            if(p.type === 'ice') z.flash = 15;
+            return false;
+          }
+        }
+      }
+      return true;
+    });
+    
+    // 更新脑子
+    this.brainDrops.forEach(b => b.update());
+    this.brainDrops = this.brainDrops.filter(b => !b.dead);
+    
+    // 更新墓碑
+    this.tombstones.forEach(t => t.update());
+    
+    // 更新粒子
+    particles.forEach(p => p.update());
+    particles = particles.filter(p => !p.dead);
+    
+    // 更新雨滴
+    if(this.raindrops.length > 0){
+      this.raindrops.forEach(r => {
+        r.y += r.speed;
+        r.x -= r.speed*0.3;
+        if(r.y > H){ r.y = -20; r.x = Math.random()*W; }
+      });
+      this.lightningTimer++;
+      if(this.lightningTimer > 300+Math.random()*300){
+        this.lightningTimer = 0;
+        this.lightningFlash = 10;
+        playTone(60, 0.3, 'sawtooth', 0.08);
+      }
+      if(this.lightningFlash > 0) this.lightningFlash--;
+    }
+    
+    // 检查波次完成
+    if(this.spawnQueue.length === 0 && this.plants.filter(p=>!p.dying).length === 0){
+      const levelDef = LEVELS[this.level];
+      if(this.wave < levelDef.waves.length - 1){
+        // 下一波
+        setTimeout(() => {
+          if(this.state === STATES.PLAYING){
+            this.startWave(this.wave + 1);
+          }
+        }, 1500);
+        // 暂时暂停生成
+        this.state = STATES.PLAYING; // 保持 PLAYING 但不再生成
+        // 标记为已完成这一波
+        this.wave = -99; // 临时标记防止重复触发
+      } else if(this.wave !== -99){
+        // 关卡完成！
+        this.state = STATES.LEVEL_COMPLETE;
+        SFX.win();
+        
+        // 计算星星
+        const stars = this.carsLost === 0 ? 3 : this.carsLost <= 2 ? 2 : 1;
+        this.levelStars[this.level] = Math.max(this.levelStars[this.level], stars);
+        
+        // 解锁下一关
+        if(this.level + 1 < 6){
+          this.unlockedLevels = Math.max(this.unlockedLevels, this.level + 2);
+        }
+        this.saveProgress();
+        
+        // 庆祝粒子
+        for(let i=0;i<5;i++){
+          setTimeout(() => {
+            spawnParticles(200+Math.random()*560, 200+Math.random()*200, 20,
+              ['#f1c40f','#e74c3c','#3498db','#2ecc71','#9b59b6','#fff'],
+              [3,10],[2,6],[30,60],0.05);
+          }, i*300);
+        }
+      }
+    }
+  }
+  
+  // ─── 主渲染循环 ───
+  render(){
+    ctx.clearRect(0,0,W,H);
+    
+    switch(this.state){
+      case STATES.TITLE: this.renderTitle(); break;
+      case STATES.LEVEL_SELECT: this.renderLevelSelect(); break;
+      case STATES.PLAYING:
+      case STATES.WAVE_ANNOUNCE:
+        this.renderGame();
+        if(this.state === STATES.WAVE_ANNOUNCE) this.renderWaveAnnounce();
+        break;
+      case STATES.LEVEL_COMPLETE: this.renderGame(); this.renderLevelComplete(); break;
+      case STATES.GAME_OVER: this.renderGame(); this.renderGameOver(); break;
+    }
+  }
+  
+  // ─── 渲染：标题画面 ───
+  renderTitle(){
+    // 渐变天空
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,'#1a1a2e');
+    grad.addColorStop(0.5,'#16213e');
+    grad.addColorStop(1,'#0f3460');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+    
+    // 月亮
+    ctx.shadowColor='#f1c40f'; ctx.shadowBlur=30;
+    drawCircle(780, 100, 50, '#f1e6b5');
+    ctx.shadowBlur=0;
+    drawCircle(795, 90, 40, '#1a1a2e');
+    
+    // 星星
+    for(let i=0;i<30;i++){
+      const sx = (i*137+this.titleAnim*0.1)%W;
+      const sy = (i*97)%300;
+      const bright = 0.3+Math.sin(this.titleAnim*0.05+i)*0.3;
+      ctx.globalAlpha = bright;
+      drawCircle(sx, sy, 1.5, '#fff');
+    }
+    ctx.globalAlpha=1;
+    
+    // 地面
+    ctx.fillStyle='#1a472a';
+    ctx.fillRect(0, 450, W, 190);
+    ctx.fillStyle='#0d3318';
+    ctx.fillRect(0, 450, W, 5);
+    
+    // 走动的僵尸
+    this.titleZombies.forEach(z => {
+      drawZombieChar(z.type, z.x, z.y, 80, 100, z.frame);
+    });
+    
+    // 标题
+    const titleBob = Math.sin(this.titleAnim*0.03)*8;
+    
+    ctx.save();
+    ctx.translate(W/2, 150 + titleBob);
+    
+    // 标题阴影
+    ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=20; ctx.shadowOffsetY=5;
+    
+    // 标题文字（大）
+    ctx.font='bold 72px "Microsoft YaHei","PingFang SC",sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    
+    // 渐变填充
+    const tg = ctx.createLinearGradient(-200,-30,200,30);
+    tg.addColorStop(0,'#ff6b35');
+    tg.addColorStop(0.5,'#f1c40f');
+    tg.addColorStop(1,'#e74c3c');
+    ctx.fillStyle = tg;
+    ctx.fillText('僵尸大战植物', 0, 0);
+    
+    ctx.shadowBlur=0;
+    
+    // 副标题
+    ctx.font='bold 24px "Microsoft YaHei","PingFang SC",sans-serif';
+    ctx.fillStyle='#ecf0f1';
+    ctx.fillText('🧟 反转大冒险 🌱', 0, 55);
+    
+    ctx.restore();
+    
+    // 戴夫头像和台词
+    const daveY = 300;
+    // 对话框
+    fillRoundRect(W/2-200, daveY-20, 400, 60, 15, 'rgba(255,255,255,0.9)');
+    drawText('疯狂僵王戴夫：我就是那个僵王！', W/2, daveY+10, 18, '#2c3e50');
+    
+    // 开始按钮
+    const btnPulse = 1 + Math.sin(this.titleAnim*0.06)*0.05;
+    ctx.save();
+    ctx.translate(W/2, 490);
+    ctx.scale(btnPulse, btnPulse);
+    const bg = ctx.createLinearGradient(-120,-30,120,30);
+    bg.addColorStop(0,'#27ae60');
+    bg.addColorStop(1,'#2ecc71');
+    ctx.fillStyle = bg;
+    roundRect(-120,-30,240,60,30);
+    ctx.fill();
+    ctx.strokeStyle='#1e8449'; ctx.lineWidth=3;
+    roundRect(-120,-30,240,60,30);
+    ctx.stroke();
+    drawText('🎮 开始游戏', 0, 0, 28, '#fff');
+    ctx.restore();
+    
+    // 版权
+    drawText('牛仔出品 · 专属小游戏', W/2, H-30, 14, 'rgba(255,255,255,0.4)');
+  }
+  
+  // ─── 渲染：关卡选择 ───
+  renderLevelSelect(){
+    // 背景
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,'#0f0c29');
+    grad.addColorStop(0.5,'#302b63');
+    grad.addColorStop(1,'#24243e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+    
+    // 飘浮粒子
+    for(let i=0;i<20;i++){
+      const px = (i*127+this.frame*0.3)%W;
+      const py = (i*83+this.frame*0.2)%H;
+      ctx.globalAlpha = 0.15;
+      drawCircle(px, py, 3+Math.sin(this.frame*0.02+i)*2, '#f1c40f');
+    }
+    ctx.globalAlpha=1;
+    
+    // 标题
+    drawTextWithShadow('选择关卡', W/2, 80, 48, '#f1c40f');
+    
+    // 返回按钮
+    fillRoundRect(20, 20, 100, 40, 12, 'rgba(255,255,255,0.15)');
+    drawText('← 返回', 70, 40, 18, '#ecf0f1');
+    
+    // 关卡卡片
+    const themes = ['day','night','pool','roof','storm','final'];
+    const bgColors = [
+      ['#87ceeb','#90EE90'], // 白天
+      ['#191970','#2c2c54'], // 晚上
+      ['#00bcd4','#4dd0e1'], // 泳池
+      ['#795548','#a1887f'], // 屋顶
+      ['#37474f','#546e7a'], // 暴风雨
+      ['#b71c1c','#e53935'], // 最终
+    ];
+    
+    for(let i=0;i<6;i++){
+      const col = i%3, row = (i/3)|0;
+      const bx = W/2-330+col*220, by = 200+row*170;
+      const unlocked = i < this.unlockedLevels;
+      
+      ctx.save();
+      
+      if(!unlocked){
+        ctx.globalAlpha = 0.4;
+      }
+      
+      // 卡片背景
+      const cg = ctx.createLinearGradient(bx, by, bx+200, by+140);
+      cg.addColorStop(0, bgColors[i][0]);
+      cg.addColorStop(1, bgColors[i][1]);
+      ctx.fillStyle = cg;
+      roundRect(bx, by, 200, 140, 16);
+      ctx.fill();
+      
+      // 边框
+      ctx.strokeStyle = unlocked ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 3;
+      roundRect(bx, by, 200, 140, 16);
+      ctx.stroke();
+      
+      // 关卡名
+      drawText(LEVELS[i].name, bx+100, by+40, 22, '#fff');
+      
+      // 关卡编号
+      drawText(`第 ${i+1} 关`, bx+100, by+70, 16, 'rgba(255,255,255,0.8)');
+      
+      // 星星
+      const stars = this.levelStars[i];
+      for(let s=0;s<3;s++){
+        drawText(s < stars ? '⭐' : '☆', bx+70+s*30, by+110, 24, s<stars?'#f1c40f':'rgba(255,255,255,0.3)');
+      }
+      
+      // 锁
+      if(!unlocked){
+        drawText('🔒', bx+100, by+70, 40, '#fff');
+      }
+      
+      ctx.restore();
+    }
+  }
+  
+  // ─── 渲染：游戏场景 ───
+  renderGame(){
+    const theme = LEVELS[this.level].theme;
+    
+    // 背景
+    this.renderBackground(theme);
+    
+    // 网格
+    this.renderGrid(theme);
+    
+    // 墓碑
+    this.tombstones.forEach(t => t.draw());
+    
+    // 弹弹车
+    this.bouncyCars.forEach(c => c.draw());
+    
+    // 实体（按y排序绘制）
+    const entities = [...this.zombies, ...this.plants].sort((a,b) => a.y - b.y);
+    entities.forEach(e => e.draw());
+    
+    // 弹道
+    this.projectiles.forEach(p => {
+      ctx.save();
+      if(p.type === 'baseball'){
+        ctx.translate(p.x, p.y);
+        ctx.rotate(this.frame*0.3);
+        drawCircle(0,0,p.size,'#fff');
+        ctx.strokeStyle='#c0392b'; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.arc(0,0,p.size*0.7, 0, Math.PI); ctx.stroke();
+      } else if(p.type === 'ice'){
+        drawCircle(p.x, p.y, p.size, '#aed6f1');
+        drawCircle(p.x, p.y, p.size*0.6, '#d4efff');
+      } else {
+        drawCircle(p.x, p.y, p.size, p.color);
+        drawCircle(p.x-1, p.y-1, p.size*0.5, 'rgba(255,255,255,0.5)');
+      }
+      ctx.restore();
+    });
+    
+    // 脑子掉落
+    this.brainDrops.forEach(b => b.draw());
+    
+    // 粒子
+    particles.forEach(p => p.draw());
+    
+    // 雨滴
+    if(this.raindrops.length > 0){
+      ctx.strokeStyle='rgba(150,200,255,0.4)'; ctx.lineWidth=1.5;
+      this.raindrops.forEach(r => {
+        ctx.beginPath();
+        ctx.moveTo(r.x, r.y);
+        ctx.lineTo(r.x - r.length*0.3, r.y + r.length);
+        ctx.stroke();
+      });
+      
+      // 闪电
+      if(this.lightningFlash > 0){
+        ctx.fillStyle = `rgba(255,255,240,${this.lightningFlash*0.04})`;
+        ctx.fillRect(0,0,W,H);
+      }
+    }
+    
+    // HUD
+    this.renderHUD();
+    
+    // 选中的僵尸跟随鼠标
+    if(this.selectedZombie >= 0 && this.state === STATES.PLAYING){
+      const avail = LEVELS[this.level].zombiesAvail;
+      const zType = avail[this.selectedZombie];
+      ctx.globalAlpha = 0.6;
+      drawZombieChar(zType, this.mouseX, this.mouseY, GRID.cw, GRID.ch, this.frame);
+      ctx.globalAlpha = 1;
+      
+      // 高亮悬停的网格
+      const cell = this.getGridCell(this.mouseX, this.mouseY);
+      if(cell && !this.grid[cell.row][cell.col]){
+        const cx = GRID.left + cell.col*GRID.cw;
+        const cy = GRID.top + cell.row*GRID.ch;
+        ctx.fillStyle = 'rgba(46,204,113,0.25)';
+        roundRect(cx+2, cy+2, GRID.cw-4, GRID.ch-4, 6);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(46,204,113,0.6)';
+        ctx.lineWidth = 2;
+        roundRect(cx+2, cy+2, GRID.cw-4, GRID.ch-4, 6);
+        ctx.stroke();
+      }
+    }
+    
+    // 教程
+    if(this.tutorial.active){
+      this.renderTutorial();
+    }
+    
+    // 波次信息
+    if(this.state === STATES.PLAYING && this.wave >= 0){
+      const levelDef = LEVELS[this.level];
+      const waveText = `第 ${this.wave+1}/${levelDef.waves.length} 波`;
+      drawText(waveText, W-80, CARD_Y+CARD_H/2+30, 14, 'rgba(255,255,255,0.7)');
+    }
+  }
+  
+  renderBackground(theme){
+    let skyGrad;
+    switch(theme){
+      case 'day':
+        skyGrad = ctx.createLinearGradient(0,0,0,GRID.top);
+        skyGrad.addColorStop(0,'#87ceeb');
+        skyGrad.addColorStop(1,'#b8e6ff');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0,0,W,GRID.top);
+        ctx.fillStyle='#5a9a3a';
+        ctx.fillRect(0,GRID.top,W,H-GRID.top);
+        // 阳光
+        ctx.shadowColor='#f1c40f'; ctx.shadowBlur=30;
+        drawCircle(850,45,25,'#f1e6b5');
+        ctx.shadowBlur=0;
+        break;
+      case 'night':
+        skyGrad = ctx.createLinearGradient(0,0,0,H);
+        skyGrad.addColorStop(0,'#0a0a2a');
+        skyGrad.addColorStop(1,'#1a1a3a');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0,0,W,H);
+        ctx.fillStyle='#1a3a2a';
+        ctx.fillRect(0,GRID.top,W,H-GRID.top);
+        // 月亮
+        ctx.shadowColor='#f1e6b5'; ctx.shadowBlur=20;
+        drawCircle(820,40,20,'#f1e6b5');
+        ctx.shadowBlur=0;
+        drawCircle(830,35,15,'#0a0a2a');
+        // 星星
+        for(let i=0;i<15;i++){
+          const sx = (i*97+20)%900;
+          const sy = (i*53+10)%70+5;
+          ctx.globalAlpha = 0.5+Math.sin(this.frame*0.03+i)*0.3;
+          drawCircle(sx,sy,1.5,'#fff');
+        }
+        ctx.globalAlpha=1;
+        break;
+      case 'pool':
+        skyGrad = ctx.createLinearGradient(0,0,0,GRID.top);
+        skyGrad.addColorStop(0,'#64b5f6');
+        skyGrad.addColorStop(1,'#90caf9');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0,0,W,GRID.top);
+        ctx.fillStyle='#4a8a3a';
+        ctx.fillRect(0,GRID.top,W,H-GRID.top);
+        // 水行（第2行和第3行）
+        for(let r=1;r<=3;r++){
+          const wy = GRID.top+r*GRID.ch;
+          const waterGrad = ctx.createLinearGradient(0,wy,0,wy+GRID.ch);
+          waterGrad.addColorStop(0,'rgba(30,144,200,0.5)');
+          waterGrad.addColorStop(0.5,'rgba(50,180,230,0.4)');
+          waterGrad.addColorStop(1,'rgba(30,144,200,0.5)');
+          ctx.fillStyle = waterGrad;
+          ctx.fillRect(GRID.left, wy, GRID.cols*GRID.cw, GRID.ch);
+          // 波纹
+          ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1;
+          for(let i=0;i<8;i++){
+            const wx = GRID.left + i*GRID.cw + Math.sin(this.frame*0.05+r+i)*10;
+            ctx.beginPath();
+            ctx.arc(wx+GRID.cw/2, wy+GRID.ch/2, 20+Math.sin(this.frame*0.03+i)*5, 0, Math.PI);
+            ctx.stroke();
+          }
+        }
+        break;
+      case 'roof':
+        ctx.fillStyle='#90a4ae';
+        ctx.fillRect(0,0,W,H);
+        // 屋顶瓦片
+        for(let r=0;r<GRID.rows;r++){
+          for(let c=0;c<GRID.cols;c++){
+            const tx = GRID.left+c*GRID.cw;
+            const ty = GRID.top+r*GRID.ch;
+            ctx.fillStyle = (r+c)%2===0?'#8d6e63':'#a1887f';
+            ctx.fillRect(tx,ty,GRID.cw,GRID.ch);
+            ctx.strokeStyle='rgba(0,0,0,0.1)';
+            ctx.lineWidth=1;
+            ctx.strokeRect(tx,ty,GRID.cw,GRID.ch);
+          }
+        }
+        // 天空
+        skyGrad = ctx.createLinearGradient(0,0,0,GRID.top);
+        skyGrad.addColorStop(0,'#78909c');
+        skyGrad.addColorStop(1,'#b0bec5');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0,0,W,GRID.top);
+        break;
+      case 'storm':
+        skyGrad = ctx.createLinearGradient(0,0,0,H);
+        skyGrad.addColorStop(0,'#1a1a2e');
+        skyGrad.addColorStop(1,'#263238');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0,0,W,H);
+        ctx.fillStyle='#1e3a2e';
+        ctx.fillRect(0,GRID.top,W,H-GRID.top);
+        break;
+      case 'final':
+        skyGrad = ctx.createLinearGradient(0,0,0,H);
+        skyGrad.addColorStop(0,'#4a0000');
+        skyGrad.addColorStop(0.5,'#8b0000');
+        skyGrad.addColorStop(1,'#2a0000');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0,0,W,H);
+        ctx.fillStyle='#2a3a1a';
+        ctx.fillRect(0,GRID.top,W,H-GRID.top);
+        // 火焰粒子效果
+        for(let i=0;i<8;i++){
+          const fx = (i*140+this.frame*0.5)%W;
+          const fy = GRID.top - 10 + Math.sin(this.frame*0.05+i)*5;
+          ctx.globalAlpha = 0.3;
+          drawCircle(fx, fy, 4+Math.sin(this.frame*0.1+i)*2, '#ff6b35');
+        }
+        ctx.globalAlpha=1;
+        break;
+    }
+    
+    // 云朵（日间/泳池关卡）
+    if(theme === 'day' || theme === 'pool'){
+      this.clouds.forEach(c => {
+        ctx.fillStyle='rgba(255,255,255,0.7)';
+        drawEllipse(c.x, c.y, c.w*0.5, 12, 'rgba(255,255,255,0.7)');
+        drawEllipse(c.x-c.w*0.2, c.y-5, c.w*0.3, 10, 'rgba(255,255,255,0.6)');
+        drawEllipse(c.x+c.w*0.2, c.y-3, c.w*0.25, 8, 'rgba(255,255,255,0.5)');
+      });
+    }
+  }
+  
+  renderGrid(theme){
+    // 网格线
+    for(let r=0;r<=GRID.rows;r++){
+      const y = GRID.top + r*GRID.ch;
+      ctx.strokeStyle = theme==='night'||theme==='storm'||theme==='final' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+      ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(GRID.left, y); ctx.lineTo(GRID.left+GRID.cols*GRID.cw, y); ctx.stroke();
+    }
+    for(let c=0;c<=GRID.cols;c++){
+      const x = GRID.left + c*GRID.cw;
+      ctx.beginPath(); ctx.moveTo(x, GRID.top); ctx.lineTo(x, GRID.top+GRID.rows*GRID.ch); ctx.stroke();
+    }
+    
+    // 草地格子（日间主题交替颜色）
+    if(theme === 'day' || theme === 'pool'){
+      for(let r=0;r<GRID.rows;r++){
+        for(let c=0;c<GRID.cols;c++){
+          if((r+c)%2===0){
+            ctx.fillStyle='rgba(80,160,60,0.15)';
+            ctx.fillRect(GRID.left+c*GRID.cw, GRID.top+r*GRID.ch, GRID.cw, GRID.ch);
+          }
+        }
+      }
+    }
+  }
+  
+  renderHUD(){
+    // 顶部栏背景
+    const hudGrad = ctx.createLinearGradient(0,0,0,CARD_Y+CARD_H+5);
+    hudGrad.addColorStop(0,'rgba(20,20,30,0.9)');
+    hudGrad.addColorStop(1,'rgba(20,20,30,0.7)');
+    ctx.fillStyle = hudGrad;
+    ctx.fillRect(0, 0, W, CARD_Y+CARD_H+5);
+    
+    // 僵尸卡片
+    const avail = LEVELS[this.level].zombiesAvail;
+    for(let i=0;i<avail.length;i++){
+      const zType = avail[i];
+      const zDef = ZOMBIE_TYPES[zType];
+      const cx = CARD_X + i*(CARD_W+CARD_GAP);
+      const cy = CARD_Y;
+      const isSelected = this.selectedZombie === i;
+      const canAfford = this.brains >= zDef.cost;
+      
+      // 卡片背景
+      if(isSelected){
+        fillRoundRect(cx, cy, CARD_W, CARD_H, 8, 'rgba(46,204,113,0.4)');
+        strokeRoundRect(cx, cy, CARD_W, CARD_H, 8, '#2ecc71', 3);
+      } else {
+        fillRoundRect(cx, cy, CARD_W, CARD_H, 8, canAfford ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)');
+        strokeRoundRect(cx, cy, CARD_W, CARD_H, 8, canAfford ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)', 2);
+      }
+      
+      // 僵尸小图
+      ctx.save();
+      if(!canAfford) ctx.globalAlpha = 0.4;
+      drawZombieChar(zType, cx+CARD_W/2, cy+CARD_H/2-6, CARD_W, CARD_H-10, this.frame, true);
+      ctx.restore();
+      
+      // 费用
+      const costBg = canAfford ? 'rgba(255,100,150,0.8)' : 'rgba(100,100,100,0.8)';
+      fillRoundRect(cx+4, cy+CARD_H-18, CARD_W-8, 16, 4, costBg);
+      drawText(`🧠${zDef.cost}`, cx+CARD_W/2, cy+CARD_H-10, 11, '#fff');
+    }
+    
+    // 脑子计数器
+    const brainX = W - 120;
+    fillRoundRect(brainX, CARD_Y+5, 110, 35, 12, 'rgba(255,100,150,0.3)');
+    strokeRoundRect(brainX, CARD_Y+5, 110, 35, 12, 'rgba(255,100,150,0.5)', 2);
+    // 脑子图标
+    drawCircle(brainX+20, CARD_Y+22, 12, '#ff88aa');
+    drawCircle(brainX+20, CARD_Y+22, 9, '#ff99bb');
+    drawText(`${this.brains}`, brainX+70, CARD_Y+22, 20, '#fff');
+    
+    // 关卡名
+    drawText(LEVELS[this.level].name, W/2, CARD_Y+CARD_H/2, 16, 'rgba(255,255,255,0.6)');
+  }
+  
+  // ─── 渲染：波次公告 ───
+  renderWaveAnnounce(){
+    // 半透明遮罩
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0,0,W,H);
+    
+    // 公告文字（缩放动画）
+    const t = 1 - this.announceTimer/120;
+    const scale = t < 0.2 ? t/0.2 * 1.2 : t < 0.3 ? 1.2 - (t-0.2)/0.1*0.2 : 1;
+    
+    ctx.save();
+    ctx.translate(W/2, H/2);
+    ctx.scale(scale, scale);
+    
+    const isLast = this.announceText.includes('最后');
+    
+    if(isLast){
+      // 最后一波 - 红色警报效果
+      drawTextWithShadow(this.announceText, 0, 0, 52, '#ff4444', 'rgba(0,0,0,0.8)');
+      // 闪烁
+      if(this.announceTimer%20 < 10){
+        ctx.fillStyle='rgba(255,0,0,0.1)';
+        ctx.fillRect(-W/2,-H/2,W,H);
+      }
+    } else {
+      drawTextWithShadow(this.announceText, 0, -10, 48, '#f1c40f', 'rgba(0,0,0,0.8)');
+      drawText('准备好了吗？', 0, 40, 24, 'rgba(255,255,255,0.8)');
+    }
+    
+    ctx.restore();
+  }
+  
+  // ─── 渲染：关卡完成 ───
+  renderLevelComplete(){
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0,0,W,H);
+    
+    // 更新和绘制粒子
+    particles.forEach(p => { p.update(); p.draw(); });
+    particles = particles.filter(p => !p.dead);
+    
+    // 胜利面板
+    fillRoundRect(W/2-220, 130, 440, 430, 24, 'rgba(30,30,50,0.95)');
+    strokeRoundRect(W/2-220, 130, 440, 430, 24, 'rgba(241,196,15,0.5)', 3);
+    
+    drawTextWithShadow('🎉 太棒了！🎉', W/2, 190, 44, '#f1c40f');
+    drawText(`${LEVELS[this.level].name} 通关！`, W/2, 250, 24, '#ecf0f1');
+    
+    // 星星
+    const stars = this.levelStars[this.level];
+    for(let i=0;i<3;i++){
+      const sx = W/2-60+i*60;
+      const starScale = 1 + (i<stars ? Math.sin(this.frame*0.05+i)*0.1 : 0);
+      ctx.save();
+      ctx.translate(sx, 320);
+      ctx.scale(starScale, starScale);
+      drawText(i<stars?'⭐':'☆', 0, 0, 48, i<stars?'#f1c40f':'#555');
+      ctx.restore();
+    }
+    
+    // 评语
+    const msgs = ['完美通关！你太厉害了！','干得漂亮！继续加油！','通关了！再试试能拿满星！'];
+    drawText(msgs[Math.min(stars-1, 2)], W/2, 380, 18, 'rgba(255,255,255,0.8)');
+    
+    // 按钮
+    if(this.level < 5){
+      const bg1 = ctx.createLinearGradient(W/2-100, 440, W/2+100, 490);
+      bg1.addColorStop(0,'#27ae60'); bg1.addColorStop(1,'#2ecc71');
+      ctx.fillStyle = bg1;
+      roundRect(W/2-100, 440, 200, 50, 25); ctx.fill();
+      drawText('下一关 ➡️', W/2, 465, 22, '#fff');
+    }
+    
+    fillRoundRect(W/2-100, 500, 200, 50, 25, 'rgba(255,255,255,0.15)');
+    drawText('返回选关', W/2, 525, 20, '#ecf0f1');
+  }
+  
+  // ─── 渲染：游戏结束 ───
+  renderGameOver(){
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0,0,W,H);
+    
+    fillRoundRect(W/2-200, 180, 400, 360, 24, 'rgba(40,20,20,0.95)');
+    strokeRoundRect(W/2-200, 180, 400, 360, 24, 'rgba(231,76,60,0.5)', 3);
+    
+    drawTextWithShadow('💀 哎呀！', W/2, 240, 48, '#e74c3c');
+    drawText('植物突破了防线！', W/2, 300, 24, '#ecf0f1');
+    drawText('别灰心，再来一次！', W/2, 340, 18, 'rgba(255,255,255,0.7)');
+    
+    // 重试按钮
+    const bg1 = ctx.createLinearGradient(W/2-100, 400, W/2+100, 450);
+    bg1.addColorStop(0,'#e67e22'); bg1.addColorStop(1,'#f39c12');
+    ctx.fillStyle = bg1;
+    roundRect(W/2-100, 400, 200, 50, 25); ctx.fill();
+    drawText('🔄 再来一次', W/2, 425, 22, '#fff');
+    
+    fillRoundRect(W/2-100, 460, 200, 50, 25, 'rgba(255,255,255,0.15)');
+    drawText('返回选关', W/2, 485, 20, '#ecf0f1');
+  }
+  
+  // ─── 渲染：教程 ───
+  renderTutorial(){
+    if(!this.tutorial.active) return;
+    
+    const step = this.tutorial.step;
+    let tipText = '';
+    let arrowX = 0, arrowY = 0, showArrow = false;
+    
+    switch(step){
+      case 0:
+        tipText = '👆 先点击上面的「向日葵僵尸」卡片！它能帮你生产脑子！';
+        arrowX = CARD_X + 1*(CARD_W+CARD_GAP) + CARD_W/2;
+        arrowY = CARD_Y + CARD_H + 20;
+        showArrow = true;
+        break;
+      case 1:
+        tipText = '👇 好的！现在点击草地上的格子来放置僵尸！';
+        arrowX = GRID.left + 1*GRID.cw + GRID.cw/2;
+        arrowY = GRID.top + 2*GRID.ch - 10;
+        showArrow = true;
+        break;
+      case 2:
+        if(this.tutorial.timer < 180){
+          tipText = '🎉 太棒了！再放一些豌豆僵尸来攻击植物吧！点击第一张卡片！';
+        } else {
+          tipText = '💡 提示：点击脑子🧠可以收集资源，用来放更多僵尸！';
+          if(this.tutorial.timer > 360){
+            this.tutorial.active = false;
+          }
+        }
+        break;
+    }
+    
+    if(tipText){
+      // 提示气泡
+      const bubbleW = Math.min(tipText.length * 16, 600);
+      const bubbleX = W/2 - bubbleW/2;
+      const bubbleY = H - 80;
+      
+      fillRoundRect(bubbleX, bubbleY, bubbleW, 50, 12, 'rgba(0,0,0,0.85)');
+      strokeRoundRect(bubbleX, bubbleY, bubbleW, 50, 12, 'rgba(241,196,15,0.6)', 2);
+      drawText(tipText, W/2, bubbleY+25, 16, '#fff');
+    }
+    
+    if(showArrow){
+      // 闪烁箭头
+      const bounce = Math.sin(this.frame*0.1)*8;
+      ctx.globalAlpha = 0.5+Math.sin(this.frame*0.08)*0.3;
+      
+      ctx.fillStyle='#f1c40f';
+      ctx.beginPath();
+      ctx.moveTo(arrowX, arrowY+bounce);
+      ctx.lineTo(arrowX-12, arrowY-18+bounce);
+      ctx.lineTo(arrowX+12, arrowY-18+bounce);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.globalAlpha=1;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// 初始化和主循环
+// ═══════════════════════════════════════════════════
+const game = new Game();
+
+// 输入事件
+function handlePointer(e){
+  e.preventDefault();
+  const pos = canvasCoord(e);
+  game.handleClick(pos.x, pos.y);
+}
+
+function handleMove(e){
+  e.preventDefault();
+  let pos;
+  if(e.touches){
+    pos = canvasCoord(e);
+  } else {
+    pos = canvasCoord(e);
+  }
+  game.handleMouseMove(pos.x, pos.y);
+}
+
+canvas.addEventListener('click', handlePointer);
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  if(e.changedTouches.length > 0){
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.changedTouches[0].clientX - rect.left) * W / rect.width;
+    const y = (e.changedTouches[0].clientY - rect.top) * H / rect.height;
+    game.handleClick(x, y);
+  }
+});
+canvas.addEventListener('mousemove', handleMove);
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if(e.touches.length > 0){
+    handleMove(e);
+  }
+}, {passive:false});
+
+// 右键取消选择
+canvas.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  game.selectedZombie = -1;
+});
+
+// 主循环
+function gameLoop(){
+  game.update();
+  game.render();
+  requestAnimationFrame(gameLoop);
+}
+gameLoop();
+
+})();
+</script>
+</body>
+</html>
