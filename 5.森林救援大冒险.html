@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>森林救援大冒险 · 5岁小勇士专属版</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b1307;
+      font-family: 'Segoe UI', Microsoft YaHei, Arial, sans-serif;
+      color: #fff;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #111d0e;
+    }
+
+    canvas {
+      display: block;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+      background-color: #1c2e17;
+    }
+
+    /* Modern Overlay UI */
+    .ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px;
+      z-index: 10;
+    }
+
+    /* Top Status Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      pointer-events: auto;
+    }
+
+    .status-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .badge-card {
+      background: rgba(20, 30, 15, 0.85);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 215, 0, 0.6);
+      border-radius: 20px;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffeb3b;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    }
+
+    .badge-icon {
+      font-size: 24px;
+    }
+
+    .progress-bar-box {
+      width: 120px;
+      height: 14px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1.5px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff9800, #4caf50);
+      width: 100%;
+      transition: width 0.3s ease;
+    }
+
+    /* Dynamic Mission Objective Hint Banner */
+    .banner-hint {
+      position: absolute;
+      top: 75px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, rgba(255, 152, 0, 0.95), rgba(255, 87, 34, 0.95));
+      border: 3px solid #fff;
+      border-radius: 30px;
+      padding: 10px 24px;
+      font-size: 20px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      box-shadow: 0 10px 25px rgba(255, 152, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: pulseGlow 2s infinite ease-in-out;
+      pointer-events: auto;
+      white-space: nowrap;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 10px 25px rgba(255, 152, 0, 0.5); }
+      50% { transform: translateX(-50%) scale(1.05); box-shadow: 0 15px 35px rgba(255, 235, 59, 0.8); }
+    }
+
+    /* Subtitles Speech Box */
+    .speech-box {
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 15, 8, 0.9);
+      border: 3px solid #76ff03;
+      border-radius: 20px;
+      padding: 12px 28px;
+      font-size: 22px;
+      font-weight: 900;
+      color: #b2ff59;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      gap: 12px;
+      z-index: 20;
+    }
+
+    .speech-box.active {
+      display: flex;
+      animation: popIn 0.3s ease;
+    }
+
+    @keyframes popIn {
+      0% { transform: translateX(-50%) scale(0.7); opacity: 0; }
+      100% { transform: translateX(-50%) scale(1); opacity: 1; }
+    }
+
+    /* Bottom Control Bar / Mobile Virtual Joystick & Buttons */
+    .bottom-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      width: 100%;
+      pointer-events: auto;
+    }
+
+    /* Action Buttons Box */
+    .action-buttons {
+      display: flex;
+      gap: 16px;
+    }
+
+    .btn-act {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      border: 4px solid #fff;
+      font-size: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5), inset 0 3px 5px rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    .btn-act:active {
+      transform: scale(0.88);
+    }
+
+    .btn-act.attack {
+      background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    }
+
+    .btn-act.eat {
+      background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+      position: relative;
+    }
+
+    .btn-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: #ffeb3b;
+      color: #000;
+      font-size: 14px;
+      font-weight: 900;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 2px solid #fff;
+    }
+
+    /* D-Pad for Mobile Touch */
+    .dpad-container {
+      width: 140px;
+      height: 140px;
+      position: relative;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      touch-action: none;
+    }
+
+    .dpad-stick {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #ffeb3b 0%, #ff9800 100%);
+      border: 3px solid #fff;
+      border-radius: 50%;
+      position: absolute;
+      top: 45px;
+      left: 45px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      pointer-events: none;
+    }
+
+    /* Victory Modal Overlay */
+    .victory-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(10, 20, 8, 0.92);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .victory-modal.active {
+      display: flex;
+      animation: zoomIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes zoomIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .victory-title {
+      font-size: 52px;
+      font-weight: 900;
+      background: linear-gradient(90deg, #ffeb3b, #ff9800, #76ff03, #00e676);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+      text-shadow: 0 4px 20px rgba(255, 235, 59, 0.5);
+    }
+
+    .victory-desc {
+      font-size: 24px;
+      color: #e0f2f1;
+      margin-bottom: 30px;
+      max-width: 600px;
+      line-height: 1.5;
+    }
+
+    .restart-btn {
+      background: linear-gradient(180deg, #76ff03 0%, #388e3c 100%);
+      color: #0b3800;
+      font-size: 28px;
+      font-weight: 900;
+      padding: 16px 48px;
+      border: 4px solid #fff;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(118, 255, 3, 0.6);
+      transition: transform 0.2s ease;
+    }
+
+    .restart-btn:hover {
+      transform: scale(1.08);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Modern UI Layer -->
+    <div class="ui-layer">
+      <!-- Top Status Info -->
+      <div class="top-bar">
+        <div class="status-group">
+          <!-- Rescued Kids Badge -->
+          <div class="badge-card">
+            <span class="badge-icon">👧</span>
+            <span>已救小孩: <span id="saved-count" style="color:#76ff03;">0</span> / 4</span>
+          </div>
+
+          <!-- Wood Count Badge -->
+          <div class="badge-card">
+            <span class="badge-icon">🪵</span>
+            <span>木材: <span id="wood-count" style="color:#ffb74d;">0</span></span>
+          </div>
+
+          <!-- Meat Count Badge -->
+          <div class="badge-card">
+            <span class="badge-icon">🍖</span>
+            <span>烤肉: <span id="meat-count" style="color:#ff5252;">0</span></span>
+          </div>
+        </div>
+
+        <div class="status-group">
+          <!-- Camp Fire Heat / Light Fuel Status -->
+          <div class="badge-card">
+            <span class="badge-icon">🔥</span>
+            <span>篝火光芒:</span>
+            <div class="progress-bar-box">
+              <div class="progress-fill" id="fire-fuel-bar"></div>
+            </div>
+          </div>
+
+          <!-- Current Weapon -->
+          <div class="badge-card" style="border-color:#40c4ff;">
+            <span class="badge-icon" id="weapon-icon">🗡️</span>
+            <span id="weapon-name" style="color:#80d8ff;">小木棍/宝剑</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Mission Objective Pointer Banner -->
+      <div class="banner-hint" id="hint-banner">
+        <span>🎯</span> <span id="hint-text">跟随金色指引箭头，寻找第一个笼子救救小孩吧！</span>
+      </div>
+
+      <!-- TTS Voice Subtitle Box -->
+      <div class="speech-box" id="speech-box">
+        <span style="font-size:32px;">🧚</span>
+        <span id="speech-text">小勇士，加油！我们一起去救小伙伴！</span>
+      </div>
+
+      <!-- Bottom Control Bar -->
+      <div class="bottom-bar">
+        <!-- Touch D-Pad for Mobile/Pad -->
+        <div class="dpad-container" id="dpad">
+          <div class="dpad-stick" id="dpad-stick"></div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <div class="btn-act eat" id="btn-eat" title="吃肉肉加速">
+            🍖
+            <div class="btn-badge" id="meat-badge">0</div>
+          </div>
+          <div class="btn-act" id="btn-trap" title="放捕兽夹防坏人">
+            🪤
+          </div>
+          <div class="btn-act attack" id="btn-attack" title="攻击/砍树">
+            ⚔️
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Victory Screen Modal -->
+    <div class="victory-modal" id="victory-modal">
+      <div style="font-size: 80px; margin-bottom: 10px;">🎉 🏆 🌟</div>
+      <div class="victory-title">太棒了！超级小勇士！</div>
+      <div class="victory-desc" id="victory-desc">
+        你打败了神秘大鹿，搜救了全部 4 个可爱的小朋友！<br>
+        营地的篝火温暖地燃烧着，大家都向你伸出了大拇指！
+      </div>
+      <button class="restart-btn" onclick="initGame()">再玩一次 🚀</button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // Web Audio API Audio Synthesizer Engine
+    // ==========================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.isMuted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playChop() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.12);
+      }
+
+      playSwing() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.15);
+      }
+
+      playChestOpen() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const freqs = [300, 400, 500, 700, 900];
+        freqs.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + i * 0.06);
+          gain.gain.setValueAtTime(0.2, now + i * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.06 + 0.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.06);
+          osc.stop(now + i * 0.06 + 0.2);
+        });
+      }
+
+      playRescueKid() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now + i * 0.1);
+          gain.gain.setValueAtTime(0.35, now + i * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.1);
+          osc.stop(now + i * 0.1 + 0.3);
+        });
+      }
+
+      playEatMeat() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.2);
+      }
+
+      playDeerScared() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.4);
+      }
+
+      playVictory() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const melody = [
+          { f: 523.25, d: 0.2 }, { f: 659.25, d: 0.2 }, { f: 783.99, d: 0.2 },
+          { f: 1046.50, d: 0.5 }, { f: 880.00, d: 0.2 }, { f: 1046.50, d: 0.6 }
+        ];
+        let t = now;
+        melody.forEach(item => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(item.f, t);
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + item.d);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + item.d);
+          t += item.d;
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // Voice Speech synthesis helper
+    function speakText(text) {
+      const speechBox = document.getElementById('speech-box');
+      const speechText = document.getElementById('speech-text');
+      speechText.innerText = text;
+      speechBox.classList.add('active');
+      setTimeout(() => { speechBox.classList.remove('active'); }, 3500);
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'zh-CN';
+        msg.rate = 1.0;
+        msg.pitch = 1.2;
+        window.speechSynthesis.speak(msg);
+      }
+    }
+
+    // ==========================================
+    // Game Canvas Engine & State Management
+    // ==========================================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const MAP_WIDTH = 2600;
+    const MAP_HEIGHT = 2600;
+
+    let camera = { x: 0, y: 0 };
+    let player = {
+      x: 400,
+      y: 400,
+      radius: 20,
+      speed: 4.5,
+      baseSpeed: 4.5,
+      angle: 0,
+      hasSword: false,
+      hasGun: false,
+      isTrapped: false,
+      trappedTimer: 0,
+      hunger: 100, // 100 max hunger
+      speedBoostTimer: 0
+    };
+
+    let camp = {
+      x: 400,
+      y: 400,
+      fireFuel: 100,
+      fireRadius: 280,
+      workbenchX: 470,
+      workbenchY: 360,
+      tentX: 330,
+      tentY: 340
+    };
+
+    let aiCompanion = {
+      x: 370,
+      y: 370,
+      targetX: 370,
+      targetY: 370,
+      active: false,
+      textBubble: ""
+    };
+
+    let inventory = {
+      savedKidsCount: 0,
+      wood: 5,
+      meat: 2,
+      placedTraps: [] // Array of {x, y}
+    };
+
+    let trees = [];
+    let animals = [];
+    let badGuys = [];
+    let chests = [];
+    let cages = [];
+    let netTraps = [];
+    let scaryDeer = {
+      x: 1800,
+      y: 1800,
+      active: false,
+      state: 'stalking', // 'stalking' or 'fleeing'
+      scaredTimer: 0
+    };
+
+    let dayNightCycle = 0; // 0 to 1 cycle
+    let isNight = false;
+    let particles = [];
+    let keyState = {};
+    let joystickVector = { x: 0, y: 0 };
+
+    // Initialize Game Map Objects
+    function initGame() {
+      sound.init();
+      document.getElementById('victory-modal').classList.remove('active');
+
+      player.x = camp.x + 40;
+      player.y = camp.y + 40;
+      player.hasSword = false;
+      player.hasGun = false;
+      player.isTrapped = false;
+      player.hunger = 100;
+
+      inventory.savedKidsCount = 0;
+      inventory.wood = 5;
+      inventory.meat = 2;
+      inventory.placedTraps = [];
+
+      camp.fireFuel = 100;
+
+      // Populate Trees
+      trees = [];
+      for (let i = 0; i < 90; i++) {
+        let tx = Math.random() * (MAP_WIDTH - 200) + 100;
+        let ty = Math.random() * (MAP_HEIGHT - 200) + 100;
+        if (Math.hypot(tx - camp.x, ty - camp.y) > 300) {
+          trees.push({ x: tx, y: ty, hp: 3, radius: 26 });
+        }
+      }
+
+      // Populate 4 Cages with Kids
+      cages = [
+        { id: 1, x: 700, y: 1200, opened: false, kidSaved: false },
+        { id: 2, x: 1900, y: 600, opened: false, kidSaved: false },
+        { id: 3, x: 2100, y: 1900, opened: false, kidSaved: false },
+        { id: 4, x: 800, y: 2200, opened: false, kidSaved: false }
+      ];
+
+      // Populate Animals
+      animals = [
+        { type: 'rabbit', x: 600, y: 500, hp: 1, speed: 2, dirX: 1, dirY: 0 },
+        { type: 'rabbit', x: 1200, y: 800, hp: 1, speed: 2, dirX: 0, dirY: 1 },
+        { type: 'bear', x: 1500, y: 1400, hp: 3, speed: 1.2, dirX: 1, dirY: 1 },
+        { type: 'wolf', x: 1000, y: 1800, hp: 2, speed: 1.8, dirX: -1, dirY: 0 }
+      ];
+
+      // Populate Chests
+      chests = [
+        { x: 900, y: 400, opened: false, reward: 'sword' },
+        { x: 1600, y: 1100, opened: false, reward: 'gun' },
+        { x: 1200, y: 2100, opened: false, reward: 'meat' }
+      ];
+
+      // Populate Net Traps in Forest
+      netTraps = [
+        { x: 1000, y: 700, triggered: false },
+        { x: 1700, y: 1600, triggered: false },
+        { x: 600, y: 1700, triggered: false }
+      ];
+
+      badGuys = [];
+
+      updateUI();
+      speakText("欢迎来到森林大冒险！我是你的AI小伙伴，快去寻找被关押在笼子里的4个小朋友吧！");
+    }
+
+    // Update HTML UI Badges
+    function updateUI() {
+      document.getElementById('saved-count').innerText = inventory.savedKidsCount;
+      document.getElementById('wood-count').innerText = inventory.wood;
+      document.getElementById('meat-count').innerText = inventory.meat;
+      document.getElementById('meat-badge').innerText = inventory.meat;
+
+      document.getElementById('fire-fuel-bar').style.width = Math.max(0, camp.fireFuel) + '%';
+
+      const wIcon = document.getElementById('weapon-icon');
+      const wName = document.getElementById('weapon-name');
+      if (player.hasGun) {
+        wIcon.innerText = '🪄';
+        wName.innerText = '魔法枪';
+      } else if (player.hasSword) {
+        wIcon.innerText = '⚔️';
+        wName.innerText = '英雄宝剑';
+      } else {
+        wIcon.innerText = '🪵';
+        wName.innerText = '小木棍';
+      }
+
+      // Dynamic Hint Arrow System Banner
+      const hintText = document.getElementById('hint-text');
+      if (inventory.savedKidsCount === 0) {
+        hintText.innerText = "🎯 第一步：跟随机光指引，寻找第一个笼子里的第 1 位小朋友！";
+      } else if (inventory.savedKidsCount < 4) {
+        hintText.innerText = `🎯 加油！已救出 ${inventory.savedKidsCount} 位小朋友，快去找下一个笼子！`;
+      } else {
+        hintText.innerText = "⛺ 太棒啦！4位小朋友全部救出，护送他们回到营地帐篷触发大胜利！";
+      }
+    }
+
+    // Keyboard Listeners
+    window.addEventListener('keydown', e => {
+      keyState[e.code] = true;
+      if (e.code === 'Space') performAttack();
+    });
+    window.addEventListener('keyup', e => {
+      keyState[e.code] = false;
+    });
+
+    // Touch D-Pad Logic
+    const dpad = document.getElementById('dpad');
+    const dpadStick = document.getElementById('dpad-stick');
+    let isDpadTouching = false;
+
+    dpad.addEventListener('pointerdown', e => {
+      isDpadTouching = true;
+      updateDpad(e);
+    });
+    window.addEventListener('pointermove', e => {
+      if (isDpadTouching) updateDpad(e);
+    });
+    window.addEventListener('pointerup', () => {
+      isDpadTouching = false;
+      joystickVector = { x: 0, y: 0 };
+      dpadStick.style.transform = 'translate(0px, 0px)';
+    });
+
+    function updateDpad(e) {
+      const rect = dpad.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      let dx = e.clientX - centerX;
+      let dy = e.clientY - centerY;
+      let dist = Math.hypot(dx, dy);
+      let maxDist = 45;
+      if (dist > maxDist) {
+        dx = (dx / dist) * maxDist;
+        dy = (dy / dist) * maxDist;
+      }
+      dpadStick.style.transform = `translate(${dx}px, ${dy}px)`;
+      joystickVector = { x: dx / maxDist, y: dy / maxDist };
+    }
+
+    // Action Button Listeners
+    document.getElementById('btn-attack').addEventListener('click', () => {
+      sound.init();
+      performAttack();
+    });
+    document.getElementById('btn-eat').addEventListener('click', () => {
+      sound.init();
+      eatMeat();
+    });
+    document.getElementById('btn-trap').addEventListener('click', () => {
+      sound.init();
+      placeTrap();
+    });
+
+    // Eat Meat Functionality
+    function eatMeat() {
+      if (inventory.meat > 0) {
+        inventory.meat--;
+        player.hunger = 100;
+        player.speedBoostTimer = 300; // 5 seconds speed boost
+        sound.playEatMeat();
+        speakText("香喷喷的烤肉真好吃！跑得更快啦！");
+        createParticles(player.x, player.y, '#76ff03', 15);
+        updateUI();
+      } else {
+        speakText("没有烤肉啦！快去森林里打野兔或者小熊拿烤肉吧！");
+      }
+    }
+
+    // Place Bear Trap near Camp/Player
+    function placeTrap() {
+      if (inventory.wood >= 1) {
+        inventory.wood--;
+        inventory.placedTraps.push({ x: player.x, y: player.y });
+        sound.playChop();
+        speakText("布置了一个捕兽夹！坏人踩到就会被夹住啦！");
+        updateUI();
+      } else {
+        speakText("需要 1 个木材才能在工作台制作捕兽夹哦，快去砍树吧！");
+      }
+    }
+
+    // Perform Attack / Interaction
+    function performAttack() {
+      sound.playSwing();
+
+      // Check chopping trees
+      trees.forEach(tree => {
+        if (Math.hypot(player.x - tree.x, player.y - tree.y) < tree.radius + 35) {
+          tree.hp--;
+          sound.playChop();
+          createParticles(tree.x, tree.y, '#8d6e63', 8);
+          if (tree.hp <= 0) {
+            inventory.wood += 2;
+            camp.fireFuel = Math.min(100, camp.fireFuel + 25);
+            createParticles(tree.x, tree.y, '#4caf50', 15);
+            speakText("获得木材！已经给营地篝火添柴啦！");
+            updateUI();
+          }
+        }
+      });
+
+      // Filter out destroyed trees
+      trees = trees.filter(t => t.hp > 0);
+
+      // Check Attack Animals
+      animals.forEach(anim => {
+        if (Math.hypot(player.x - anim.x, player.y - anim.y) < 55) {
+          anim.hp--;
+          createParticles(anim.x, anim.y, '#ff5252', 10);
+          if (anim.hp <= 0) {
+            inventory.meat += 2;
+            speakText("拿到香喷喷的烤肉啦！肚子饿时可以吃肉恢复速度！");
+            updateUI();
+          }
+        }
+      });
+      animals = animals.filter(a => a.hp > 0);
+
+      // Check Attack Bad Guys
+      badGuys.forEach(bg => {
+        if (Math.hypot(player.x - bg.x, player.y - bg.y) < 60) {
+          bg.hp--;
+          createParticles(bg.x, bg.y, '#ff9800', 10);
+        }
+      });
+      badGuys = badGuys.filter(b => b.hp > 0);
+
+      // Check Ranged magic attack if player has gun
+      if (player.hasGun) {
+        const shootDist = 250;
+        let targetX = player.x + Math.cos(player.angle) * shootDist;
+        let targetY = player.y + Math.sin(player.angle) * shootDist;
+        createParticles(targetX, targetY, '#00e676', 12);
+
+        animals.forEach(anim => {
+          if (Math.hypot(targetX - anim.x, targetY - anim.y) < 60) {
+            anim.hp = 0;
+            inventory.meat += 2;
+            updateUI();
+          }
+        });
+        animals = animals.filter(a => a.hp > 0);
+      }
+    }
+
+    // Helper Particles System
+    function createParticles(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 6,
+          vy: (Math.random() - 0.5) * 6,
+          size: Math.random() * 6 + 3,
+          color: color,
+          alpha: 1,
+          life: 30
+        });
+      }
+    }
+
+    // Update Game Frame Cycle
+    function update() {
+      // Day-Night Cycle Update
+      dayNightCycle = (dayNightCycle + 0.0003) % 1;
+      isNight = dayNightCycle > 0.5;
+
+      // Camp Fire Fuel slowly drops
+      camp.fireFuel -= 0.02;
+      if (camp.fireFuel < 0) camp.fireFuel = 0;
+      camp.fireRadius = 150 + (camp.fireFuel / 100) * 180;
+
+      // Player Movement Logic
+      let moveX = 0;
+      let moveY = 0;
+
+      if (keyState['KeyW'] || keyState['ArrowUp']) moveY -= 1;
+      if (keyState['KeyS'] || keyState['ArrowDown']) moveY += 1;
+      if (keyState['KeyA'] || keyState['ArrowLeft']) moveX -= 1;
+      if (keyState['KeyD'] || keyState['ArrowRight']) moveX += 1;
+
+      if (joystickVector.x !== 0 || joystickVector.y !== 0) {
+        moveX = joystickVector.x;
+        moveY = joystickVector.y;
+      }
+
+      if (player.isTrapped) {
+        moveX = 0;
+        moveY = 0;
+        player.trappedTimer--;
+        if (player.trappedTimer <= 0) {
+          player.isTrapped = false;
+        }
+      }
+
+      // Speed Modifier based on Hunger & Eat Meat Boost
+      let curSpeed = player.baseSpeed;
+      if (player.speedBoostTimer > 0) {
+        player.speedBoostTimer--;
+        curSpeed = player.baseSpeed * 1.6;
+        if (Math.random() < 0.3) createParticles(player.x, player.y, '#76ff03', 2);
+      } else if (player.hunger < 30) {
+        curSpeed = player.baseSpeed * 0.55; // Walking slow when hungry
+      }
+
+      if (moveX !== 0 || moveY !== 0) {
+        let len = Math.hypot(moveX, moveY);
+        moveX = (moveX / len) * curSpeed;
+        moveY = (moveY / len) * curSpeed;
+
+        player.x += moveX;
+        player.y += moveY;
+        player.angle = Math.atan2(moveY, moveX);
+
+        // Keep inside Map boundaries
+        player.x = Math.max(40, Math.min(MAP_WIDTH - 40, player.x));
+        player.y = Math.max(40, Math.min(MAP_HEIGHT - 40, player.y));
+
+        // Hunger slowly decreases when walking
+        player.hunger -= 0.015;
+        if (player.hunger < 0) player.hunger = 0;
+      }
+
+      // Camera follow player smoothly
+      camera.x = player.x - canvas.width / 2;
+      camera.y = player.y - canvas.height / 2;
+
+      // Net Traps Triggering
+      netTraps.forEach(trap => {
+        if (!trap.triggered && Math.hypot(player.x - trap.x, player.y - trap.y) < 35) {
+          trap.triggered = true;
+          player.isTrapped = true;
+          player.trappedTimer = 180; // 3 seconds
+
+          if (player.hasSword) {
+            speakText("踩到树网陷阱啦！快按攻击键用宝剑切开它！");
+          } else {
+            // Invisible AI Helper comes to rescue!
+            speakText("别害怕！AI神奇小伙伴飞过来帮你解开网兜啦！");
+            aiCompanion.active = true;
+            aiCompanion.x = player.x - 100;
+            aiCompanion.y = player.y - 100;
+            setTimeout(() => {
+              player.isTrapped = false;
+              aiCompanion.active = false;
+              createParticles(player.x, player.y, '#76ff03', 20);
+            }, 1200);
+          }
+        }
+      });
+
+      // Opening Chests
+      chests.forEach(chest => {
+        if (!chest.opened && Math.hypot(player.x - chest.x, player.y - chest.y) < 45) {
+          chest.opened = true;
+          sound.playChestOpen();
+          createParticles(chest.x, chest.y, '#ffeb3b', 25);
+          if (chest.reward === 'sword') {
+            player.hasSword = true;
+            speakText("太棒啦！在宝箱里找到了闪闪发光的【英雄宝剑】！");
+          } else if (chest.reward === 'gun') {
+            player.hasGun = true;
+            speakText("哇！找到了超级酷炫的【魔法远射枪】！");
+          } else {
+            inventory.meat += 3;
+            speakText("宝箱里装满了香喷喷的美味烤肉！");
+          }
+          updateUI();
+        }
+      });
+
+      // Cages & Rescuing Kids
+      cages.forEach(cage => {
+        if (!cage.opened && Math.hypot(player.x - cage.x, player.y - cage.y) < 55) {
+          cage.opened = true;
+          cage.kidSaved = true;
+          inventory.savedKidsCount++;
+          sound.playRescueKid();
+          createParticles(cage.x, cage.y, '#76ff03', 30);
+          speakText(`救出第 ${inventory.savedKidsCount} 个小朋友啦！快带他一起回营地吧！`);
+          updateUI();
+        }
+      });
+
+      // Check Victory Condition (All 4 Kids brought safely back to Camp Tent)
+      if (inventory.savedKidsCount === 4 && Math.hypot(player.x - camp.tentX, player.y - camp.tentY) < 100) {
+        sound.playVictory();
+        document.getElementById('victory-modal').classList.add('active');
+      }
+
+      // Bad Guys Spawning & AI Attack on Camp
+      if (Math.random() < 0.003 && badGuys.length < 3) {
+        let spawnAngle = Math.random() * Math.PI * 2;
+        let spawnDist = 700;
+        badGuys.push({
+          x: camp.x + Math.cos(spawnAngle) * spawnDist,
+          y: camp.y + Math.sin(spawnAngle) * spawnDist,
+          hp: 2,
+          speed: 1.5
+        });
+      }
+
+      // Bad Guys Movement towards Camp Base
+      badGuys.forEach(bg => {
+        let angleToCamp = Math.atan2(camp.y - bg.y, camp.x - bg.x);
+        bg.x += Math.cos(angleToCamp) * bg.speed;
+        bg.y += Math.sin(angleToCamp) * bg.speed;
+
+        // Check if Bad Guys step on placed Bear Traps
+        inventory.placedTraps.forEach((trap, idx) => {
+          if (Math.hypot(bg.x - trap.x, bg.y - trap.y) < 30) {
+            bg.hp = 0;
+            inventory.placedTraps.splice(idx, 1);
+            createParticles(bg.x, bg.y, '#ff9800', 15);
+            speakText("捕兽夹夹住了坏人！营地安全啦！");
+          }
+        });
+      });
+      badGuys = badGuys.filter(b => b.hp > 0);
+
+      // Scary Deer Logic
+      if (isNight && Math.hypot(player.x - scaryDeer.x, player.y - scaryDeer.y) < 600) {
+        scaryDeer.active = true;
+        let distToFire = Math.hypot(scaryDeer.x - camp.x, scaryDeer.y - camp.y);
+        let distToPlayer = Math.hypot(scaryDeer.x - player.x, scaryDeer.y - player.y);
+
+        if (distToFire < camp.fireRadius || distToPlayer < 200) {
+          // Deer gets scared of fire light and flees away!
+          scaryDeer.state = 'fleeing';
+          sound.playDeerScared();
+          let fleeAngle = Math.atan2(scaryDeer.y - camp.y, scaryDeer.x - camp.x);
+          scaryDeer.x += Math.cos(fleeAngle) * 4;
+          scaryDeer.y += Math.sin(fleeAngle) * 4;
+        } else {
+          scaryDeer.state = 'stalking';
+          let stalkAngle = Math.atan2(player.y - scaryDeer.y, player.x - scaryDeer.x);
+          scaryDeer.x += Math.cos(stalkAngle) * 1.2;
+          scaryDeer.y += Math.sin(stalkAngle) * 1.2;
+        }
+      } else {
+        scaryDeer.active = false;
+      }
+
+      // Update Particles
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.03;
+      });
+      particles = particles.filter(p => p.alpha > 0);
+    }
+
+    // Render Canvas Scene
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(-camera.x, -camera.y);
+
+      // Draw Forest Meadow Ground
+      ctx.fillStyle = '#22381b';
+      ctx.fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
+
+      // Draw Subtle Grass Pattern Lines
+      ctx.strokeStyle = '#2b4722';
+      ctx.lineWidth = 2;
+      for (let x = 0; x < MAP_WIDTH; x += 150) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, MAP_HEIGHT);
+        ctx.stroke();
+      }
+
+      // Draw Camp Base (营地) Area
+      ctx.fillStyle = 'rgba(76, 175, 80, 0.15)';
+      ctx.beginPath();
+      ctx.arc(camp.x, camp.y, 220, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#81c784';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 8]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw Campfire (篝火)
+      ctx.fillStyle = '#ff9800';
+      ctx.beginPath();
+      ctx.arc(camp.x, camp.y, 16, 0, Math.PI * 2);
+      ctx.fill();
+      // Fire Light Glow Effect
+      let fireGlow = ctx.createRadialGradient(camp.x, camp.y, 10, camp.x, camp.y, camp.fireRadius);
+      fireGlow.addColorStop(0, 'rgba(255, 235, 59, 0.45)');
+      fireGlow.addColorStop(0.6, 'rgba(255, 152, 0, 0.2)');
+      fireGlow.addColorStop(1, 'rgba(255, 152, 0, 0)');
+      ctx.fillStyle = fireGlow;
+      ctx.beginPath();
+      ctx.arc(camp.x, camp.y, camp.fireRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw Workbench & Tent Icon Labels
+      ctx.font = '28px sans-serif';
+      ctx.fillText('🪵⚒️', camp.workbenchX - 15, camp.workbenchY);
+      ctx.fillText('⛺', camp.tentX - 15, camp.tentY);
+
+      // Draw Placed Bear Traps
+      inventory.placedTraps.forEach(trap => {
+        ctx.font = '24px sans-serif';
+        ctx.fillText('🪤', trap.x - 12, trap.y + 8);
+      });
+
+      // Draw Net Traps
+      netTraps.forEach(trap => {
+        ctx.font = '30px sans-serif';
+        ctx.fillText(trap.triggered ? '🕸️ (破损)' : '🕸️', trap.x - 15, trap.y + 10);
+      });
+
+      // Draw Trees
+      trees.forEach(tree => {
+        ctx.fillStyle = '#1b5e20';
+        ctx.beginPath();
+        ctx.arc(tree.x, tree.y, tree.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#2e7d32';
+        ctx.beginPath();
+        ctx.arc(tree.x - 5, tree.y - 5, tree.radius * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw Chests
+      chests.forEach(chest => {
+        ctx.font = '32px sans-serif';
+        ctx.fillText(chest.opened ? '📦 (开)' : '🎁', chest.x - 16, chest.y + 10);
+      });
+
+      // Draw Cages & Kids
+      cages.forEach(cage => {
+        ctx.font = '36px sans-serif';
+        if (cage.opened) {
+          ctx.fillText('🔓', cage.x - 18, cage.y + 10);
+        } else {
+          ctx.fillText('🔒👧', cage.x - 22, cage.y + 10);
+        }
+      });
+
+      // Draw Animals
+      animals.forEach(anim => {
+        ctx.font = '28px sans-serif';
+        let emoji = anim.type === 'rabbit' ? '🐰' : anim.type === 'bear' ? '🐻' : '🐺';
+        ctx.fillText(emoji, anim.x - 14, anim.y + 10);
+      });
+
+      // Draw Bad Guys
+      badGuys.forEach(bg => {
+        ctx.font = '32px sans-serif';
+        ctx.fillText('🥷', bg.x - 16, bg.y + 10);
+      });
+
+      // Draw Scary Deer
+      if (scaryDeer.active) {
+        ctx.font = '48px sans-serif';
+        ctx.fillText(scaryDeer.state === 'fleeing' ? '🦌💨' : '🦌👀', scaryDeer.x - 24, scaryDeer.y + 16);
+      }
+
+      // Draw AI Invisible Companion Helper if rescuing
+      if (aiCompanion.active) {
+        ctx.font = '36px sans-serif';
+        ctx.fillText('🧚✨', aiCompanion.x, aiCompanion.y);
+      }
+
+      // Draw Follower Kids behind Player
+      for (let i = 0; i < inventory.savedKidsCount; i++) {
+        let followDist = (i + 1) * 32;
+        let kx = player.x - Math.cos(player.angle) * followDist;
+        let ky = player.y - Math.sin(player.angle) * followDist;
+        ctx.font = '28px sans-serif';
+        ctx.fillText('👧', kx - 14, ky + 10);
+      }
+
+      // Draw Player Character Hero
+      ctx.save();
+      ctx.translate(player.x, player.y);
+      ctx.rotate(player.angle);
+
+      // Hero Body Glow Halo
+      let playerGlow = ctx.createRadialGradient(0, 0, 5, 0, 0, 60);
+      playerGlow.addColorStop(0, 'rgba(255, 235, 59, 0.4)');
+      playerGlow.addColorStop(1, 'rgba(255, 235, 59, 0)');
+      ctx.fillStyle = playerGlow;
+      ctx.beginPath();
+      ctx.arc(0, 0, 60, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Hero Avatar
+      ctx.font = '36px sans-serif';
+      ctx.fillText('🧑‍🌾', -18, 12);
+
+      // Weapon Emoji Handheld
+      if (player.hasGun) {
+        ctx.fillText('🪄', 10, -10);
+      } else if (player.hasSword) {
+        ctx.fillText('⚔️', 10, -10);
+      }
+      ctx.restore();
+
+      // Draw Particle Effects
+      particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+
+      // Draw Guidance Arrow (指向最近的未救笼子或营地)
+      let targetObj = null;
+      let openCage = cages.find(c => !c.opened);
+      if (openCage) {
+        targetObj = openCage;
+      } else if (inventory.savedKidsCount === 4) {
+        targetObj = { x: camp.tentX, y: camp.tentY };
+      }
+
+      if (targetObj) {
+        let angleToTarget = Math.atan2(targetObj.y - player.y, targetObj.x - player.x);
+        let arrowDist = 80;
+        let ax = player.x + Math.cos(angleToTarget) * arrowDist;
+        let ay = player.y + Math.sin(angleToTarget) * arrowDist;
+
+        ctx.save();
+        ctx.translate(ax, ay);
+        ctx.rotate(angleToTarget);
+        ctx.font = '36px sans-serif';
+        ctx.fillText('🟡➡️', -18, 12);
+        ctx.restore();
+      }
+
+      // Night Lighting Overlay Mask
+      if (isNight) {
+        ctx.fillStyle = 'rgba(5, 10, 20, 0.65)';
+        ctx.fillRect(camera.x, camera.y, canvas.width, canvas.height);
+      }
+
+      ctx.restore();
+    }
+
+    // Main Animation Loop
+    function gameLoop() {
+      update();
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Handle Window Resize
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Start Game Initialization
+    initGame();
+    gameLoop();
+  </script>
+</body>
+</html>
