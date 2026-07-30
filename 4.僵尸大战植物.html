@@ -71,7 +71,7 @@ const SFX = {
 // 僵尸类型定义
 // ═══════════════════════════════════════════════════
 const ZOMBIE_TYPES = [
-  { id:'pea', name:'豌豆僵尸', cost:100, hp:300, atk:20, range:'lane', rate:4.5, desc:'吐小豆和大豆', color:'#5b9b3c', emoji:'🫛' },
+  { id:'pea', name:'豌豆僵尸', cost:100, hp:300, atk:20, range:'lane', rate:2.0, desc:'吐小豆和大豆', color:'#5b9b3c', emoji:'🫛' },
   { id:'sun', name:'向日葵僵尸', cost:50, hp:200, atk:0, range:'none', rate:0, desc:'生产脑子', color:'#e8b830', emoji:'🌻' },
   { id:'nut', name:'坚果僵尸', cost:50, hp:800, atk:0, range:'none', rate:0, desc:'超级坚硬', color:'#b87333', emoji:'🥜' },
   { id:'cherry', name:'樱桃炸弹', cost:150, hp:1, atk:1800, range:'3x3', rate:0, desc:'范围爆炸', color:'#e74c3c', emoji:'🍒' },
@@ -776,15 +776,15 @@ class PlantUnit {
       this.x -= speed;
     }
     
-    // 射击（一边走一边射）
+    // 射击（一边走一边射，发射速率放慢至3秒，飞行速度大幅减慢至 -1.3 超级慢速泡泡）
     if(this.def.shoots){
       this.shootTimer++;
-      if(this.shootTimer >= 90){
+      if(this.shootTimer >= 180){
         this.shootTimer = 0;
         const projColor = this.def.id === 'torch' ? '#e67e22' : this.def.id === 'iceshooter' ? '#5dade2' : '#7dce54';
         game.projectiles.push({
           x: this.x - 30, y: this.y,
-          vx: -4, vy: 0,
+          vx: -1.3, vy: 0,
           damage: this.def.atk, fromZombie: false,
           size: 5, color: projColor,
           type: this.def.id === 'iceshooter' ? 'ice' : 'pea',
@@ -1198,17 +1198,22 @@ class Game {
     const levelDef = LEVELS[this.level];
     const waveDef = levelDef.waves[waveIdx];
     
-    // 构建生成队列
+    // 构建生成队列：第 N 轮总数严格为 waveIdx + 1 (第1轮1个，第2轮2个，第3轮3个...)
     this.spawnQueue = [];
-    waveDef.plants.forEach(entry => {
-      for(let i=0;i<entry.n;i++){
-        this.spawnQueue.push({ type: entry.t, row: Math.random()*5|0 });
-      }
-    });
-    // 打乱顺序
-    for(let i=this.spawnQueue.length-1;i>0;i--){
-      const j = Math.random()*(i+1)|0;
-      [this.spawnQueue[i], this.spawnQueue[j]] = [this.spawnQueue[j], this.spawnQueue[i]];
+    const targetPlantCount = waveIdx + 1;
+    const availableTypes = waveDef.plants.map(p => p.t);
+    
+    // 生成洗牌后的不同行数组（分配在不同行）
+    let rows = [0, 1, 2, 3, 4];
+    for(let i = rows.length - 1; i > 0; i--){
+      const j = Math.random() * (i + 1) | 0;
+      [rows[i], rows[j]] = [rows[j], rows[i]];
+    }
+    
+    for(let i = 0; i < targetPlantCount; i++){
+      const type = availableTypes[i % availableTypes.length];
+      const assignedRow = rows[i % 5];
+      this.spawnQueue.push({ type: type, row: assignedRow });
     }
     
     this.spawnTimer = 0;
@@ -1464,11 +1469,11 @@ class Game {
       this.spawnBrain(bx, by);
     }
     
-    // 生成植物敌人
-    if(this.spawnQueue.length > 0){
+    // 生成植物敌人：一次只来一只！打败一只后才出现下一只
+    const activePlants = this.plants.filter(p => !p.dead && !p.dying);
+    if(this.spawnQueue.length > 0 && activePlants.length === 0){
       this.spawnTimer++;
-      const interval = Math.max(40, 120 - this.level*10 - this.wave*5);
-      if(this.spawnTimer >= interval){
+      if(this.spawnTimer >= 20){
         this.spawnTimer = 0;
         const spawn = this.spawnQueue.shift();
         this.plants.push(new PlantUnit(spawn.type, spawn.row));
