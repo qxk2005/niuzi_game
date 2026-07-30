@@ -97,40 +97,40 @@ const PLANT_TYPES = [
 // ═══════════════════════════════════════════════════
 const LEVELS = [
   { name:'☀️ 白天草坪', theme:'day', zombiesAvail:[0,1], waves:[
-    { plants:[{t:0,n:4},{t:2,n:1}] },
-    { plants:[{t:0,n:5},{t:2,n:2}] },
-    { plants:[{t:0,n:6},{t:2,n:2}] },
-    { plants:[{t:0,n:7},{t:2,n:3},{t:1,n:1}] },
+    { types:[0] },
+    { types:[0,2] },
+    { types:[0,2] },
+    { types:[0,1,2] },
   ]},
   { name:'🌙 神秘夜晚', theme:'night', zombiesAvail:[0,1,2], waves:[
-    { plants:[{t:0,n:5},{t:2,n:2}] },
-    { plants:[{t:0,n:6},{t:1,n:2},{t:2,n:2}] },
-    { plants:[{t:0,n:7},{t:1,n:2},{t:2,n:3}] },
-    { plants:[{t:0,n:8},{t:1,n:3},{t:2,n:3}] },
+    { types:[0,2] },
+    { types:[0,1,2] },
+    { types:[0,1,2] },
+    { types:[0,1,2] },
   ]},
   { name:'🏊 泳池派对', theme:'pool', zombiesAvail:[0,1,2,3], waves:[
-    { plants:[{t:0,n:5},{t:1,n:2},{t:2,n:3}] },
-    { plants:[{t:0,n:6},{t:1,n:3},{t:2,n:3},{t:3,n:1}] },
-    { plants:[{t:0,n:7},{t:1,n:3},{t:3,n:2},{t:2,n:3}] },
-    { plants:[{t:0,n:8},{t:1,n:4},{t:3,n:2},{t:2,n:3}] },
+    { types:[0,1,2] },
+    { types:[0,1,2,3] },
+    { types:[0,1,2,3] },
+    { types:[0,1,2,3] },
   ]},
   { name:'🏠 屋顶大战', theme:'roof', zombiesAvail:[0,1,2,3,4,5], waves:[
-    { plants:[{t:0,n:5},{t:1,n:3},{t:3,n:2}] },
-    { plants:[{t:0,n:6},{t:1,n:3},{t:3,n:2},{t:4,n:1}] },
-    { plants:[{t:0,n:7},{t:1,n:4},{t:3,n:3},{t:4,n:2}] },
-    { plants:[{t:0,n:9},{t:1,n:4},{t:3,n:3},{t:4,n:3}] },
+    { types:[0,1,3] },
+    { types:[0,1,3,4] },
+    { types:[0,1,3,4] },
+    { types:[0,1,3,4] },
   ]},
   { name:'⛈️ 暴风骤雨', theme:'storm', zombiesAvail:[0,1,2,3,4,5,6], waves:[
-    { plants:[{t:0,n:6},{t:1,n:3},{t:3,n:3},{t:4,n:2}] },
-    { plants:[{t:0,n:7},{t:1,n:4},{t:3,n:3},{t:4,n:3}] },
-    { plants:[{t:0,n:8},{t:1,n:4},{t:3,n:4},{t:4,n:3}] },
-    { plants:[{t:0,n:10},{t:1,n:5},{t:3,n:4},{t:4,n:4}] },
+    { types:[0,1,3,4] },
+    { types:[0,1,3,4] },
+    { types:[0,1,3,4] },
+    { types:[0,1,3,4] },
   ]},
   { name:'👑 最终之战', theme:'final', zombiesAvail:[0,1,2,3,4,5,6,7], waves:[
-    { plants:[{t:0,n:7},{t:1,n:4},{t:3,n:3},{t:4,n:3}] },
-    { plants:[{t:0,n:8},{t:1,n:5},{t:3,n:4},{t:4,n:4}] },
-    { plants:[{t:0,n:10},{t:1,n:5},{t:3,n:5},{t:4,n:4},{t:2,n:3}] },
-    { plants:[{t:0,n:12},{t:1,n:6},{t:3,n:5},{t:4,n:5},{t:2,n:4}] },
+    { types:[0,1,3,4] },
+    { types:[0,1,3,4] },
+    { types:[0,1,2,3,4] },
+    { types:[0,1,2,3,4] },
   ]},
 ];
 
@@ -1198,10 +1198,13 @@ class Game {
     const levelDef = LEVELS[this.level];
     const waveDef = levelDef.waves[waveIdx];
     
-    // 构建生成队列：第 N 轮总数严格为 waveIdx + 1 (第1轮1个，第2轮2个，第3轮3个...)
+    // 清空现有植物敌人与生成队列
+    this.plants = [];
     this.spawnQueue = [];
+    
+    // 强制约束：第 N 轮 (waveIdx+1) 全图产生的右侧植物敌人总数精确为 waveIdx + 1 (第一轮1个，第二轮2个...)
     const targetPlantCount = waveIdx + 1;
-    const availableTypes = waveDef.plants.map(p => p.t);
+    const availableTypes = waveDef.types || [0];
     
     // 生成洗牌后的不同行数组（分配在不同行）
     let rows = [0, 1, 2, 3, 4];
