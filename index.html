@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,10 +36,23 @@
     }
 
     @keyframes floatUp {
-      0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-      20% { opacity: 0.2; }
-      80% { opacity: 0.2; }
-      100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+      0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+      }
+
+      20% {
+        opacity: 0.2;
+      }
+
+      80% {
+        opacity: 0.2;
+      }
+
+      100% {
+        transform: translateY(-10vh) rotate(360deg);
+        opacity: 0;
+      }
     }
 
     /* Header Container */
@@ -74,7 +88,7 @@
       border-radius: 30px;
       border: 1px solid rgba(255, 255, 255, 0.15);
       display: inline-block;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
     }
 
     /* Game Showcase Grid */
@@ -99,7 +113,7 @@
       flex-direction: column;
       justify-content: space-between;
       transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      box-shadow: 0 15px 35px rgba(0,0,0,0.5), inset 0 0 20px rgba(255, 255, 255, 0.05);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05);
       position: relative;
       overflow: hidden;
     }
@@ -120,7 +134,7 @@
       font-weight: 800;
       padding: 5px 14px;
       border-radius: 20px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
       border: 1.5px solid #fff;
     }
 
@@ -133,7 +147,7 @@
       justify-content: center;
       font-size: 40px;
       margin-bottom: 18px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.4);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.4);
       border: 3px solid #fff;
     }
 
@@ -142,7 +156,7 @@
       font-weight: 900;
       color: #fff;
       margin-bottom: 8px;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     }
 
     .card-desc {
@@ -178,7 +192,7 @@
       border: 3px solid #fff;
       border-radius: 50px;
       cursor: pointer;
-      box-shadow: 0 8px 20px rgba(56, 142, 60, 0.5), inset 0 3px 6px rgba(255,255,255,0.6);
+      box-shadow: 0 8px 20px rgba(56, 142, 60, 0.5), inset 0 3px 6px rgba(255, 255, 255, 0.6);
       transition: all 0.2s ease;
       display: flex;
       align-items: center;
@@ -189,7 +203,7 @@
     .play-btn:hover {
       transform: scale(1.04);
       background: linear-gradient(180deg, #b2ff59 0%, #43a047 100%);
-      box-shadow: 0 12px 25px rgba(56, 142, 60, 0.7), inset 0 3px 6px rgba(255,255,255,0.8);
+      box-shadow: 0 12px 25px rgba(56, 142, 60, 0.7), inset 0 3px 6px rgba(255, 255, 255, 0.8);
     }
 
     .play-btn:active {
@@ -226,7 +240,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     }
 
     .modal-title {
@@ -252,7 +266,7 @@
       border-radius: 30px;
       border: 2px solid #fff;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       transition: all 0.2s ease;
       display: flex;
       align-items: center;
@@ -287,6 +301,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <!-- Background Floating Particles -->
@@ -307,7 +322,8 @@
 
     <!-- Card 0: 森林救援大冒险 (5岁特别定制) -->
     <div class="game-card" style="border-color: #76ff03; background: rgba(25, 45, 20, 0.85);">
-      <div class="card-badge" style="background: linear-gradient(90deg, #76ff03, #388e3c); color: #052600;">🌟 5岁梦想重现 · 专属定制</div>
+      <div class="card-badge" style="background: linear-gradient(90deg, #76ff03, #388e3c); color: #052600;">🌟 5岁梦想重现 ·
+        专属定制</div>
       <div class="card-icon-wrapper" style="background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);">
         🦌
       </div>
@@ -319,7 +335,8 @@
         <span style="font-size: 14px; font-weight: bold; color: #b2ff59;">✨ 声光音效 · 全程中文指引</span>
         <span class="stars">⭐⭐⭐⭐⭐</span>
       </div>
-      <button class="play-btn" onclick="openGame('5.森林救援大冒险.html', '🌲 森林救援大冒险 (5岁小勇士专属版)')" style="background: linear-gradient(180deg, #ffeb3b 0%, #ff9800 100%); color: #4a2800;">
+      <button class="play-btn" onclick="openGame('5.森林救援大冒险.html', '🌲 森林救援大冒险 (5岁小勇士专属版)')"
+        style="background: linear-gradient(180deg, #ffeb3b 0%, #ff9800 100%); color: #4a2800;">
         <span>▶️</span> 立即开玩
       </button>
     </div>
@@ -419,6 +436,26 @@
       </button>
     </div>
 
+    <!-- Card 6: 大战植物僵尸 (颠倒脑洞版) -->
+    <div class="game-card" style="border-color: #facc15;">
+      <div class="card-badge" style="background: linear-gradient(90deg, #f59e0b, #ef4444);">🌟 5岁特别定制 · 颠倒脑洞</div>
+      <div class="card-icon-wrapper" style="background: linear-gradient(135deg, #facc15 0%, #16a34a 100%);">
+        🌻
+      </div>
+      <div class="card-title">🌻 大战植物僵尸（反转）</div>
+      <div class="card-desc">
+        5岁脑洞大开！豌豆射手变生产太阳能量，向日葵变成强力战将！普通僵尸变身小僵王博士，小推车变成疯狂戴夫的保护小屋！全语音指引与酷炫声光特效！
+      </div>
+      <div class="card-meta">
+        <span style="font-size: 14px; font-weight: bold; color: #fef08a;">✨ 4大关卡 · 语音陪伴</span>
+        <span class="stars">⭐⭐⭐⭐⭐</span>
+      </div>
+      <button class="play-btn" style="background: linear-gradient(180deg, #facc15 0%, #d97706 100%); color: #451a03;"
+        onclick="openGame('6.大战植物僵尸（反转）.html', '🌻 大战植物僵尸 - 5岁小朋友奇妙脑洞')">
+        <span>▶️</span> 立即开玩
+      </button>
+    </div>
+
   </div>
 
   <!-- Iframe Game Player Screen Modal -->
@@ -510,4 +547,5 @@
     }
   </script>
 </body>
+
 </html>
