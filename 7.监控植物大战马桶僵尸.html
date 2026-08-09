@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>监控植物大战马桶僵尸 - 5岁小英雄超级版</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Arial, Microsoft YaHei, sans-serif;
+      background: #0f172a;
+      color: #fff;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #game-container {
+      position: relative;
+      width: 1000px;
+      height: 600px;
+      background: #1e293b;
+      border: 4px solid #38bdf8;
+      border-radius: 16px;
+      box-shadow: 0 0 40px rgba(56, 189, 248, 0.4);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 顶部导航与植物卡片栏 */
+    #top-bar {
+      height: 90px;
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border-bottom: 3px solid #334155;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .status-box {
+      background: #0284c7;
+      border: 2px solid #38bdf8;
+      border-radius: 12px;
+      padding: 6px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 110px;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.3);
+    }
+    .status-title {
+      font-size: 12px;
+      color: #bae6fd;
+      font-weight: bold;
+    }
+    .status-value {
+      font-size: 22px;
+      color: #ffffff;
+      font-weight: 900;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    #plant-selector {
+      flex: 1;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px 0;
+      align-items: center;
+    }
+    #plant-selector::-webkit-scrollbar {
+      height: 4px;
+    }
+    #plant-selector::-webkit-scrollbar-thumb {
+      background: #0284c7;
+      border-radius: 2px;
+    }
+
+    .plant-card {
+      width: 68px;
+      height: 78px;
+      background: linear-gradient(135deg, #334155, #1e293b);
+      border: 2px solid #64748b;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .plant-card.active {
+      border-color: #38bdf8;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      box-shadow: 0 0 12px #38bdf8;
+      transform: scale(1.05);
+    }
+    .plant-card.disabled {
+      opacity: 0.4;
+      filter: grayscale(0.8);
+      cursor: not-allowed;
+    }
+    .plant-card.selected {
+      border-color: #facc15;
+      box-shadow: 0 0 15px #facc15;
+      transform: scale(1.08);
+    }
+    .plant-icon-img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      pointer-events: none;
+    }
+    .plant-cost {
+      font-size: 12px;
+      font-weight: bold;
+      color: #fef08a;
+      background: rgba(0,0,0,0.6);
+      padding: 1px 6px;
+      border-radius: 8px;
+    }
+    .plant-name {
+      font-size: 10px;
+      color: #e2e8f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    #controls-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      padding: 8px 14px;
+      font-size: 14px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .btn:active {
+      transform: scale(0.95);
+    }
+    .btn-super {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      color: white;
+      border: 2px solid #fca5a5;
+      animation: pulse-red 1.5s infinite;
+    }
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    .btn-audio {
+      background: #475569;
+      color: white;
+    }
+
+    /* 游戏主画布区域 */
+    #main-stage {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      background: #15803d;
+      overflow: hidden;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 进度条与广播 */
+    #level-banner {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      border: 2px solid #38bdf8;
+      border-radius: 20px;
+      padding: 6px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #38bdf8;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .progress-bar-bg {
+      width: 140px;
+      height: 12px;
+      background: #334155;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #64748b;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #22c55e);
+      transition: width 0.3s ease;
+    }
+
+    /* 指引小手动画 */
+    #guide-finger {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      pointer-events: none;
+      z-index: 50;
+      transition: all 0.4s ease-out;
+      display: none;
+    }
+    #guide-finger svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+      animation: finger-bounce 0.8s infinite alternate;
+    }
+    @keyframes finger-bounce {
+      from { transform: translateY(0px) scale(1); }
+      to { transform: translateY(-12px) scale(1.1); }
+    }
+
+    /* BOSS 血条弹窗 */
+    #boss-hp-container {
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 450px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 3px solid #eab308;
+      border-radius: 16px;
+      padding: 8px 16px;
+      z-index: 12;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 0 25px rgba(234, 179, 8, 0.6);
+    }
+    .boss-name {
+      color: #facc15;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-shadow: 0 0 8px rgba(250, 204, 21, 0.8);
+      margin-bottom: 4px;
+    }
+    .boss-hp-bg {
+      width: 100%;
+      height: 16px;
+      background: #475569;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #1e293b;
+    }
+    .boss-hp-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #ef4444, #eab308);
+      transition: width 0.2s linear;
+    }
+
+    /* 通关/对话模态框 */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-card {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 4px solid #38bdf8;
+      border-radius: 24px;
+      padding: 28px 40px;
+      text-align: center;
+      max-width: 550px;
+      box-shadow: 0 0 50px rgba(56, 189, 248, 0.5);
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .modal-overlay.show .modal-card {
+      transform: scale(1);
+    }
+    .modal-title {
+      font-size: 32px;
+      font-weight: 900;
+      color: #38bdf8;
+      margin-bottom: 12px;
+      text-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+    }
+    .modal-desc {
+      font-size: 18px;
+      color: #cbd5e1;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .modal-btn {
+      padding: 12px 36px;
+      font-size: 20px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #22c55e, #15803d);
+      color: white;
+      border: 3px solid #86efac;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.5);
+      transition: all 0.2s;
+    }
+    .modal-btn:hover {
+      transform: scale(1.06);
+    }
+
+    /* 游戏提示喷气字幕 */
+    #tip-toast {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(2, 132, 199, 0.95);
+      color: #ffffff;
+      padding: 8px 24px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border: 2px solid #7dd3fc;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+      z-index: 40;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #tip-toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <!-- 顶部状态栏 -->
+    <div id="top-bar">
+      <div class="status-box">
+        <span class="status-title">监控能量 ⚡</span>
+        <span class="status-value" id="energy-val">150</span>
+      </div>
+
+      <!-- 植物卡片列表 -->
+      <div id="plant-selector"></div>
+
+      <div id="controls-box">
+        <button class="btn btn-super" id="btn-super-laser">
+          ⚡ 监控超级射线!
+        </button>
+        <button class="btn btn-audio" id="btn-audio-toggle">
+          🔊 声音: 开
+        </button>
+      </div>
+    </div>
+
+    <!-- 游戏画布与主视窗 -->
+    <div id="main-stage">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- 关卡进度条 -->
+      <div id="level-banner">
+        <span id="level-name-text">第 1 关: 草地监控防线</span>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="level-progress-fill"></div>
+        </div>
+      </div>
+
+      <!-- BOSS 血条 -->
+      <div id="boss-hp-container">
+        <div class="boss-name" id="boss-name-text">👑 黄金马桶僵尸王 👑</div>
+        <div class="boss-hp-bg">
+          <div class="boss-hp-fill" id="boss-hp-fill"></div>
+        </div>
+      </div>
+
+      <!-- 动态指引小手 -->
+      <div id="guide-finger">
+        <svg viewBox="0 0 100 100">
+          <path d="M50 10 L65 45 L95 50 L65 65 L60 95 L45 65 L15 50 L45 45 Z" fill="#facc15" stroke="#ffffff" stroke-width="4"/>
+          <circle cx="50" cy="50" r="12" fill="#ef4444"/>
+        </svg>
+      </div>
+
+      <!-- 提示冒泡 -->
+      <div id="tip-toast">点击拖动监控植物到草地上吧！</div>
+    </div>
+  </div>
+
+  <!-- 关卡通关 & 剧情弹窗 -->
+  <div class="modal-overlay" id="modal-start">
+    <div class="modal-card">
+      <div class="modal-title">📹 监控植物大战马桶僵尸 🚽</div>
+      <div class="modal-desc" id="modal-start-desc">
+        欢迎小英雄！马桶僵尸们想要入侵我们的家园！<br>
+        快摆放各种酷炫的监控摄像头植物，用双眼发射超级激光消灭马桶僵尸吧！
+      </div>
+      <button class="modal-btn" id="btn-start-game">🚀 开始第 1 关！</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-victory">
+    <div class="modal-card">
+      <div class="modal-title" id="victory-title">🎉 关卡胜利！</div>
+      <div class="modal-desc" id="victory-desc">
+        太棒啦！你成功保卫了监控防线，解锁了全新的监控植物！
+      </div>
+      <button class="modal-btn" id="btn-next-level">下一关 ➔</button>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       1. 音频合成引擎 (Web Audio API - 无需外部文件，极其稳定可靠)
+       ========================================================================= */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playLaser() {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.12);
+      }
+      playIceLaser() {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.15);
+      }
+      playPlant() {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.08);
+      }
+      playEnergy() {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, this.ctx.currentTime);
+        osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.06);
+        osc.frequency.setValueAtTime(783.99, this.ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.2);
+      }
+      playExplode() {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.3);
+      }
+      playFlush() {
+        if (!this.enabled) return;
+        this.init();
+        // 模拟水流马桶冲水声
+        const bufferSize = this.ctx.sampleRate * 0.4;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(400, this.ctx.currentTime);
+        filter.frequency.linearRampToValueAtTime(100, this.ctx.currentTime + 0.4);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start();
+      }
+      playVictory() {
+        if (!this.enabled) return;
+        this.init();
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.08);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime + i * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + i * 0.08 + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(this.ctx.currentTime + i * 0.08);
+          osc.stop(this.ctx.currentTime + i * 0.08 + 0.25);
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    /* =========================================================================
+       2. 植物配置表 (10 种监控风格植物)
+       ========================================================================= */
+    const PLANT_TYPES = {
+      sunflower: {
+        id: 'sunflower',
+        name: '监控向日葵',
+        cost: 50,
+        hp: 300,
+        cd: 5,
+        unlockLevel: 1,
+        desc: '旋转镜头收集监控能量光粒'
+      },
+      peashooter: {
+        id: 'peashooter',
+        name: '监控豌豆',
+        cost: 100,
+        hp: 300,
+        cd: 3,
+        unlockLevel: 1,
+        desc: '眼射红色炫彩激光打击马桶人'
+      },
+      wallnut: {
+        id: 'wallnut',
+        name: '监控坚果墙',
+        cost: 50,
+        hp: 2000,
+        cd: 10,
+        unlockLevel: 2,
+        desc: '装甲摄像头高超防御挡住前方'
+      },
+      potatomine: {
+        id: 'potatomine',
+        name: '监控地雷',
+        cost: 25,
+        hp: 300,
+        cd: 8,
+        unlockLevel: 2,
+        desc: '地下红光监控感应炸飞马桶僵尸'
+      },
+      puffshroom: {
+        id: 'puffshroom',
+        name: '监控小喷菇',
+        cost: 0,
+        hp: 200,
+        cd: 3,
+        unlockLevel: 3,
+        desc: '夜视摄像头，近距离免费激光喷射'
+      },
+      fumeshroom: {
+        id: 'fumeshroom',
+        name: '监控大喷菇',
+        cost: 75,
+        hp: 350,
+        cd: 5,
+        unlockLevel: 3,
+        desc: '夜视全景感应，穿透整行马桶人'
+      },
+      iceshooter: {
+        id: 'iceshooter',
+        name: '监控寒冰射手',
+        cost: 175,
+        hp: 350,
+        cd: 6,
+        unlockLevel: 4,
+        desc: '发射蓝光冰冻激光，大幅减速马桶'
+      },
+      cherrybomb: {
+        id: 'cherrybomb',
+        name: '监控樱桃炸弹',
+        cost: 150,
+        hp: 300,
+        cd: 15,
+        unlockLevel: 4,
+        desc: '双警报摄像头，3x3范围震撼大爆破'
+      },
+      flowerpot: {
+        id: 'flowerpot',
+        name: '监控花盆',
+        cost: 25,
+        hp: 300,
+        cd: 3,
+        unlockLevel: 5,
+        desc: '屋顶监控基座，屋顶必须种植花盆'
+      },
+      hypnoshroom: {
+        id: 'hypnoshroom',
+        name: '监控魅惑菇',
+        cost: 75,
+        hp: 200,
+        cd: 12,
+        unlockLevel: 6,
+        desc: '彩虹催眠摄像头，让马桶反向战斗！'
+      }
+    };
+
+    /* =========================================================================
+       3. 关卡配置 (7 个渐进关卡)
+       ========================================================================= */
+    const LEVEL_CONFIGS = [
+      {
+        level: 1,
+        title: '第 1 关: 草地监控防线 (入门)',
+        bgType: 'day',
+        waves: 4,
+        zombies: ['normal'],
+        energyDrop: true,
+        desc: '摆放监控向日葵产生能量，种植监控豌豆发射激光！'
+      },
+      {
+        level: 2,
+        title: '第 2 关: 草地监控防线 (进阶)',
+        bgType: 'day',
+        waves: 6,
+        zombies: ['normal', 'conehead'],
+        energyDrop: true,
+        desc: '解锁监控坚果墙与地雷，挡住路障马桶僵尸！'
+      },
+      {
+        level: 3,
+        title: '第 3 关: 夜间马桶墓碑 (黑暗)',
+        bgType: 'night',
+        waves: 7,
+        zombies: ['normal', 'conehead', 'tombstone'],
+        energyDrop: false,
+        desc: '黑夜降临！免费使用监控小喷菇与穿透大喷菇！'
+      },
+      {
+        level: 4,
+        title: '第 4 关: 夜间迷雾防线 (冰霜)',
+        bgType: 'night_fog',
+        waves: 8,
+        zombies: ['normal', 'conehead', 'buckethead', 'tombstone'],
+        energyDrop: false,
+        desc: '使用监控寒冰射手减速僵尸，樱桃炸弹全屏扫荡！'
+      },
+      {
+        level: 5,
+        title: '第 5 关: 屋顶监控平台 (高空)',
+        bgType: 'roof',
+        waves: 9,
+        zombies: ['normal', 'conehead', 'buckethead'],
+        energyDrop: true,
+        needPot: true,
+        desc: '屋顶作战！必须先摆放【监控花盆】才能种植植物哦！'
+      },
+      {
+        level: 6,
+        title: '第 6 关: 监控全面反击 (魅惑)',
+        bgType: 'sunset',
+        waves: 10,
+        zombies: ['normal', 'conehead', 'buckethead', 'tombstone'],
+        energyDrop: true,
+        desc: '解锁监控魅惑菇！让被吃掉的马桶僵尸掉头为你作战！'
+      },
+      {
+        level: 7,
+        title: '第 7 关: 黄金马桶王 (终极决战)',
+        bgType: 'boss_arena',
+        waves: 1,
+        hasBoss: true,
+        zombies: ['normal', 'conehead', 'buckethead'],
+        energyDrop: true,
+        desc: '终极BOSS！消灭震撼的【黄金马桶僵尸王】！'
+      }
+    ];
+
+    /* =========================================================================
+       4. 游戏全局状态与引擎变量
+       ========================================================================= */
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let currentLevelIdx = 0;
+    let energy = 150;
+    let selectedPlantId = null;
+    let isPlaying = false;
+
+    const COLS = 8;
+    const ROWS = 5;
+    let gridWidth = 0;
+    let gridHeight = 0;
+    let gridOffsetX = 120;
+    let gridOffsetY = 80;
+
+    let plants = [];
+    let zombies = [];
+    let projectiles = [];
+    let energyParticles = [];
+    let visualEffects = [];
+    let tombstones = [];
+    let gridState = []; // 储存每个格子放置的植物与花盆
+
+    let waveTimer = 0;
+    let currentWave = 0;
+    let totalWaves = 5;
+    let levelProgress = 0;
+
+    let bossObj = null;
+    let superLaserCd = 0;
+
+    // 辅助引导状态 (5岁小朋友友好)
+    let guideStep = 0; // 0: None, 1: Point Sunflower, 2: Point Grid Cell (0,1), 3: Point Peashooter
+
+    /* =========================================================================
+       5. 屏幕自适应与初始化
+       ========================================================================= */
+    function resizeCanvas() {
+      const container = document.getElementById('main-stage');
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+
+      gridOffsetX = 110;
+      gridOffsetY = 70;
+      gridWidth = (canvas.width - gridOffsetX - 40) / COLS;
+      gridHeight = (canvas.height - gridOffsetY - 20) / ROWS;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    /* =========================================================================
+       6. UI 卡片生成与交互控制
+       ========================================================================= */
+    function renderPlantCards() {
+      const container = document.getElementById('plant-selector');
+      container.innerHTML = '';
+      const cfg = LEVEL_CONFIGS[currentLevelIdx];
+
+      Object.values(PLANT_TYPES).forEach(plant => {
+        if (plant.unlockLevel > cfg.level) return; // 尚未解锁
+
+        const card = document.createElement('div');
+        card.className = `plant-card ${energy < plant.cost ? 'disabled' : ''} ${selectedPlantId === plant.id ? 'selected' : ''}`;
+        card.dataset.id = plant.id;
+
+        // 生成简易 SVG 图标预览
+        const iconSvg = generatePlantSvgIcon(plant.id);
+
+        card.innerHTML = `
+          <div style="width:38px;height:38px;">${iconSvg}</div>
+          <span class="plant-cost">⚡ ${plant.cost}</span>
+          <span class="plant-name">${plant.name}</span>
+        `;
+
+        card.addEventListener('click', (e) => {
+          if (energy < plant.cost) {
+            showToast('监控能量不足，稍等一下生成能量吧！');
+            return;
+          }
+          if (selectedPlantId === plant.id) {
+            selectedPlantId = null;
+          } else {
+            selectedPlantId = plant.id;
+            sound.playPlant();
+          }
+          renderPlantCards();
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    function updateEnergy(amount) {
+      energy = Math.max(0, energy + amount);
+      document.getElementById('energy-val').innerText = energy;
+      renderPlantCards();
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('tip-toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    /* =========================================================================
+       7. SVG 图像绘制助手 (画各种科技风格监控摄像头)
+       ========================================================================= */
+    function generatePlantSvgIcon(type) {
+      if (type === 'sunflower') {
+        return `<svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="40" fill="#facc15" stroke="#eab308" stroke-width="4"/>
+          <circle cx="50" cy="50" r="24" fill="#1e293b" stroke="#38bdf8" stroke-width="4"/>
+          <circle cx="50" cy="50" r="10" fill="#0284c7"/>
+          <circle cx="55" cy="45" r="4" fill="#ffffff"/>
+        </svg>`;
+      } else if (type === 'peashooter') {
+        return `<svg viewBox="0 0 100 100">
+          <rect x="42" y="55" width="16" height="35" fill="#64748b" rx="4"/>
+          <rect x="25" y="25" width="50" height="35" rx="10" fill="#475569" stroke="#94a3b8" stroke-width="4"/>
+          <circle cx="70" cy="42" r="14" fill="#0f172a" stroke="#ef4444" stroke-width="4"/>
+          <circle cx="70" cy="42" r="6" fill="#ef4444"/>
+        </svg>`;
+      } else if (type === 'wallnut') {
+        return `<svg viewBox="0 0 100 100">
+          <ellipse cx="50" cy="55" rx="35" ry="40" fill="#78350f" stroke="#b45309" stroke-width="4"/>
+          <rect x="30" y="30" width="40" height="20" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="3"/>
+          <circle cx="50" cy="40" r="6" fill="#38bdf8"/>
+        </svg>`;
+      } else if (type === 'potatomine') {
+        return `<svg viewBox="0 0 100 100">
+          <ellipse cx="50" cy="65" rx="30" ry="20" fill="#92400e"/>
+          <circle cx="50" cy="40" r="12" fill="#ef4444" stroke="#ffffff" stroke-width="3"/>
+        </svg>`;
+      } else if (type === 'puffshroom') {
+        return `<svg viewBox="0 0 100 100">
+          <path d="M25 60 Q50 20 75 60 Z" fill="#a855f7"/>
+          <circle cx="50" cy="50" r="10" fill="#1e293b" stroke="#c084fc" stroke-width="3"/>
+          <rect x="44" y="60" width="12" height="25" fill="#cbd5e1"/>
+        </svg>`;
+      } else if (type === 'fumeshroom') {
+        return `<svg viewBox="0 0 100 100">
+          <path d="M15 55 Q50 10 85 55 Z" fill="#7e22ce"/>
+          <circle cx="50" cy="45" r="14" fill="#0f172a" stroke="#e879f9" stroke-width="4"/>
+          <rect x="42" y="55" width="16" height="30" fill="#94a3b8"/>
+        </svg>`;
+      } else if (type === 'iceshooter') {
+        return `<svg viewBox="0 0 100 100">
+          <rect x="42" y="55" width="16" height="35" fill="#38bdf8" rx="4"/>
+          <rect x="25" y="25" width="50" height="35" rx="10" fill="#0284c7" stroke="#bae6fd" stroke-width="4"/>
+          <circle cx="70" cy="42" r="14" fill="#0f172a" stroke="#38bdf8" stroke-width="4"/>
+          <circle cx="70" cy="42" r="6" fill="#38bdf8"/>
+        </svg>`;
+      } else if (type === 'cherrybomb') {
+        return `<svg viewBox="0 0 100 100">
+          <circle cx="35" cy="55" r="22" fill="#dc2626"/>
+          <circle cx="65" cy="55" r="22" fill="#dc2626"/>
+          <circle cx="35" cy="55" r="8" fill="#1e293b" stroke="#fef08a" stroke-width="3"/>
+          <circle cx="65" cy="55" r="8" fill="#1e293b" stroke="#fef08a" stroke-width="3"/>
+          <path d="M35 33 Q50 15 65 33" stroke="#15803d" stroke-width="6" fill="none"/>
+        </svg>`;
+      } else if (type === 'flowerpot') {
+        return `<svg viewBox="0 0 100 100">
+          <polygon points="20,40 80,40 70,80 30,80" fill="#b45309" stroke="#78350f" stroke-width="4"/>
+          <rect x="15" y="30" width="70" height="12" fill="#d97706" rx="4"/>
+        </svg>`;
+      } else if (type === 'hypnoshroom') {
+        return `<svg viewBox="0 0 100 100">
+          <path d="M20 55 Q50 15 80 55 Z" fill="#ec4899"/>
+          <circle cx="50" cy="45" r="12" fill="#facc15" stroke="#ffffff" stroke-width="3"/>
+          <rect x="44" y="55" width="12" height="25" fill="#f472b6"/>
+        </svg>`;
+      }
+      return '';
+    }
+
+    /* =========================================================================
+       8. 游戏逻辑类与实体 (Plants, Zombies, Projectiles, Particles)
+       ========================================================================= */
+
+    class Plant {
+      constructor(type, r, c) {
+        this.type = type;
+        this.config = PLANT_TYPES[type];
+        this.r = r;
+        this.c = c;
+        this.x = gridOffsetX + c * gridWidth + gridWidth / 2;
+        this.y = gridOffsetY + r * gridHeight + gridHeight / 2;
+        this.hp = this.config.hp;
+        this.maxHp = this.config.hp;
+        this.timer = 0;
+        this.armTimer = 0; // 地雷准备时间
+        this.isArmed = type !== 'potatomine'; // 地雷需要时间准备
+      }
+
+      update() {
+        this.timer++;
+
+        // 监控向日葵: 定期产生能量粒子
+        if (this.type === 'sunflower') {
+          if (this.timer % 300 === 0) {
+            energyParticles.push(new EnergyParticle(this.x, this.y - 20, false));
+          }
+        }
+
+        // 监控豌豆射手: 眼睛发射红光激光
+        if (this.type === 'peashooter') {
+          if (this.timer % 80 === 0) {
+            // 检查本行是否有马桶僵尸或僵王BOSS
+            const hasTarget = (bossObj && bossObj.hp > 0) || zombies.some(z => z.r === this.r && z.x > this.x && !z.isHypno);
+            if (hasTarget) {
+              projectiles.push(new Projectile(this.x + 20, this.y - 8, this.r, 'laser', 25, false));
+              sound.playLaser();
+            }
+          }
+        }
+
+        // 监控寒冰射手: 发射冰冻光束
+        if (this.type === 'iceshooter') {
+          if (this.timer % 90 === 0) {
+            const hasTarget = (bossObj && bossObj.hp > 0) || zombies.some(z => z.r === this.r && z.x > this.x && !z.isHypno);
+            if (hasTarget) {
+              projectiles.push(new Projectile(this.x + 20, this.y - 8, this.r, 'ice_laser', 30, true));
+              sound.playIceLaser();
+            }
+          }
+        }
+
+        // 监控小喷菇 (近距离或BOSS关卡)
+        if (this.type === 'puffshroom') {
+          if (this.timer % 70 === 0) {
+            const hasTarget = (bossObj && bossObj.hp > 0) || zombies.some(z => z.r === this.r && z.x > this.x && (z.x - this.x) < gridWidth * 3.5 && !z.isHypno);
+            if (hasTarget) {
+              projectiles.push(new Projectile(this.x + 15, this.y - 5, this.r, 'purple_puff', 20, false));
+              sound.playLaser();
+            }
+          }
+        }
+
+        // 监控大喷菇 (贯穿喷射)
+        if (this.type === 'fumeshroom') {
+          if (this.timer % 100 === 0) {
+            const hasTarget = (bossObj && bossObj.hp > 0) || zombies.some(z => z.r === this.r && z.x > this.x && !z.isHypno);
+            if (hasTarget) {
+              visualEffects.push(new FumeBeamEffect(this.x + 20, this.y, this.r));
+              // 直接造成整行马桶僵尸与BOSS伤害
+              zombies.forEach(z => {
+                if (z.r === this.r && z.x > this.x && !z.isHypno) {
+                  z.takeDamage(45);
+                }
+              });
+              if (bossObj && bossObj.hp > 0) {
+                bossObj.takeDamage(45);
+              }
+              sound.playLaser();
+            }
+          }
+        }
+
+        // 监控地雷
+        if (this.type === 'potatomine') {
+          if (!this.isArmed) {
+            this.armTimer++;
+            if (this.armTimer > 180) { // 3秒激活
+              this.isArmed = true;
+            }
+          }
+        }
+
+        // 监控樱桃炸弹
+        if (this.type === 'cherrybomb') {
+          if (this.timer > 40) { // 很快爆破
+            this.explode();
+          }
+        }
+      }
+
+      explode() {
+        this.hp = 0; // 销毁
+        sound.playExplode();
+        triggerScreenShake();
+        // 3x3 区域大伤害
+        zombies.forEach(z => {
+          if (Math.abs(z.r - this.r) <= 1 && Math.abs(z.x - this.x) <= gridWidth * 1.8) {
+            z.takeDamage(1200);
+          }
+        });
+        if (bossObj && bossObj.hp > 0) {
+          bossObj.takeDamage(1500);
+        }
+        if (tombstones) {
+          tombstones.forEach(t => {
+            if (Math.abs(t.r - this.r) <= 1 && Math.abs(t.c - this.c) <= 1) {
+              t.hp -= 500;
+            }
+          });
+        }
+        visualEffects.push(new ExplosionEffect(this.x, this.y, 100));
+      }
+
+      draw(ctx) {
+        // 画监控植物
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // 如果在屋顶，下面显示花盆
+        if (LEVEL_CONFIGS[currentLevelIdx].needPot && gridState[this.r][this.c].hasPot && this.type !== 'flowerpot') {
+          drawPotGraphic(ctx, 0, 20);
+        }
+
+        if (this.type === 'sunflower') {
+          // 太阳花镜头旋转
+          const rot = (this.timer * 0.03) % (Math.PI * 2);
+          ctx.save();
+          ctx.rotate(rot);
+          for (let i = 0; i < 8; i++) {
+            ctx.rotate(Math.PI / 4);
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.ellipse(25, 0, 10, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+          // 摄像头主体
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.arc(0, 0, 18, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = '#38bdf8';
+          ctx.stroke();
+          // 镜头高光
+          ctx.fillStyle = '#0284c7';
+          ctx.beginPath();
+          ctx.arc(0, 0, 8, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'peashooter') {
+          // 支架
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(-5, 5, 10, 25);
+          // 摄像头方框
+          ctx.fillStyle = '#334155';
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.roundRect(-20, -18, 40, 28, 6);
+          ctx.fill();
+          ctx.stroke();
+          // 发射镜头
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(15, -4, 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(17, -6, 3, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'iceshooter') {
+          ctx.fillStyle = '#0284c7';
+          ctx.fillRect(-5, 5, 10, 25);
+          ctx.fillStyle = '#0369a1';
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.roundRect(-20, -18, 40, 28, 6);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(15, -4, 8, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'wallnut') {
+          // 重装甲镜头
+          ctx.fillStyle = '#78350f';
+          ctx.beginPath();
+          ctx.ellipse(0, 5, 26, 32, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#b45309';
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          // 核心视窗
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(-15, -10, 30, 16);
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(0, -2, 5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'potatomine') {
+          ctx.fillStyle = '#78350f';
+          ctx.beginPath();
+          ctx.ellipse(0, 15, 20, 12, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // 摄像头露头
+          ctx.fillStyle = this.isArmed ? '#ef4444' : '#64748b';
+          ctx.beginPath();
+          ctx.arc(0, this.isArmed ? 2 : 12, 10, 0, Math.PI * 2);
+          ctx.fill();
+          if (this.isArmed && Math.floor(this.timer / 10) % 2 === 0) {
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, 2, 4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (this.type === 'cherrybomb') {
+          // 炸弹闪烁
+          const scale = 1 + Math.sin(this.timer * 0.3) * 0.15;
+          ctx.scale(scale, scale);
+          ctx.fillStyle = '#dc2626';
+          ctx.beginPath();
+          ctx.arc(-14, 5, 16, 0, Math.PI * 2);
+          ctx.arc(14, 5, 16, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fef08a';
+          ctx.beginPath();
+          ctx.arc(-14, 5, 6, 0, Math.PI * 2);
+          ctx.arc(14, 5, 6, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'puffshroom') {
+          ctx.fillStyle = '#a855f7';
+          ctx.beginPath();
+          ctx.arc(0, -5, 16, Math.PI, 0);
+          ctx.fill();
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(-6, -5, 12, 18);
+          ctx.fillStyle = '#c084fc';
+          ctx.beginPath();
+          ctx.arc(6, -8, 5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'fumeshroom') {
+          ctx.fillStyle = '#7e22ce';
+          ctx.beginPath();
+          ctx.ellipse(0, -6, 22, 18, 0, Math.PI, 0);
+          ctx.fill();
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(-8, -6, 16, 22);
+          ctx.fillStyle = '#e879f9';
+          ctx.beginPath();
+          ctx.arc(8, -8, 7, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'flowerpot') {
+          drawPotGraphic(ctx, 0, 5);
+        } else if (this.type === 'hypnoshroom') {
+          const hue = (this.timer * 5) % 360;
+          ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
+          ctx.beginPath();
+          ctx.arc(0, -5, 18, Math.PI, 0);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(0, -10, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 血条 (当受损时)
+        if (this.hp < this.maxHp) {
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fillRect(-20, -32, 40, 6);
+          ctx.fillStyle = '#22c55e';
+          ctx.fillRect(-20, -32, (this.hp / this.maxHp) * 40, 6);
+        }
+
+        ctx.restore();
+      }
+    }
+
+    function drawPotGraphic(ctx, x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = '#b45309';
+      ctx.beginPath();
+      ctx.moveTo(-25, -10);
+      ctx.lineTo(25, -10);
+      ctx.lineTo(18, 20);
+      ctx.lineTo(-18, 20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(-28, -18, 56, 10);
+      ctx.restore();
+    }
+
+    class Zombie {
+      constructor(r, type = 'normal') {
+        this.r = r;
+        this.type = type;
+        this.x = canvas.width + 30;
+        this.y = gridOffsetY + r * gridHeight + gridHeight / 2;
+        this.speed = 0.5;
+        this.isFrozen = false;
+        this.freezeTimer = 0;
+        this.isHypno = false; // 是否被魅惑反向走
+
+        if (type === 'normal') {
+          this.hp = 200;
+          this.maxHp = 200;
+        } else if (type === 'conehead') {
+          this.hp = 500;
+          this.maxHp = 500;
+        } else if (type === 'buckethead') {
+          this.hp = 900;
+          this.maxHp = 900;
+        }
+
+        this.eatingTarget = null;
+      }
+
+      update() {
+        if (this.freezeTimer > 0) {
+          this.freezeTimer--;
+          if (this.freezeTimer <= 0) this.isFrozen = false;
+        }
+
+        const currentSpeed = this.isFrozen ? this.speed * 0.4 : this.speed;
+
+        // 魅惑僵尸往右走，普通僵尸往左走
+        if (this.isHypno) {
+          this.x += currentSpeed;
+          // 攻击其他普通僵尸
+          const enemy = zombies.find(z => !z.isHypno && z.r === this.r && Math.abs(z.x - this.x) < 35);
+          if (enemy) {
+            enemy.takeDamage(3);
+          }
+          return;
+        }
+
+        // 寻找眼前要啃咬的植物
+        const targetPlant = plants.find(p => p.r === this.r && Math.abs(p.x - this.x) < 30);
+        if (targetPlant) {
+          targetPlant.hp -= 1.2;
+          if (Math.random() < 0.1) sound.playFlush();
+
+          // 遇到触发魅惑菇
+          if (targetPlant.type === 'hypnoshroom') {
+            targetPlant.hp = 0;
+            this.isHypno = true;
+            showToast('马桶僵尸被监控催眠，掉头反击啦！');
+          }
+          // 遇到激活的地雷
+          if (targetPlant.type === 'potatomine' && targetPlant.isArmed) {
+            targetPlant.explode();
+          }
+        } else {
+          this.x -= currentSpeed;
+        }
+
+        // 底线检测: 触发紧急防守激光帮小朋友打
+        if (this.x < gridOffsetX - 10 && !this.isHypno) {
+          triggerEmergencyDefense(this.r);
+        }
+      }
+
+      takeDamage(damage, isIce = false) {
+        this.hp -= damage;
+        if (isIce) {
+          this.isFrozen = true;
+          this.freezeTimer = 120; // 减速2秒
+        }
+        visualEffects.push(new SparkEffect(this.x, this.y));
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // 如果被减速变蓝
+        if (this.isFrozen) {
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+          ctx.beginPath();
+          ctx.arc(0, 0, 35, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 魅惑绿光
+        if (this.isHypno) {
+          ctx.fillStyle = 'rgba(34, 197, 94, 0.4)';
+          ctx.beginPath();
+          ctx.arc(0, 0, 38, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 白色马桶底座
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 3;
+        // 马桶身
+        ctx.beginPath();
+        ctx.ellipse(0, 12, 22, 18, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        // 马桶水箱 (在右侧)
+        ctx.fillRect(10, -18, 16, 28);
+        ctx.strokeRect(10, -18, 16, 28);
+
+        // 探出的僵尸头
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.arc(-5, -6, 14, 0, Math.PI * 2);
+        ctx.fill();
+        // 呆滞眼睛
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-9, -8, 4, 0, Math.PI * 2);
+        ctx.arc(-2, -8, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(-9, -8, 1.5, 0, Math.PI * 2);
+        ctx.arc(-2, -8, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 装备: 路障 / 铁桶
+        if (this.type === 'conehead') {
+          ctx.fillStyle = '#f97316';
+          ctx.beginPath();
+          ctx.moveTo(-16, -18);
+          ctx.lineTo(6, -18);
+          ctx.lineTo(-5, -38);
+          ctx.closePath();
+          ctx.fill();
+        } else if (this.type === 'buckethead') {
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(-15, -32, 20, 16);
+          ctx.strokeStyle = '#64748b';
+          ctx.strokeRect(-15, -32, 20, 16);
+        }
+
+        // 血条
+        if (this.hp < this.maxHp) {
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fillRect(-20, -42, 40, 5);
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-20, -42, (this.hp / this.maxHp) * 40, 5);
+        }
+
+        ctx.restore();
+      }
+    }
+
+    /* =========================================================================
+       9. 黄金马桶僵尸王 (第 7 关终极 BOSS)
+       ========================================================================= */
+    class BossZombie {
+      constructor() {
+        this.x = canvas.width - 150;
+        this.y = canvas.height / 2;
+        this.hp = 5000;
+        this.maxHp = 5000;
+        this.timer = 0;
+        this.phase = 1;
+      }
+
+      update() {
+        this.timer++;
+
+        // 僵王固定在右侧防线（不上下浮动，保持稳固战术站位）
+        this.y = canvas.height / 2;
+
+        // BOSS 阶段切换 (50% 血量狂暴咆哮并召唤)
+        if (this.hp < this.maxHp * 0.5 && this.phase === 1) {
+          this.phase = 2;
+          triggerScreenShake();
+          showToast('黄金马桶僵尸王狂暴啦！召唤马桶军团！');
+          sound.playExplode();
+          // 召唤一波小马桶僵尸
+          for (let r = 0; r < 5; r++) {
+            zombies.push(new Zombie(r, 'conehead'));
+          }
+        }
+
+        // 攻击模式: 投掷卷纸弹飞弹
+        if (this.timer % 120 === 0) {
+          const targetRow = Math.floor(Math.random() * ROWS);
+          projectiles.push(new BossPaperMissile(this.x - 50, gridOffsetY + targetRow * gridHeight + gridHeight / 2, targetRow));
+          sound.playExplode();
+        }
+
+        // 更新 UI 血条
+        const fill = document.getElementById('boss-hp-fill');
+        if (fill) {
+          fill.style.width = `${Math.max(0, (this.hp / this.maxHp) * 100)}%`;
+        }
+      }
+
+      takeDamage(damage) {
+        this.hp -= damage;
+        visualEffects.push(new SparkEffect(this.x - 40 + (Math.random() - 0.5) * 40, this.y + (Math.random() - 0.5) * 160));
+        if (this.hp <= 0) {
+          triggerVictorySequence();
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // 抖动视效 (被攻击或狂暴时)
+        const shake = this.phase === 2 ? (Math.random() - 0.5) * 4 : 0;
+        ctx.translate(shake, shake);
+
+        // 霸气巨型黄金底座马桶 (覆盖右侧全行高度)
+        ctx.fillStyle = '#eab308';
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 70, 160, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 黄金水箱 (右侧加宽)
+        ctx.fillRect(40, -140, 50, 280);
+        ctx.strokeRect(40, -140, 50, 280);
+
+        // 黄金巨头
+        ctx.fillStyle = '#ca8a04';
+        ctx.beginPath();
+        ctx.arc(-20, -30, 48, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 皇冠
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.moveTo(-60, -70);
+        ctx.lineTo(-40, -105);
+        ctx.lineTo(-20, -78);
+        ctx.lineTo(0, -105);
+        ctx.lineTo(20, -70);
+        ctx.closePath();
+        ctx.fill();
+
+        // 发光红眼
+        ctx.fillStyle = '#ef4444';
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(-35, -35, 10, 0, Math.PI * 2);
+        ctx.arc(-10, -35, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    class BossPaperMissile {
+      constructor(x, y, r) {
+        this.x = x;
+        this.y = y;
+        this.r = r;
+        this.speed = 6;
+      }
+      update() {
+        this.x -= this.speed;
+
+        // 击中植物
+        const hitPlant = plants.find(p => p.r === this.r && Math.abs(p.x - this.x) < 25);
+        if (hitPlant) {
+          hitPlant.hp -= 250;
+          this.destroy();
+        }
+        if (this.x < 0) this.destroy();
+      }
+      destroy() {
+        projectiles = projectiles.filter(p => p !== this);
+        visualEffects.push(new ExplosionEffect(this.x, this.y, 40));
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    /* =========================================================================
+       10. 弹射物、能量粒子与爆破视效
+       ========================================================================= */
+    class Projectile {
+      constructor(x, y, r, type, damage, isIce) {
+        this.x = x;
+        this.y = y;
+        this.r = r;
+        this.type = type;
+        this.damage = damage;
+        this.isIce = isIce;
+        this.speed = 10;
+      }
+
+      update() {
+        this.x += this.speed;
+
+        // 1. BOSS 战击中僵王 (僵王覆盖右侧全行)
+        if (bossObj && bossObj.hp > 0 && this.x >= bossObj.x - 70) {
+          bossObj.takeDamage(this.damage);
+          this.destroy();
+          return;
+        }
+
+        // 2. 检查打中马桶僵尸
+        const target = zombies.find(z => z.r === this.r && Math.abs(z.x - this.x) < 25 && !z.isHypno);
+        if (target) {
+          target.takeDamage(this.damage, this.isIce);
+          this.destroy();
+          return;
+        }
+
+        // 击中墓碑
+        const tomb = tombstones.find(t => t.r === this.r && Math.abs(t.x - this.x) < 25);
+        if (tomb) {
+          tomb.hp -= this.damage;
+          this.destroy();
+        }
+
+        if (this.x > canvas.width) this.destroy();
+      }
+
+      destroy() {
+        projectiles = projectiles.filter(p => p !== this);
+      }
+
+      draw(ctx) {
+        ctx.save();
+        if (this.type === 'laser') {
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 4;
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.moveTo(this.x - 15, this.y);
+          ctx.lineTo(this.x + 10, this.y);
+          ctx.stroke();
+        } else if (this.type === 'ice_laser') {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 5;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.moveTo(this.x - 15, this.y);
+          ctx.lineTo(this.x + 10, this.y);
+          ctx.stroke();
+        } else if (this.type === 'purple_puff') {
+          ctx.fillStyle = '#c084fc';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    class EnergyParticle {
+      constructor(x, y, isNatural = true) {
+        this.x = x;
+        this.y = y;
+        this.targetY = isNatural ? Math.random() * (canvas.height - 200) + 100 : y;
+        this.isNatural = isNatural;
+        this.timer = 0;
+      }
+      update() {
+        if (this.isNatural && this.y < this.targetY) {
+          this.y += 2;
+        }
+        this.timer++;
+        // 5秒后自动磁吸收集，适合5岁小朋友
+        if (this.timer > 300) {
+          this.collect();
+        }
+      }
+      collect() {
+        sound.playEnergy();
+        updateEnergy(25);
+        energyParticles = energyParticles.filter(e => e !== this);
+        visualEffects.push(new SparkEffect(this.x, this.y, '#fef08a'));
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.fillStyle = '#facc15';
+        ctx.shadowColor = '#fef08a';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class FumeBeamEffect {
+      constructor(x, y, r) {
+        this.x = x;
+        this.y = y;
+        this.r = r;
+        this.life = 15;
+      }
+      update() {
+        this.life--;
+        if (this.life <= 0) visualEffects = visualEffects.filter(v => v !== this);
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(168, 85, 247, 0.4)';
+        ctx.fillRect(this.x, this.y - 20, canvas.width - this.x, 40);
+        ctx.restore();
+      }
+    }
+
+    class ExplosionEffect {
+      constructor(x, y, radius) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.life = 20;
+      }
+      update() {
+        this.life--;
+        if (this.life <= 0) visualEffects = visualEffects.filter(v => v !== this);
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * (1 - this.life / 20), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class SparkEffect {
+      constructor(x, y, color = '#ef4444') {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.life = 10;
+      }
+      update() {
+        this.life--;
+        if (this.life <= 0) visualEffects = visualEffects.filter(v => v !== this);
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.fillStyle = this.color;
+        for (let i = 0; i < 5; i++) {
+          ctx.fillRect(this.x + (Math.random() - 0.5) * 20, this.y + (Math.random() - 0.5) * 20, 4, 4);
+        }
+        ctx.restore();
+      }
+    }
+
+    class Tombstone {
+      constructor(r, c) {
+        this.r = r;
+        this.c = c;
+        this.x = gridOffsetX + c * gridWidth + gridWidth / 2;
+        this.y = gridOffsetY + r * gridHeight + gridHeight / 2;
+        this.hp = 600;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(-15, -20, 30, 35);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText('🚽 RIP', -14, 0);
+        ctx.restore();
+      }
+    }
+
+    /* =========================================================================
+       11. 防输机制与震动
+       ========================================================================= */
+    let screenShakeTimer = 0;
+    function triggerScreenShake() {
+      screenShakeTimer = 15;
+    }
+
+    function triggerEmergencyDefense(row) {
+      showToast('⚠️ 监控紧急全屏扫射！消灭底线马桶僵尸！');
+      sound.playExplode();
+      triggerScreenShake();
+      zombies.forEach(z => {
+        if (z.r === row && !z.isHypno) {
+          z.takeDamage(1000);
+        }
+      });
+      visualEffects.push(new FumeBeamEffect(0, gridOffsetY + row * gridHeight + gridHeight / 2, row));
+    }
+
+    /* =========================================================================
+       12. 主游戏循环 (Main Loop)
+       ========================================================================= */
+    function gameLoop() {
+      if (!isPlaying) return;
+
+      // 震动偏置
+      let shakeX = 0, shakeY = 0;
+      if (screenShakeTimer > 0) {
+        screenShakeTimer--;
+        shakeX = (Math.random() - 0.5) * 10;
+        shakeY = (Math.random() - 0.5) * 10;
+      }
+
+      ctx.save();
+      ctx.translate(shakeX, shakeY);
+
+      // 1. 绘制地图背景 (Day/Night/Roof/Boss)
+      drawEnvironmentBg();
+
+      // 2. 绘制草地网格
+      drawGrid();
+
+      // 3. 产生自然能量 (白天模式)
+      const cfg = LEVEL_CONFIGS[currentLevelIdx];
+      if (cfg.energyDrop && Math.random() < 0.005) {
+        energyParticles.push(new EnergyParticle(Math.random() * (canvas.width - 200) + 100, 0, true));
+      }
+
+      // 4. 刷新马桶僵尸刷怪流
+      handleZombieSpawns();
+
+      // 5. 更新与绘制实体
+      if (tombstones) tombstones.forEach(t => t.draw(ctx));
+      plants.forEach(p => { p.update(); p.draw(ctx); });
+      plants = plants.filter(p => p.hp > 0);
+
+      zombies.forEach(z => { z.update(); z.draw(ctx); });
+      zombies = zombies.filter(z => z.hp > 0);
+
+      if (bossObj) {
+        bossObj.update();
+        bossObj.draw(ctx);
+      }
+
+      projectiles.forEach(p => { p.update(); p.draw(ctx); });
+      energyParticles.forEach(e => { e.update(); e.draw(ctx); });
+      visualEffects.forEach(v => { v.update(); v.draw(ctx); });
+
+      // 6. 辅助引导更新
+      updateGuideFinger();
+
+      ctx.restore();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    /* =========================================================================
+       13. 环境背景与网格绘制
+       ========================================================================= */
+    function drawEnvironmentBg() {
+      const cfg = LEVEL_CONFIGS[currentLevelIdx];
+      if (cfg.bgType === 'day') {
+        ctx.fillStyle = '#15803d'; // 绿草地
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (cfg.bgType === 'night' || cfg.bgType === 'night_fog') {
+        ctx.fillStyle = '#0f172a'; // 黑夜
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // 星光
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(100, 30, 2, 2);
+        ctx.fillRect(300, 40, 3, 3);
+        ctx.fillRect(700, 20, 2, 2);
+      } else if (cfg.bgType === 'roof') {
+        ctx.fillStyle = '#78350f'; // 红砖屋顶
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (cfg.bgType === 'sunset' || cfg.bgType === 'boss_arena') {
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      // 迷雾 (Night Fog)
+      if (cfg.bgType === 'night_fog') {
+        ctx.fillStyle = 'rgba(203, 213, 225, 0.45)';
+        ctx.fillRect(gridOffsetX + gridWidth * 5, 0, canvas.width, canvas.height);
+      }
+    }
+
+    function drawGrid() {
+      const cfg = LEVEL_CONFIGS[currentLevelIdx];
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const x = gridOffsetX + c * gridWidth;
+          const y = gridOffsetY + r * gridHeight;
+
+          ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, gridWidth, gridHeight);
+
+          // 如果是屋顶并且放了花盆
+          if (cfg.needPot && gridState[r][c].hasPot && !plants.some(p => p.r === r && p.c === c)) {
+            drawPotGraphic(ctx, x + gridWidth / 2, y + gridHeight / 2 + 5);
+          }
+        }
+      }
+    }
+
+    /* =========================================================================
+       14. 刷怪逻辑与关卡推进
+       ========================================================================= */
+    function handleZombieSpawns() {
+      const cfg = LEVEL_CONFIGS[currentLevelIdx];
+      if (cfg.hasBoss) return; // BOSS 关卡不按常规波次
+
+      waveTimer++;
+      if (waveTimer > 350) { // 每几秒刷新一波
+        waveTimer = 0;
+        if (currentWave < cfg.waves) {
+          currentWave++;
+          // 随机整行刷怪
+          const count = Math.min(3, Math.floor(currentWave / 2) + 1);
+          for (let i = 0; i < count; i++) {
+            const r = Math.floor(Math.random() * ROWS);
+            const zType = cfg.zombies[Math.floor(Math.random() * cfg.zombies.length)];
+            if (zType !== 'tombstone') {
+              zombies.push(new Zombie(r, zType));
+            }
+          }
+          // 更新关卡进度
+          document.getElementById('level-progress-fill').style.width = `${(currentWave / cfg.waves) * 100}%`;
+        } else if (zombies.length === 0) {
+          // 本关胜利！
+          triggerVictorySequence();
+        }
+      }
+    }
+
+    /* =========================================================================
+       15. 交互点击放置植物 & 能量收集
+       ========================================================================= */
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      // 1. 检查是否点中能量粒子
+      energyParticles.forEach(p => {
+        if (Math.hypot(p.x - clickX, p.y - clickY) < 30) {
+          p.collect();
+        }
+      });
+
+      // 2. 检查放置植物
+      if (!selectedPlantId) return;
+
+      const c = Math.floor((clickX - gridOffsetX) / gridWidth);
+      const r = Math.floor((clickY - gridOffsetY) / gridHeight);
+
+      if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+        const cfg = LEVEL_CONFIGS[currentLevelIdx];
+
+        // 屋顶关卡检查花盆
+        if (cfg.needPot && selectedPlantId !== 'flowerpot' && !gridState[r][c].hasPot) {
+          showToast('屋顶需要先种植【监控花盆】哦！');
+          return;
+        }
+
+        // 检查该位置是否已有植物
+        const existingPlant = plants.find(p => p.r === r && p.c === c);
+        if (existingPlant && selectedPlantId !== 'flowerpot') {
+          showToast('这里已经有监控植物啦！');
+          return;
+        }
+
+        const pConfig = PLANT_TYPES[selectedPlantId];
+        if (energy >= pConfig.cost) {
+          updateEnergy(-pConfig.cost);
+
+          if (selectedPlantId === 'flowerpot') {
+            gridState[r][c].hasPot = true;
+          } else {
+            plants.push(new Plant(selectedPlantId, r, c));
+          }
+
+          sound.playPlant();
+          selectedPlantId = null;
+          renderPlantCards();
+
+          // 引导推进
+          if (currentLevelIdx === 0 && guideStep > 0) guideStep = 0;
+        }
+      }
+    });
+
+    /* =========================================================================
+       16. 5岁儿童全方位指引小手
+       ========================================================================= */
+    function updateGuideFinger() {
+      const finger = document.getElementById('guide-finger');
+      if (currentLevelIdx !== 0 || guideStep === 0) {
+        finger.style.display = 'none';
+        return;
+      }
+
+      finger.style.display = 'block';
+      if (guideStep === 1) { // 指向第一张向日葵卡片
+        finger.style.left = '160px';
+        finger.style.top = '20px';
+      } else if (guideStep === 2) { // 指向第一行网格
+        finger.style.left = `${gridOffsetX + gridWidth * 0.5}px`;
+        finger.style.top = `${gridOffsetY + gridHeight * 0.5}px`;
+      }
+    }
+
+    /* =========================================================================
+       17. 关卡加载与切换逻辑
+       ========================================================================= */
+    function startLevel(levelIdx) {
+      currentLevelIdx = levelIdx;
+      const cfg = LEVEL_CONFIGS[currentLevelIdx];
+
+      // 重置全局数据
+      energy = 150;
+      plants = [];
+      zombies = [];
+      projectiles = [];
+      energyParticles = [];
+      visualEffects = [];
+      tombstones = [];
+      bossObj = null;
+      currentWave = 0;
+      waveTimer = 0;
+      selectedPlantId = null;
+
+      // 初始化格子状态
+      gridState = [];
+      for (let r = 0; r < ROWS; r++) {
+        gridState[r] = [];
+        for (let c = 0; c < COLS; c++) {
+          gridState[r][c] = { hasPot: false };
+        }
+      }
+
+      // 墓碑刷新 (夜间关卡)
+      if (cfg.zombies.includes('tombstone')) {
+        for (let i = 0; i < 4; i++) {
+          const r = Math.floor(Math.random() * ROWS);
+          const c = Math.floor(Math.random() * 3) + 4;
+          tombstones.push(new Tombstone(r, c));
+        }
+      }
+
+      // BOSS 关卡加载 BOSS
+      const bossHpBox = document.getElementById('boss-hp-container');
+      if (cfg.hasBoss) {
+        bossObj = new BossZombie();
+        bossHpBox.style.display = 'flex';
+      } else {
+        bossHpBox.style.display = 'none';
+      }
+
+      // 更新界面文本
+      document.getElementById('level-name-text').innerText = cfg.title;
+      document.getElementById('level-progress-fill').style.width = '0%';
+      updateEnergy(0);
+
+      // 第一关开启小手指引
+      if (currentLevelIdx === 0) guideStep = 1;
+
+      isPlaying = true;
+      requestAnimationFrame(gameLoop);
+    }
+
+    function triggerVictorySequence() {
+      isPlaying = false;
+      sound.playVictory();
+
+      const modal = document.getElementById('modal-victory');
+      const title = document.getElementById('victory-title');
+      const desc = document.getElementById('victory-desc');
+
+      if (currentLevelIdx === 6) {
+        title.innerText = '🏆 恭喜小英雄终极通关！ 🏆';
+        desc.innerHTML = '你成功击败了【黄金马桶僵尸王】！<br>你是最棒的监控超级大英雄！🎉🎉🎉';
+        document.getElementById('btn-next-level').innerText = '🔄 再玩一遍';
+      } else {
+        title.innerText = '🎉 关卡胜利！';
+        desc.innerText = `太棒啦！你成功保卫了【${LEVEL_CONFIGS[currentLevelIdx].title}】！`;
+        document.getElementById('btn-next-level').innerText = '下一关 ➔';
+      }
+
+      modal.classList.add('show');
+    }
+
+    /* =========================================================================
+       18. 事件绑定 (按钮与模态框)
+       ========================================================================= */
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+      document.getElementById('modal-start').classList.remove('show');
+      startLevel(0);
+    });
+
+    document.getElementById('btn-next-level').addEventListener('click', () => {
+      document.getElementById('modal-victory').classList.remove('show');
+      if (currentLevelIdx >= 6) {
+        startLevel(0);
+      } else {
+        startLevel(currentLevelIdx + 1);
+      }
+    });
+
+    // 超级监控射线按钮
+    document.getElementById('btn-super-laser').addEventListener('click', () => {
+      showToast('⚡ 开启全局监控超级射线爆破！');
+      sound.playExplode();
+      triggerScreenShake();
+      zombies.forEach(z => z.takeDamage(800));
+      if (bossObj) bossObj.takeDamage(1000);
+      visualEffects.push(new ExplosionEffect(canvas.width / 2, canvas.height / 2, 300));
+    });
+
+    // 声音切换
+    document.getElementById('btn-audio-toggle').addEventListener('click', (e) => {
+      sound.enabled = !sound.enabled;
+      e.target.innerText = sound.enabled ? '🔊 声音: 开' : '🔇 声音: 关';
+    });
+
+    // 页面加载显示开始界面
+    window.addEventListener('load', () => {
+      document.getElementById('modal-start').classList.add('show');
+      renderPlantCards();
+    });
+
+  </script>
+</body>
+</html>
