@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>植物大战僵尸升级第二版 - 5岁小英雄超级高对比版</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      background: #090d16;
+      color: #fff;
+      font-family: 'Segoe UI', Microsoft YaHei, sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game-wrapper {
+      position: relative;
+      width: 1000px;
+      height: 640px;
+      background: #0f172a;
+      border: 5px solid #fbbf24;
+      border-radius: 24px;
+      box-shadow: 0 0 60px rgba(251, 191, 36, 0.4), inset 0 0 25px rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 顶部控制栏 */
+    #top-bar {
+      height: 88px;
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border-bottom: 4px solid #334155;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 12px;
+      z-index: 20;
+    }
+
+    .status-card {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      border: 3px solid #fef08a;
+      border-radius: 16px;
+      padding: 4px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 14px rgba(217, 119, 6, 0.5);
+      min-width: 140px;
+    }
+    .status-icon {
+      font-size: 32px;
+      animation: spinSun 8s linear infinite;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+    @keyframes spinSun { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .status-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .status-label {
+      font-size: 11px;
+      color: #fef08a;
+      font-weight: bold;
+    }
+    .status-val {
+      font-size: 24px;
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+
+    /* 植物选择卡片栏 */
+    #cards-container {
+      flex: 1;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      overflow-x: auto;
+      padding: 2px 4px;
+    }
+    #cards-container::-webkit-scrollbar { display: none; }
+
+    .plant-card {
+      width: 76px;
+      height: 80px;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 3px solid #475569;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+    }
+    .plant-card.usable {
+      border-color: #10b981;
+      background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+    }
+    .plant-card.usable:hover {
+      transform: translateY(-5px) scale(1.08);
+      border-color: #34d399;
+      box-shadow: 0 8px 24px rgba(52, 211, 153, 0.6);
+    }
+    .plant-card.selected {
+      border-color: #fbbf24 !important;
+      box-shadow: 0 0 20px #fbbf24 !important;
+      transform: scale(1.1);
+    }
+    .plant-card .emoji {
+      font-size: 32px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+    }
+    .plant-card .name {
+      font-size: 11px;
+      font-weight: 900;
+      color: #ffffff;
+      white-space: nowrap;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .plant-card .cost {
+      font-size: 12px;
+      font-weight: 900;
+      color: #fef08a;
+      background: rgba(0,0,0,0.6);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* 一键灭绝大招按钮 */
+    #ult-btn {
+      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      border: 3.5px solid #fca5a5;
+      border-radius: 18px;
+      padding: 6px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(220, 38, 38, 0.6);
+      transition: all 0.2s ease;
+      animation: pulseUlt 1.5s infinite alternate;
+    }
+    @keyframes pulseUlt {
+      0% { transform: scale(1); box-shadow: 0 0 12px rgba(220,38,38,0.6); }
+      100% { transform: scale(1.06); box-shadow: 0 0 28px rgba(248,113,113,0.95); }
+    }
+    #ult-btn:hover { transform: scale(1.12); }
+    #ult-btn:active { transform: scale(0.95); }
+    #ult-btn .ult-title { font-size: 14px; font-weight: 900; color: #fff; text-shadow: 0 2px 4px #000; }
+    #ult-btn .ult-sub { font-size: 11px; color: #fecaca; font-weight: bold; }
+
+    /* 提示指引横幅 */
+    #guide-banner {
+      height: 34px;
+      background: linear-gradient(90deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+      border-bottom: 3px solid #818cf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 16px;
+      font-size: 15px;
+      font-weight: bold;
+      color: #a5f3fc;
+      gap: 8px;
+      z-index: 15;
+    }
+    #guide-banner span.highlight {
+      color: #fde047;
+      font-size: 16px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+
+    /* 游戏主 Canvas */
+    #game-canvas {
+      width: 1000px;
+      height: 518px;
+      display: block;
+      cursor: pointer;
+    }
+
+    /* 结算弹窗 */
+    #modal-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(10px);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s ease;
+    }
+    #modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-box {
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      border: 4px solid #fbbf24;
+      border-radius: 26px;
+      padding: 32px 44px;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.85), 0 0 35px rgba(251,191,36,0.5);
+      max-width: 520px;
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .modal-title {
+      font-size: 38px;
+      font-weight: 900;
+      color: #fbbf24;
+      margin-bottom: 14px;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    }
+    .modal-desc {
+      font-size: 19px;
+      color: #f3f4f6;
+      margin-bottom: 26px;
+      line-height: 1.6;
+    }
+    .modal-btn {
+      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+      color: #fff;
+      font-size: 24px;
+      font-weight: 900;
+      padding: 14px 40px;
+      border: 3px solid #6ee7b7;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(16, 185, 129, 0.5);
+      transition: all 0.2s ease;
+    }
+    .modal-btn:hover {
+      transform: scale(1.08);
+      background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+  <!-- 顶部状态与植物选牌 -->
+  <div id="top-bar">
+    <div class="status-card">
+      <div class="status-icon">☀️</div>
+      <div class="status-info">
+        <span class="status-label">超级阳光 (各+100)</span>
+        <span class="status-val" id="sun-val">500</span>
+      </div>
+    </div>
+
+    <div id="cards-container">
+      <!-- 动态生成的植物卡片 -->
+    </div>
+
+    <!-- 一键刷刷灭绝大招按纽 -->
+    <div id="ult-btn" onclick="triggerUltSkill()">
+      <span class="ult-title">⚔️ 5剑刷刷灭绝</span>
+      <span class="ult-sub">一键扫荡全屏僵尸</span>
+    </div>
+  </div>
+
+  <!-- 提示指引条 -->
+  <div id="guide-banner">
+    <span>💡 5岁小英雄提示：</span>
+    <span id="guide-text" class="highlight">点击下方卡片，种在草坪上发射【巨型超级大豆弹】吧！</span>
+  </div>
+
+  <!-- 核心游戏 Canvas -->
+  <canvas id="game-canvas" width="1000" height="518"></canvas>
+
+  <!-- 关卡/胜利结算弹窗 -->
+  <div id="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title" id="modal-title">🎉 关卡大胜利！</div>
+      <div class="modal-desc" id="modal-desc">你成功保护了家园！快进入下一关全新的惊险场景吧！</div>
+      <button class="modal-btn" id="modal-btn" onclick="nextLevelOrRestart()">🚀 进入下一关</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+
+// ═══════════════════════════════════════════════════
+// Web Audio API 音效合成引擎
+// ═══════════════════════════════════════════════════
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+const SFX = {
+  click() {
+    try {
+      const a = getAudioCtx(), o = a.createOscillator(), g = a.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(600, a.currentTime);
+      o.frequency.exponentialRampToValueAtTime(800, a.currentTime + 0.08);
+      g.gain.setValueAtTime(0.15, a.currentTime);
+      g.gain.linearRampToValueAtTime(0.01, a.currentTime + 0.08);
+      o.connect(g); g.connect(a.destination);
+      o.start(); o.stop(a.currentTime + 0.08);
+    } catch(e){}
+  },
+  sunCollect() {
+    try {
+      const a = getAudioCtx();
+      [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+        setTimeout(() => {
+          const o = a.createOscillator(), g = a.createGain();
+          o.type = 'triangle'; o.frequency.value = freq;
+          g.gain.setValueAtTime(0.2, a.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.15);
+          o.connect(g); g.connect(a.destination);
+          o.start(); o.stop(a.currentTime + 0.15);
+        }, i * 60);
+      });
+    } catch(e){}
+  },
+  shootMegaPea() {
+    try {
+      const a = getAudioCtx(), o = a.createOscillator(), g = a.createGain();
+      o.type = 'square'; o.frequency.setValueAtTime(300, a.currentTime);
+      o.frequency.exponentialRampToValueAtTime(100, a.currentTime + 0.12);
+      g.gain.setValueAtTime(0.12, a.currentTime);
+      g.gain.linearRampToValueAtTime(0.01, a.currentTime + 0.12);
+      o.connect(g); g.connect(a.destination);
+      o.start(); o.stop(a.currentTime + 0.12);
+    } catch(e){}
+  },
+  gatlingPea() {
+    try {
+      const a = getAudioCtx();
+      for(let i=0; i<4; i++){
+        setTimeout(() => {
+          const o = a.createOscillator(), g = a.createGain();
+          o.type = 'sawtooth'; o.frequency.setValueAtTime(450 - i*50, a.currentTime);
+          g.gain.setValueAtTime(0.1, a.currentTime);
+          g.gain.linearRampToValueAtTime(0.01, a.currentTime + 0.06);
+          o.connect(g); g.connect(a.destination);
+          o.start(); o.stop(a.currentTime + 0.06);
+        }, i * 50);
+      }
+    } catch(e){}
+  },
+  hitZomb() {
+    try {
+      const a = getAudioCtx(), o = a.createOscillator(), g = a.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(150, a.currentTime);
+      g.gain.setValueAtTime(0.15, a.currentTime);
+      g.gain.linearRampToValueAtTime(0.01, a.currentTime + 0.06);
+      o.connect(g); g.connect(a.destination);
+      o.start(); o.stop(a.currentTime + 0.06);
+    } catch(e){}
+  },
+  upgrade() {
+    try {
+      const a = getAudioCtx();
+      [300, 450, 600, 900].forEach((f, i) => {
+        setTimeout(() => {
+          const o = a.createOscillator(), g = a.createGain();
+          o.type = 'sine'; o.frequency.value = f;
+          g.gain.setValueAtTime(0.2, a.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.12);
+          o.connect(g); g.connect(a.destination);
+          o.start(); o.stop(a.currentTime + 0.12);
+        }, i * 70);
+      });
+    } catch(e){}
+  },
+  explode() {
+    try {
+      const a = getAudioCtx();
+      const buf = a.createBuffer(1, a.sampleRate * 0.4, a.sampleRate);
+      const data = buf.getChannelData(0);
+      for(let i=0; i<data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (a.sampleRate * 0.1));
+      const src = a.createBufferSource(); src.buffer = buf;
+      const g = a.createGain(); g.gain.setValueAtTime(0.3, a.currentTime);
+      src.connect(g); g.connect(a.destination);
+      src.start(); src.stop(a.currentTime + 0.4);
+    } catch(e){}
+  },
+  swordUlt() {
+    try {
+      const a = getAudioCtx();
+      [200, 400, 600, 800, 1200].forEach((f, i) => {
+        setTimeout(() => {
+          const o = a.createOscillator(), g = a.createGain();
+          o.type = 'sawtooth'; o.frequency.setValueAtTime(f, a.currentTime);
+          o.frequency.exponentialRampToValueAtTime(f/2, a.currentTime + 0.2);
+          g.gain.setValueAtTime(0.25, a.currentTime);
+          g.gain.linearRampToValueAtTime(0.01, a.currentTime + 0.2);
+          o.connect(g); g.connect(a.destination);
+          o.start(); o.stop(a.currentTime + 0.2);
+        }, i * 100);
+      });
+    } catch(e){}
+  },
+  winFanfare() {
+    try {
+      const a = getAudioCtx();
+      const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+      notes.forEach((f, i) => {
+        setTimeout(() => {
+          const o = a.createOscillator(), g = a.createGain();
+          o.type = 'triangle'; o.frequency.value = f;
+          g.gain.setValueAtTime(0.25, a.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.3);
+          o.connect(g); g.connect(a.destination);
+          o.start(); o.stop(a.currentTime + 0.3);
+        }, i * 120);
+      });
+    } catch(e){}
+  }
+};
+
+// ═══════════════════════════════════════════════════
+// 游戏网格与高对比亮色彩色配置
+// ═══════════════════════════════════════════════════
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+
+const GRID = {
+  left: 100,
+  top: 55,
+  cols: 9,
+  rows: 5,
+  cw: 95,
+  ch: 88
+};
+
+let currentLevelIdx = 0;
+let sunCount = 500;
+let selectedPlantType = null;
+
+// 关卡数据定义 (6大高强对比超清晰场景)
+const LEVELS = [
+  {
+    id: 1,
+    name: '☀️ 1. 阳光高光草坪 (暖色高对比)',
+    bgType: 'day',
+    guide: '👉 点击卡片【豌豆向日葵】，种在草坪上，每次生成100阳光！',
+    zombiesToSpawn: 12,
+    spawnRate: 280,
+    allowedZombies: ['normal', 'cone']
+  },
+  {
+    id: 2,
+    name: '🌙 2. 紫暗星空墓园 (黑夜不掉阳光规则)',
+    bgType: 'night',
+    guide: '🌙 夜间关卡特别规则：黑夜里天空不会掉阳光哦！一定要多种【豌豆向日葵】来产生100阳光！',
+    zombiesToSpawn: 16,
+    spawnRate: 240,
+    allowedZombies: ['normal', 'cone', 'bucket']
+  },
+  {
+    id: 3,
+    name: '🏊 3. 湛蓝水晶泳池 (亮水地块)',
+    bgType: 'pool',
+    guide: '🏊 中间2条是水路！试试【双花青军长】和【冰暴寒冰射手】冰冻敌人！',
+    zombiesToSpawn: 20,
+    spawnRate: 200,
+    allowedZombies: ['normal', 'cone', 'bucket', 'ducky']
+  },
+  {
+    id: 4,
+    name: '🏠 4. 暖红暴风雨屋顶 (红砖白线)',
+    bgType: 'roof_storm',
+    guide: '🌩️ 狂风暴雨！注意巨大的橄榄球僵尸与兔子巨怪，快用【爆裂樱桃大炮】！',
+    zombiesToSpawn: 24,
+    spawnRate: 180,
+    allowedZombies: ['normal', 'bucket', 'football', 'gargantuar']
+  },
+  {
+    id: 5,
+    name: '🌴 5. 增强版·金边苔藓丛林',
+    bgType: 'jungle',
+    guide: '🌴 进入增强场景！植物攻击全面加倍，所有豆子升级为火焰爆裂弹！',
+    zombiesToSpawn: 30,
+    spawnRate: 150,
+    allowedZombies: ['normal', 'cone', 'bucket', 'football', 'gargantuar']
+  },
+  {
+    id: 6,
+    name: '🧪 6. 增强版·霓虹粘液夜池 (黑夜决战)',
+    bgType: 'slime_night',
+    guide: '🧪 粘液夜池特别规则：黑夜里天上不掉阳光！快多种【豌豆向日葵】赚阳光，升级【超级机枪】打BOSS！',
+    zombiesToSpawn: 35,
+    spawnRate: 120,
+    allowedZombies: ['normal', 'cone', 'bucket', 'football', 'gargantuar', 'boss']
+  }
+];
+
+// 植物定义（高对比多彩发光底座配色）
+const PLANT_TYPES = [
+  {
+    id: 'sun_pea',
+    name: '豌豆向日葵',
+    emoji: '🌻',
+    cost: 50,
+    hp: 300,
+    desc: '产100阳光+吐巨型大豆',
+    badgeBg: '#fef08a',
+    badgeBorder: '#d97706',
+    color: '#eab308'
+  },
+  {
+    id: 'pod_pea',
+    name: '升级豌豆荚',
+    emoji: '🫛',
+    cost: 100,
+    hp: 400,
+    desc: '在同位置重复放置升级为超级机枪！',
+    badgeBg: '#bbf7d0',
+    badgeBorder: '#15803d',
+    color: '#22c55e'
+  },
+  {
+    id: 'captain_flower',
+    name: '双花青军长',
+    emoji: '🌺',
+    cost: 150,
+    hp: 500,
+    desc: '七彩激光大豆+护盾光环',
+    badgeBg: '#fbcfe8',
+    badgeBorder: '#db2777',
+    color: '#ec4899'
+  },
+  {
+    id: 'wall_nut',
+    name: '巨无霸坚果',
+    emoji: '🥜',
+    cost: 50,
+    hp: 2500,
+    desc: '超级硬度防护墙',
+    badgeBg: '#fde68a',
+    badgeBorder: '#b45309',
+    color: '#d97706'
+  },
+  {
+    id: 'cherry_bomb',
+    name: '爆裂樱桃大炮',
+    emoji: '🍒',
+    cost: 150,
+    hp: 1,
+    desc: '3x3 范围巨型大爆炸',
+    badgeBg: '#fecaca',
+    badgeBorder: '#dc2626',
+    color: '#ef4444'
+  },
+  {
+    id: 'ice_pea',
+    name: '冰暴寒冰射手',
+    emoji: '❄️',
+    cost: 100,
+    hp: 350,
+    desc: '减速冰冻僵尸',
+    badgeBg: '#cff4fc',
+    badgeBorder: '#0284c7',
+    color: '#38bdf8'
+  }
+];
+
+// 动态游戏对象列表
+let plantsGrid = Array(GRID.rows).fill(null).map(() => Array(GRID.cols).fill(null));
+let zombies = [];
+let bullets = [];
+let suns = [];
+let particles = [];
+let swordEffects = [];
+let floatingTexts = [];
+let gameFrame = 0;
+let zombiesSpawned = 0;
+let zombiesKilled = 0;
+let isLevelCompleted = false;
+let rainParticles = [];
+
+// 画面震动效果
+let screenShake = 0;
+
+// 初始化渲染选牌栏
+function initPlantCards() {
+  const container = document.getElementById('cards-container');
+  container.innerHTML = '';
+  PLANT_TYPES.forEach((p) => {
+    const card = document.createElement('div');
+    card.className = `plant-card ${sunCount >= p.cost ? 'usable' : ''}`;
+    card.id = `card-${p.id}`;
+    card.onclick = () => selectCard(p, card);
+
+    // 支持拖拽放置
+    card.setAttribute('draggable', 'true');
+    card.ondragstart = (e) => {
+      if (sunCount >= p.cost) {
+        selectCard(p, card);
+        e.dataTransfer.setData('text/plain', p.id);
+      } else {
+        e.preventDefault();
+      }
+    };
+
+    card.innerHTML = `
+      <div class="emoji">${p.emoji}</div>
+      <div class="name">${p.name}</div>
+      <div class="cost">☀️ ${p.cost}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function updateCardUsability() {
+  PLANT_TYPES.forEach(p => {
+    const card = document.getElementById(`card-${p.id}`);
+    if (card) {
+      if (sunCount >= p.cost) card.classList.add('usable');
+      else card.classList.remove('usable');
+    }
+  });
+  document.getElementById('sun-val').innerText = sunCount;
+}
+
+function selectCard(plantDef, cardElem) {
+  SFX.click();
+  if (selectedPlantType && selectedPlantType.id === plantDef.id) {
+    selectedPlantType = null;
+    document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('guide-text').innerText = LEVELS[currentLevelIdx].guide;
+    return;
+  }
+  if (sunCount < plantDef.cost) {
+    document.getElementById('guide-text').innerText = `⚠️ 阳光不足哦！阳光还需要 ${plantDef.cost - sunCount}，快收集掉落的☀️大太阳吧！`;
+    return;
+  }
+  selectedPlantType = plantDef;
+  document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
+  cardElem.classList.add('selected');
+  document.getElementById('guide-text').innerText = `已选择【${plantDef.name}】，点击或拖拽到草坪空地！`;
+}
+
+// ═══════════════════════════════════════════════════
+// 点击与拖拽放置/升级逻辑 (5岁友情设计)
+// ═══════════════════════════════════════════════════
+canvas.onclick = (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+  // 1. 优先检查是否点击收集太阳
+  for (let i = suns.length - 1; i >= 0; i--) {
+    const s = suns[i];
+    const dist = Math.hypot(clickX - s.x, clickY - s.y);
+    if (dist < s.r + 22) {
+      sunCount += 100;
+      SFX.sunCollect();
+      addFloatingText(s.x, s.y, '+100 ☀️');
+      createSparkles(s.x, s.y, '#fde047', 15);
+      suns.splice(i, 1);
+      updateCardUsability();
+      return;
+    }
+  }
+
+  // 2. 检查网格放置
+  const col = Math.floor((clickX - GRID.left) / GRID.cw);
+  const row = Math.floor((clickY - GRID.top) / GRID.ch);
+
+  if (col >= 0 && col < GRID.cols && row >= 0 && row < GRID.rows) {
+    handleGridClick(row, col);
+  }
+};
+
+// Canvas 拖拽支持
+canvas.ondragover = (e) => e.preventDefault();
+canvas.ondrop = (e) => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const dropX = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const dropY = (e.clientY - rect.top) * (canvas.height / rect.height);
+  const col = Math.floor((dropX - GRID.left) / GRID.cw);
+  const row = Math.floor((dropY - GRID.top) / GRID.ch);
+  if (col >= 0 && col < GRID.cols && row >= 0 && row < GRID.rows) {
+    handleGridClick(row, col);
+  }
+};
+
+function handleGridClick(row, col) {
+  const existing = plantsGrid[row][col];
+
+  if (!selectedPlantType) {
+    if (existing && existing.typeId === 'pod_pea') {
+      if (sunCount >= 100) {
+        upgradePeaPod(existing, row, col);
+      } else {
+        document.getElementById('guide-text').innerText = '⚠️ 阳光不够100，无法将豌豆荚升级哦！快拾取阳光吧！';
+      }
+    } else {
+      document.getElementById('guide-text').innerText = '👉 请先在上方选择一张【植物卡片】吧！';
+    }
+    return;
+  }
+
+  // 如果选了植物
+  if (existing) {
+    if (existing.typeId === 'pod_pea' && selectedPlantType.id === 'pod_pea') {
+      if (sunCount >= selectedPlantType.cost) {
+        upgradePeaPod(existing, row, col);
+      }
+    } else {
+      document.getElementById('guide-text').innerText = '⚠️ 这个位置已经种了植物啦，请选择其他空位置吧！';
+    }
+    return;
+  }
+
+  // 扣阳光种植物
+  if (sunCount >= selectedPlantType.cost) {
+    sunCount -= selectedPlantType.cost;
+    updateCardUsability();
+    SFX.click();
+
+    // 樱桃炸弹特殊处理
+    if (selectedPlantType.id === 'cherry_bomb') {
+      triggerCherryExplosion(row, col);
+      selectedPlantType = null;
+      document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
+      return;
+    }
+
+    plantsGrid[row][col] = {
+      typeId: selectedPlantType.id,
+      name: selectedPlantType.name,
+      emoji: selectedPlantType.emoji,
+      hp: selectedPlantType.hp,
+      maxHp: selectedPlantType.hp,
+      color: selectedPlantType.color,
+      badgeBg: selectedPlantType.badgeBg,
+      badgeBorder: selectedPlantType.badgeBorder,
+      podLevel: 1,
+      isGatling: false,
+      shootTimer: 0,
+      sunTimer: 0,
+      animOffset: Math.random() * Math.PI * 2
+    };
+
+    createSparkles(GRID.left + col * GRID.cw + GRID.cw/2, GRID.top + row * GRID.ch + GRID.ch/2, '#10b981', 15);
+    document.getElementById('guide-text').innerText = `🎉 成功种下【${selectedPlantType.name}】！大豆弹火力已准备！`;
+
+    selectedPlantType = null;
+    document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
+  }
+}
+
+// 豌豆荚升级逻辑
+function upgradePeaPod(plantObj, row, col) {
+  sunCount -= 100;
+  updateCardUsability();
+
+  if (plantObj.podLevel < 5 && !plantObj.isGatling) {
+    if (plantObj.podLevel === 1) plantObj.podLevel = 2;
+    else if (plantObj.podLevel === 2) plantObj.podLevel = 3;
+    else if (plantObj.podLevel === 3) plantObj.podLevel = 5;
+    plantObj.emoji = '🫛'.repeat(Math.min(3, plantObj.podLevel));
+    plantObj.hp += 200;
+    SFX.upgrade();
+    addFloatingText(GRID.left + col * GRID.cw + GRID.cw/2, GRID.top + row * GRID.ch, `升级 ${plantObj.podLevel}重豌豆荚！`);
+  } else if (!plantObj.isGatling) {
+    plantObj.isGatling = true;
+    plantObj.emoji = '⚡🫛';
+    plantObj.name = '超级机枪豌豆荚';
+    plantObj.hp += 500;
+    plantObj.badgeBg = '#fef08a';
+    plantObj.badgeBorder = '#f59e0b';
+    SFX.upgrade();
+    screenShake = 12;
+    const cx = GRID.left + col * GRID.cw + GRID.cw/2;
+    const cy = GRID.top + row * GRID.ch + GRID.ch/2;
+    createSparkles(cx, cy, '#fbbf24', 35);
+    addFloatingText(cx, cy - 20, '💥 进化！超级机枪豌豆荚！');
+    document.getElementById('guide-text').innerText = '⚡ 哇！成功进化为【超级机枪豌豆荚】！一次连发4发巨型震撼炮弹！';
+  } else {
+    plantObj.hp += 300;
+    SFX.upgrade();
+    addFloatingText(GRID.left + col * GRID.cw + GRID.cw/2, GRID.top + row * GRID.ch, '护甲与火力加倍！');
+  }
+
+  selectedPlantType = null;
+  document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
+}
+
+// 樱桃炸弹爆炸
+function triggerCherryExplosion(row, col) {
+  SFX.explode();
+  screenShake = 16;
+  const cx = GRID.left + col * GRID.cw + GRID.cw/2;
+  const cy = GRID.top + row * GRID.ch + GRID.ch/2;
+
+  createSparkles(cx, cy, '#ef4444', 45);
+  createSparkles(cx, cy, '#fbbf24', 35);
+
+  zombies.forEach(z => {
+    if (Math.abs(z.row - row) <= 1 && Math.abs(z.x - cx) <= GRID.cw * 1.5) {
+      z.hp -= 2000;
+      addFloatingText(z.x, z.y - 20, '💥 BOOM! -2000');
+    }
+  });
+
+  addFloatingText(cx, cy, '🍒 樱桃超级大爆炸！');
+}
+
+// 一键【⚔️ 5剑刷刷灭绝】大招
+window.triggerUltSkill = function() {
+  if (zombies.length === 0) {
+    document.getElementById('guide-text').innerText = '⚔️ 场上暂时没有僵尸哦，等僵尸出来再使用吧！';
+    return;
+  }
+  SFX.swordUlt();
+  screenShake = 22;
+
+  for (let i = 0; i < 5; i++) {
+    swordEffects.push({
+      x: -200 - i * 120,
+      y: GRID.top + i * GRID.ch + GRID.ch / 2,
+      speed: 26,
+      row: i
+    });
+  }
+
+  zombies.forEach(z => {
+    if (z.isBoss) {
+      z.hp -= 1500;
+      addFloatingText(z.x, z.y - 30, '⚔️ 剑光斩击 -1500');
+    } else {
+      z.hp = -100;
+      createSparkles(z.x, z.y, '#fef08a', 20);
+      addFloatingText(z.x, z.y - 20, '⚔️ 刷刷灭绝！');
+    }
+  });
+
+  document.getElementById('guide-text').innerText = '⚔️ 5把神奇仙剑飞过！全屏僵尸全部消灭掉啦！好厉害！';
+};
+
+// ═══════════════════════════════════════════════════
+// 僵尸高对比配色与生成 (紫灰鬼魅肤色+明亮配饰)
+// ═══════════════════════════════════════════════════
+
+function spawnZombie() {
+  const currentLvl = LEVELS[currentLevelIdx];
+  if (zombiesSpawned >= currentLvl.zombiesToSpawn) return;
+
+  zombiesSpawned++;
+  const row = Math.floor(Math.random() * GRID.rows);
+  const typeKey = currentLvl.allowedZombies[Math.floor(Math.random() * currentLvl.allowedZombies.length)];
+
+  // 默认紫灰鬼魅皮肤，绝对避开草地绿！
+  let zObj = {
+    x: canvas.width + 40,
+    y: GRID.top + row * GRID.ch + GRID.ch / 2,
+    row: row,
+    hp: 300,
+    maxHp: 300,
+    speed: 0.5,
+    atk: 1,
+    name: '普通僵尸',
+    emoji: '🧌',
+    pedestalColor: 'rgba(239, 68, 68, 0.5)',
+    color: '#ef4444',
+    freezeTimer: 0,
+    isBoss: false
+  };
+
+  if (typeKey === 'cone') {
+    zObj.hp = 600; zObj.maxHp = 600; zObj.name = '路障僵尸'; zObj.emoji = '🧟‍♂️'; zObj.pedestalColor = 'rgba(249, 115, 22, 0.6)'; zObj.color = '#f97316';
+  } else if (typeKey === 'bucket') {
+    zObj.hp = 1200; zObj.maxHp = 1200; zObj.name = '铁桶僵尸'; zObj.emoji = '🪣'; zObj.pedestalColor = 'rgba(148, 163, 184, 0.6)'; zObj.color = '#38bdf8';
+  } else if (typeKey === 'ducky') {
+    zObj.hp = 400; zObj.maxHp = 400; zObj.name = '泳池鸭子僵尸'; zObj.emoji = '🐥'; zObj.pedestalColor = 'rgba(250, 204, 21, 0.6)'; zObj.color = '#facc15';
+  } else if (typeKey === 'football') {
+    zObj.hp = 1000; zObj.maxHp = 1000; zObj.speed = 1.0; zObj.name = '橄榄球极速僵尸'; zObj.emoji = '🏈'; zObj.pedestalColor = 'rgba(185, 28, 28, 0.7)'; zObj.color = '#b91c1c';
+  } else if (typeKey === 'gargantuar') {
+    zObj.hp = 2200; zObj.maxHp = 2200; zObj.speed = 0.35; zObj.name = '巨型兔子僵尸'; zObj.emoji = '🐰'; zObj.pedestalColor = 'rgba(168, 85, 247, 0.7)'; zObj.color = '#a855f7';
+  } else if (typeKey === 'boss') {
+    zObj.hp = 5000; zObj.maxHp = 5000; zObj.speed = 0.25; zObj.name = '👑 黄金巨怪僵尸王'; zObj.emoji = '👑'; zObj.pedestalColor = 'rgba(251, 191, 36, 0.8)'; zObj.color = '#fbbf24'; zObj.isBoss = true;
+  }
+
+  zombies.push(zObj);
+}
+
+// 自动生成自然掉落太阳 (🌙 黑夜关卡遵守经典规则：天上不掉阳光！)
+function spawnNaturalSun() {
+  const currentLvl = LEVELS[currentLevelIdx];
+  if (currentLvl.bgType === 'night' || currentLvl.bgType === 'slime_night') {
+    return; // 🌙 黑夜关卡天空不掉阳光，全靠向日葵产出！
+  }
+  if (Math.random() < 0.0085) {
+    suns.push({
+      x: GRID.left + Math.random() * (GRID.cols * GRID.cw),
+      y: -30,
+      targetY: GRID.top + Math.random() * (GRID.rows * GRID.ch),
+      r: 28,
+      vy: 1.6,
+      life: 600
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// 游戏主逻辑 Loop
+// ═══════════════════════════════════════════════════
+function update() {
+  gameFrame++;
+  const currentLvl = LEVELS[currentLevelIdx];
+
+  // 1. 生成僵尸
+  if (gameFrame % currentLvl.spawnRate === 0 && zombiesSpawned < currentLvl.zombiesToSpawn) {
+    spawnZombie();
+  }
+
+  spawnNaturalSun();
+
+  // 更新太阳位置
+  for (let i = suns.length - 1; i >= 0; i--) {
+    const s = suns[i];
+    if (s.y < s.targetY) s.y += s.vy;
+    s.life--;
+    if (s.life <= 0) suns.splice(i, 1);
+  }
+
+  // 2. 植物逻辑 (攻击与太阳产出)
+  for (let r = 0; r < GRID.rows; r++) {
+    for (let c = 0; c < GRID.cols; c++) {
+      const p = plantsGrid[r][c];
+      if (!p) continue;
+
+      const plantX = GRID.left + c * GRID.cw + GRID.cw / 2;
+      const plantY = GRID.top + r * GRID.ch + GRID.ch / 2;
+
+      const hasZombieInRow = zombies.some(z => z.row === r && z.x > plantX);
+
+      // 向日葵定期产生 100 阳光
+      if (p.typeId === 'sun_pea') {
+        p.sunTimer++;
+        if (p.sunTimer > 300) {
+          p.sunTimer = 0;
+          suns.push({
+            x: plantX + (Math.random()*20 - 10),
+            y: plantY - 20,
+            targetY: plantY + 10,
+            r: 26,
+            vy: 1,
+            life: 600
+          });
+          createSparkles(plantX, plantY, '#fde047', 10);
+        }
+      }
+
+      // 攻击发射逻辑
+      if (hasZombieInRow && p.typeId !== 'wall_nut') {
+        p.shootTimer++;
+        let shootInterval = p.isGatling ? 28 : 55;
+        if (p.shootTimer >= shootInterval) {
+          p.shootTimer = 0;
+
+          if (p.isGatling) {
+            SFX.gatlingPea();
+            for (let b = 0; b < 4; b++) {
+              bullets.push({
+                x: plantX + 20 + b * 15,
+                y: plantY + (b % 2 === 0 ? -8 : 8),
+                row: r,
+                speed: 9.5,
+                dmg: 85,
+                color: '#fbbf24',
+                strokeColor: '#7f1d1d',
+                size: 15,
+                isGatling: true
+              });
+            }
+          } else if (p.typeId === 'pod_pea') {
+            SFX.shootMegaPea();
+            const count = Math.min(3, p.podLevel);
+            for (let b = 0; b < count; b++) {
+              bullets.push({
+                x: plantX + 20 + b * 12,
+                y: plantY,
+                row: r,
+                speed: 7.5,
+                dmg: 50 * p.podLevel,
+                color: '#a3e635',
+                strokeColor: '#14532d',
+                size: 13 + p.podLevel * 2
+              });
+            }
+          } else if (p.typeId === 'captain_flower') {
+            SFX.shootMegaPea();
+            bullets.push({
+              x: plantX + 20,
+              y: plantY,
+              row: r,
+              speed: 8.5,
+              dmg: 130,
+              color: '#f43f5e',
+              strokeColor: '#ffffff',
+              size: 17,
+              isRainbow: true
+            });
+          } else if (p.typeId === 'ice_pea') {
+            SFX.shootMegaPea();
+            bullets.push({
+              x: plantX + 20,
+              y: plantY,
+              row: r,
+              speed: 7.5,
+              dmg: 55,
+              color: '#38bdf8',
+              strokeColor: '#1e3a8a',
+              size: 15,
+              isIce: true
+            });
+          } else {
+            SFX.shootMegaPea();
+            bullets.push({
+              x: plantX + 20,
+              y: plantY,
+              row: r,
+              speed: 7,
+              dmg: 55,
+              color: '#a3e635',
+              strokeColor: '#14532d',
+              size: 14
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // 3. 更新子弹碰撞
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    b.x += b.speed;
+
+    for (let j = 0; j < zombies.length; j++) {
+      const z = zombies[j];
+      if (z.row === b.row && Math.abs(z.x - b.x) < 32) {
+        z.hp -= b.dmg;
+        SFX.hitZomb();
+        createSparkles(b.x, b.y, b.color, 10);
+        addFloatingText(z.x, z.y - 25, `-${b.dmg}`);
+
+        if (b.isIce) {
+          z.freezeTimer = 90;
+        }
+
+        bullets.splice(i, 1);
+        break;
+      }
+    }
+
+    if (b.x > canvas.width + 50) bullets.splice(i, 1);
+  }
+
+  // 4. 更新僵尸行为
+  for (let i = zombies.length - 1; i >= 0; i--) {
+    const z = zombies[i];
+
+    let currentSpeed = z.speed;
+    if (z.freezeTimer > 0) {
+      z.freezeTimer--;
+      currentSpeed *= 0.4;
+    }
+
+    const col = Math.floor((z.x - GRID.left) / GRID.cw);
+    let eatingPlant = null;
+    if (col >= 0 && col < GRID.cols) {
+      eatingPlant = plantsGrid[z.row][col];
+    }
+
+    if (eatingPlant) {
+      eatingPlant.hp -= z.atk;
+      if (eatingPlant.hp <= 0) {
+        plantsGrid[z.row][col] = null;
+        createSparkles(z.x, z.y, '#ef4444', 18);
+      }
+    } else {
+      z.x -= currentSpeed;
+    }
+
+    // 🛡️ 5岁神圣保护机制
+    if (z.x < GRID.left - 20) {
+      SFX.explode();
+      screenShake = 14;
+      createSparkles(GRID.left, z.y, '#38bdf8', 30);
+      addFloatingText(GRID.left + 50, z.y, '🛡️ 神圣气泡反弹！');
+      z.hp = -1;
+    }
+
+    if (z.hp <= 0) {
+      zombiesKilled++;
+      createSparkles(z.x, z.y, z.color, 22);
+      zombies.splice(i, 1);
+    }
+  }
+
+  // 5. 5剑扫荡
+  for (let i = swordEffects.length - 1; i >= 0; i--) {
+    const s = swordEffects[i];
+    s.x += s.speed;
+    createSparkles(s.x, s.y, '#fef08a', 5);
+    if (s.x > canvas.width + 200) swordEffects.splice(i, 1);
+  }
+
+  // 6. 文字与粒子
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const ft = floatingTexts[i];
+    ft.y -= 1;
+    ft.alpha -= 0.02;
+    if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.x += pt.vx;
+    pt.y += pt.vy;
+    pt.alpha -= 0.03;
+    if (pt.alpha <= 0) particles.splice(i, 1);
+  }
+
+  if (zombiesSpawned >= currentLvl.zombiesToSpawn && zombies.length === 0 && !isLevelCompleted) {
+    isLevelCompleted = true;
+    setTimeout(showLevelWinModal, 600);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// Canvas 极高对比度渲染系统 (重置地板网格与实体)
+// ═══════════════════════════════════════════════════
+function render() {
+  ctx.save();
+
+  if (screenShake > 0) {
+    const sx = (Math.random() - 0.5) * screenShake;
+    const sy = (Math.random() - 0.5) * screenShake;
+    ctx.translate(sx, sy);
+    screenShake *= 0.85;
+    if (screenShake < 0.5) screenShake = 0;
+  }
+
+  const currentLvl = LEVELS[currentLevelIdx];
+
+  // 1. 绘制高清对比地块背景
+  drawBackground(currentLvl.bgType);
+
+  // 2. 绘制醒目清晰网格线 (带有高对比金色/白亮描边)
+  for (let r = 0; r < GRID.rows; r++) {
+    for (let c = 0; c < GRID.cols; c++) {
+      const x = GRID.left + c * GRID.cw;
+      const y = GRID.top + r * GRID.ch;
+
+      // 网格内部轻微反差填充
+      ctx.fillStyle = (r + c) % 2 === 0 ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.12)';
+      ctx.fillRect(x + 2, y + 2, GRID.cw - 4, GRID.ch - 4);
+
+      // 清晰网格边框 (金色高亮)
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x + 1, y + 1, GRID.cw - 2, GRID.ch - 2);
+
+      // 选卡时的准备放置提示
+      if (selectedPlantType) {
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x + 4, y + 4, GRID.cw - 8, GRID.ch - 8);
+      }
+    }
+  }
+
+  // 3. 绘制植物（底部带彩虹发光底座，Emoji 带 3px 白色强对比描边）
+  for (let r = 0; r < GRID.rows; r++) {
+    for (let c = 0; c < GRID.cols; c++) {
+      const p = plantsGrid[r][c];
+      if (!p) continue;
+
+      const px = GRID.left + c * GRID.cw + GRID.cw / 2;
+      const py = GRID.top + r * GRID.ch + GRID.ch / 2;
+
+      const bounce = Math.sin(gameFrame * 0.12 + p.animOffset) * 4;
+
+      ctx.save();
+      ctx.translate(px, py + bounce);
+
+      // 🌟 植物高强对比底座圆形圆牌！让植物瞬间跳出草地背景！
+      ctx.beginPath();
+      ctx.arc(0, 10, 26, 0, Math.PI * 2);
+      ctx.fillStyle = p.badgeBg || '#ffffff';
+      ctx.fill();
+      ctx.strokeStyle = p.badgeBorder || '#fbbf24';
+      ctx.lineWidth = 3.5;
+      ctx.stroke();
+
+      // 如果是超级机枪，另外增加黄金外环
+      if (p.isGatling) {
+        ctx.beginPath();
+        ctx.arc(0, 10, 32, 0, Math.PI * 2);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+      }
+
+      // 植物 Emoji (加上阴影提升辨识度)
+      ctx.font = p.isGatling ? '42px Segoe UI Emoji' : '36px Segoe UI Emoji';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 6;
+      ctx.fillText(p.emoji, 0, 0);
+
+      // 血条
+      if (p.hp < p.maxHp) {
+        const hpPercent = Math.max(0, p.hp / p.maxHp);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(-22, 28, 44, 7);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-22, 28, 44 * hpPercent, 7);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-22, 28, 44, 7);
+      }
+
+      ctx.restore();
+    }
+  }
+
+  // 4. 绘制僵尸（高对比紫灰鬼魅形象 + 醒目警示底座盘）
+  zombies.forEach(z => {
+    ctx.save();
+    ctx.translate(z.x, z.y);
+
+    const wobble = Math.sin(gameFrame * 0.15) * 5;
+    ctx.rotate(wobble * Math.PI / 180);
+
+    // 🌟 僵尸脚步警示暗红/金色底座光圈（极大区分于草地背景！）
+    ctx.beginPath();
+    ctx.ellipse(0, 22, 26, 10, 0, 0, Math.PI * 2);
+    ctx.fillStyle = z.pedestalColor || 'rgba(239, 68, 68, 0.5)';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 冰冻蓝色光圈
+    if (z.freezeTimer > 0) {
+      ctx.beginPath();
+      ctx.arc(0, 0, 32, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.5)';
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    ctx.font = z.isBoss ? '58px Segoe UI Emoji' : '40px Segoe UI Emoji';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#000000';
+    ctx.shadowBlur = 8;
+    ctx.fillText(z.emoji, 0, 0);
+
+    // 僵尸血条
+    const barW = z.isBoss ? 64 : 40;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(-barW/2, z.isBoss ? -44 : -32, barW, 7);
+    ctx.fillStyle = z.color;
+    ctx.fillRect(-barW/2, z.isBoss ? -44 : -32, barW * Math.max(0, z.hp / z.maxHp), 7);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-barW/2, z.isBoss ? -44 : -32, barW, 7);
+
+    ctx.restore();
+  });
+
+  // 5. 绘制巨型大豆炮弹（霓虹高彩 + 黑色高对比外描边）
+  bullets.forEach(b => {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+    ctx.fillStyle = b.color;
+    ctx.shadowColor = b.color;
+    ctx.shadowBlur = 14;
+    ctx.fill();
+
+    // 黑色高反差边框
+    ctx.strokeStyle = b.strokeColor || '#000000';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // 高光白点
+    ctx.beginPath();
+    ctx.arc(b.x - b.size*0.35, b.y - b.size*0.35, b.size*0.35, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // 6. 绘制掉落阳光 (☀️ 100个，超高能见度发光底盘+醒目标签)
+  suns.forEach(s => {
+    ctx.save();
+    ctx.translate(s.x, s.y);
+
+    // 🌟 外围发光太阳光晕
+    ctx.beginPath();
+    ctx.arc(0, 0, 26, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(253, 224, 71, 0.45)';
+    ctx.fill();
+    ctx.shadowColor = '#fbbf24';
+    ctx.shadowBlur = 25;
+
+    // 金黄色圆形衬底底盘
+    ctx.beginPath();
+    ctx.arc(0, 0, 20, 0, Math.PI * 2);
+    ctx.fillStyle = '#fde047';
+    ctx.fill();
+    ctx.strokeStyle = '#b45309';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // 旋转太阳 Emoji
+    ctx.save();
+    const sunSpin = gameFrame * 0.05;
+    ctx.rotate(sunSpin);
+    ctx.font = '42px Segoe UI Emoji';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('☀️', 0, 0);
+    ctx.restore();
+
+    // 🌟 太阳顶部醒目 "+100" 标签
+    ctx.font = '900 13px Microsoft YaHei';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = '#000000';
+    ctx.shadowBlur = 4;
+    ctx.fillText('+100', 0, -24);
+
+    ctx.restore();
+  });
+
+  // 7. 5剑灭绝光效
+  swordEffects.forEach(s => {
+    ctx.save();
+    ctx.font = '54px Segoe UI Emoji';
+    ctx.shadowColor = '#fde047';
+    ctx.shadowBlur = 28;
+    ctx.fillText('⚔️', s.x, s.y);
+    ctx.restore();
+  });
+
+  // 8. 粒子与浮动文字
+  particles.forEach(pt => {
+    ctx.save();
+    ctx.globalAlpha = pt.alpha;
+    ctx.fillStyle = pt.color;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  floatingTexts.forEach(ft => {
+    ctx.save();
+    ctx.globalAlpha = ft.alpha;
+    ctx.font = '900 24px Microsoft YaHei';
+    ctx.fillStyle = '#fde047';
+    ctx.shadowColor = '#000000';
+    ctx.shadowBlur = 6;
+    ctx.fillText(ft.text, ft.x, ft.y);
+    ctx.restore();
+  });
+
+  ctx.restore();
+}
+
+// 绘制重置后的高对比关卡地块
+function drawBackground(bgType) {
+  if (bgType === 'day') {
+    // ☀️ 明亮暖暖黄绿棋盘草坪（告别纯深绿！）
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#2d7a27');
+    grad.addColorStop(1, '#1b5217');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 棋盘格交替暖黄色块
+    for (let r = 0; r < GRID.rows; r++) {
+      for (let c = 0; c < GRID.cols; c++) {
+        if ((r + c) % 2 === 0) {
+          ctx.fillStyle = 'rgba(163, 230, 53, 0.15)';
+          ctx.fillRect(GRID.left + c * GRID.cw, GRID.top + r * GRID.ch, GRID.cw, GRID.ch);
+        }
+      }
+    }
+  } else if (bgType === 'night') {
+    // 🌙 炫彩夜紫地块
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#1e1b4b');
+    grad.addColorStop(1, '#090d16');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } else if (bgType === 'pool') {
+    // 🏊 湛蓝水路 + 暖黄草坪包边
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(GRID.left, GRID.top + 2 * GRID.ch, GRID.cols * GRID.cw, 2 * GRID.ch);
+  } else if (bgType === 'roof_storm') {
+    // 🌩️ 暖红红砖屋顶 + 雨丝
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#7c2d12');
+    grad.addColorStop(1, '#451a03');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (Math.random() < 0.7) {
+      rainParticles.push({
+        x: Math.random() * canvas.width,
+        y: 0,
+        length: 16 + Math.random() * 16,
+        speed: 13 + Math.random() * 8
+      });
+    }
+    ctx.strokeStyle = 'rgba(224, 242, 254, 0.5)';
+    ctx.lineWidth = 2;
+    for (let i = rainParticles.length - 1; i >= 0; i--) {
+      const rp = rainParticles[i];
+      rp.y += rp.speed;
+      rp.x -= 3;
+      ctx.beginPath();
+      ctx.moveTo(rp.x, rp.y);
+      ctx.lineTo(rp.x - 3, rp.y + rp.length);
+      ctx.stroke();
+      if (rp.y > canvas.height) rainParticles.splice(i, 1);
+    }
+  } else if (bgType === 'jungle') {
+    // 🌴 深褐泥土/金苔石地
+    const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    grad.addColorStop(0, '#1c1917');
+    grad.addColorStop(0.5, '#292524');
+    grad.addColorStop(1, '#1c1917');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } else if (bgType === 'slime_night') {
+    // 🧪 毒紫深渊 + 荧光绿粘液
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#311b92');
+    grad.addColorStop(1, '#090d16');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#84cc16';
+    ctx.fillRect(GRID.left, GRID.top + 2 * GRID.ch, GRID.cols * GRID.cw, 2 * GRID.ch);
+  }
+}
+
+// 辅助创建粒子
+function createSparkles(x, y, color, count=10) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: x,
+      y: y,
+      vx: (Math.random() - 0.5) * 6,
+      vy: (Math.random() - 0.5) * 6,
+      r: 3 + Math.random() * 4,
+      color: color,
+      alpha: 1
+    });
+  }
+}
+
+// 辅助漂浮文字
+function addFloatingText(x, y, text) {
+  floatingTexts.push({ x, y, text, alpha: 1 });
+}
+
+// 显示通关弹窗
+function showLevelWinModal() {
+  SFX.winFanfare();
+  const overlay = document.getElementById('modal-overlay');
+  const title = document.getElementById('modal-title');
+  const desc = document.getElementById('modal-desc');
+  const btn = document.getElementById('modal-btn');
+
+  if (currentLevelIdx < LEVELS.length - 1) {
+    title.innerText = `🎉 第 ${currentLevelIdx + 1} 关顺利突破！`;
+    desc.innerText = `你太棒啦！下一关是全新的：【${LEVELS[currentLevelIdx + 1].name}】！更加酷炫精彩！`;
+    btn.innerText = '🚀 开启下一关大冒险';
+  } else {
+    title.innerText = '🏆 恭喜获得终极总冠军！';
+    desc.innerText = '你打败了黄金巨怪僵尸王，成功保卫了家园！你就是最厉害的5岁小英雄！';
+    btn.innerText = '🔄 重新体验爽快关卡';
+  }
+
+  overlay.classList.add('active');
+}
+
+window.nextLevelOrRestart = function() {
+  document.getElementById('modal-overlay').classList.remove('active');
+  if (currentLevelIdx < LEVELS.length - 1) {
+    currentLevelIdx++;
+  } else {
+    currentLevelIdx = 0;
+  }
+  startLevel(currentLevelIdx);
+};
+
+function startLevel(idx) {
+  currentLevelIdx = idx;
+  const currentLvl = LEVELS[idx];
+  plantsGrid = Array(GRID.rows).fill(null).map(() => Array(GRID.cols).fill(null));
+  zombies = [];
+  bullets = [];
+  suns = [];
+  particles = [];
+  swordEffects = [];
+  zombiesSpawned = 0;
+  zombiesKilled = 0;
+  isLevelCompleted = false;
+  sunCount = 600;
+  updateCardUsability();
+
+  document.getElementById('guide-text').innerText = currentLvl.guide;
+  addFloatingText(canvas.width / 2, canvas.height / 2, `关卡开始：${currentLvl.name}`);
+}
+
+// 主循环入口
+function gameLoop() {
+  update();
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+// 启动游戏
+initPlantCards();
+startLevel(0);
+gameLoop();
+
+})();
+</script>
+</body>
+</html>
