@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>乐高植物大战僵尸 - 5岁小英雄超级拼装大选角版</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      background: #090d16;
+      color: #fff;
+      font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game-container {
+      position: relative;
+      width: 1024px;
+      height: 680px;
+      background: #0f172a;
+      border: 6px solid #fbbf24;
+      border-radius: 28px;
+      box-shadow: 0 0 60px rgba(251, 191, 36, 0.4), inset 0 0 30px rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 顶栏 Header */
+    #top-bar {
+      height: 72px;
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border-bottom: 4px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 50;
+    }
+
+    .btn-icon {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      border: 3px solid #93c5fd;
+      color: #fff;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 8px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-icon:hover {
+      transform: scale(1.05);
+      filter: brightness(1.1);
+    }
+    .btn-icon:active {
+      transform: scale(0.95);
+    }
+
+    .level-badge {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border: 3px solid #fef08a;
+      border-radius: 24px;
+      padding: 6px 18px;
+      font-size: 18px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    /* 游戏主画布区 */
+    #canvas-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      background: #1e293b;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 底部积木零件托盘与控制面板 */
+    #bottom-panel {
+      height: 170px;
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border-top: 4px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      position: relative;
+      z-index: 30;
+    }
+
+    .parts-tray {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      overflow-x: auto;
+      padding: 10px 10px;
+      margin-right: 150px;
+    }
+    .parts-tray::-webkit-scrollbar {
+      height: 6px;
+    }
+    .parts-tray::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 3px;
+    }
+
+    .lego-part-card {
+      min-width: 100px;
+      height: 125px;
+      background: linear-gradient(145deg, #334155 0%, #1e293b 100%);
+      border: 4px solid #64748b;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      transition: all 0.2s ease;
+      position: relative;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+      pointer-events: auto;
+    }
+    .lego-part-card:hover {
+      transform: translateY(-6px) scale(1.05);
+      border-color: #38bdf8;
+      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4);
+    }
+    .lego-part-card.active-target {
+      border-color: #facc15;
+      animation: pulseGlow 1.2s infinite ease-in-out;
+    }
+    .lego-part-card.used {
+      opacity: 0.35;
+      filter: grayscale(0.8);
+      pointer-events: none;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px #facc15; transform: scale(1.02); }
+      50% { box-shadow: 0 0 30px #fef08a, 0 0 40px #f59e0b; transform: scale(1.08); }
+    }
+
+    .part-preview {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .part-label {
+      font-size: 13px;
+      font-weight: bold;
+      color: #cbd5e1;
+      text-align: center;
+    }
+    .part-tag {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #10b981;
+      color: #fff;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 2px 10px;
+      border-radius: 12px;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      white-space: nowrap;
+    }
+    .part-tag.zombie-tag {
+      background: #ef4444;
+    }
+
+    /* 右下角超级升级按钮 */
+    #upgrade-btn-box {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      z-index: 40;
+      pointer-events: auto;
+    }
+
+    .upgrade-btn {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffe066 0%, #f59e0b 60%, #b45309 100%);
+      border: 5px solid #fff;
+      color: #fff;
+      font-weight: 900;
+      font-size: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.8);
+      animation: upgradeBounce 2s infinite ease-in-out;
+      transition: all 0.2s ease;
+    }
+    .upgrade-btn:hover {
+      transform: scale(1.15) rotate(5deg);
+      box-shadow: 0 0 45px rgba(251, 191, 36, 1);
+    }
+    .upgrade-btn:active {
+      transform: scale(0.95);
+    }
+    .upgrade-icon {
+      font-size: 38px;
+      margin-bottom: 2px;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+    }
+    @keyframes upgradeBounce {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-8px) scale(1.06); }
+    }
+
+    /* 开始大决战按钮 */
+    #start-battle-btn {
+      position: absolute;
+      left: 50%;
+      top: -30px;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+      border: 5px solid #a7f3d0;
+      color: #fff;
+      font-size: 24px;
+      font-weight: 900;
+      padding: 12px 40px;
+      border-radius: 40px;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.6);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+      z-index: 50;
+    }
+    #start-battle-btn:hover {
+      transform: translateX(-50%) scale(1.1);
+      filter: brightness(1.1);
+      box-shadow: 0 12px 35px rgba(16, 185, 129, 0.8);
+    }
+
+    /* 智能指引手势 👆 */
+    #guide-finger {
+      position: absolute;
+      font-size: 50px;
+      pointer-events: none;
+      z-index: 100;
+      display: none;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+      animation: fingerTap 1s infinite alternate;
+    }
+    @keyframes fingerTap {
+      0% { transform: translateY(0) scale(1) rotate(-15deg); }
+      100% { transform: translateY(-15px) scale(1.2) rotate(-5deg); }
+    }
+
+    /* 经典角色头像选择模态框 */
+    #character-select-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(10px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      padding: 20px;
+    }
+    .select-modal-title {
+      font-size: 32px;
+      font-weight: 900;
+      color: #facc15;
+      margin-bottom: 6px;
+      text-shadow: 0 2px 10px rgba(250, 204, 21, 0.5);
+    }
+    .select-modal-sub {
+      font-size: 16px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+    }
+
+    .char-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      max-width: 860px;
+      max-height: 480px;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .char-grid::-webkit-scrollbar {
+      width: 8px;
+    }
+    .char-grid::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+
+    .char-card {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      border: 4px solid #64748b;
+      border-radius: 20px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .char-card:hover {
+      transform: translateY(-5px) scale(1.06);
+      border-color: #38bdf8;
+      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.5);
+    }
+    .char-card.boss-card {
+      border-color: #ef4444;
+      background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%);
+    }
+    .char-card.boss-card:hover {
+      border-color: #f87171;
+      box-shadow: 0 10px 25px rgba(239, 68, 68, 0.6);
+    }
+    .char-avatar-icon {
+      font-size: 48px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    }
+    .char-name {
+      font-size: 14px;
+      font-weight: 900;
+      color: #fff;
+      text-align: center;
+    }
+
+    /* 结算弹窗 & 选关弹窗 */
+    #modal-overlay, #level-select-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .modal-card {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 6px solid #fbbf24;
+      border-radius: 32px;
+      padding: 36px 48px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(251, 191, 36, 0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      max-width: 520px;
+    }
+    .stars-row {
+      display: flex;
+      gap: 16px;
+      font-size: 54px;
+    }
+    .star-icon {
+      color: #facc15;
+      text-shadow: 0 0 20px #f59e0b;
+      animation: starSpin 2s infinite ease-in-out;
+    }
+    @keyframes starSpin {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.25) rotate(15deg); }
+    }
+    .modal-title {
+      font-size: 34px;
+      font-weight: 900;
+      background: linear-gradient(90deg, #facc15, #f59e0b, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .modal-desc { font-size: 18px; color: #cbd5e1; }
+    .modal-btn-row { display: flex; gap: 20px; }
+    .modal-btn {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      border: 4px solid #93c5fd;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 900;
+      padding: 10px 28px;
+      border-radius: 30px;
+      cursor: pointer;
+    }
+    .levels-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      max-width: 800px;
+      margin-top: 20px;
+    }
+    .level-item-btn {
+      background: linear-gradient(135deg, #1e293b, #334155);
+      border: 3px solid #64748b;
+      border-radius: 20px;
+      padding: 14px 10px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .level-item-num { font-size: 22px; font-weight: 900; color: #facc15; }
+    .level-item-name { font-size: 12px; color: #e2e8f0; }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <!-- 顶部导航栏 -->
+    <div id="top-bar">
+      <button class="btn-icon" onclick="window.location.href='index.html'">
+        🏠 返回主页
+      </button>
+
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-icon" style="background: linear-gradient(135deg, #10b981, #047857); border-color: #a7f3d0;" onclick="openPlantSelectModal()">
+          🌱 更换植物
+        </button>
+        <button class="btn-icon" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #fca5a5;" onclick="openZombieSelectModal()">
+          🧟 更换僵尸
+        </button>
+      </div>
+
+      <div class="level-badge" id="level-title-display" onclick="openLevelSelect()">
+        <span>第 1 / 10 关</span>
+        <span style="font-size: 15px; color: #fef08a;">草地晴天 🔻</span>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-icon" onclick="resetCurrentLevel()">🔄 重拼</button>
+        <button class="btn-icon" id="sound-btn" onclick="toggleAudio()">🔊 音效</button>
+      </div>
+    </div>
+
+    <!-- 游戏主画布 -->
+    <div id="canvas-container">
+      <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <!-- 底部拼装托盘 -->
+    <div id="bottom-panel">
+      <button id="start-battle-btn" onclick="startBattle()">
+        ⚔️ 开始大决战！🚀
+      </button>
+      <div class="parts-tray" id="parts-tray"></div>
+      <div id="upgrade-btn-box">
+        <button class="upgrade-btn" onclick="triggerUpgrade()">
+          <div class="upgrade-icon">⚡⭐</div>
+          <div>超级升级</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- 智能指引小手 -->
+    <div id="guide-finger">👆</div>
+
+    <!-- 经典角色头像选择模态框 -->
+    <div id="character-select-modal">
+      <div class="select-modal-title" id="char-select-title">🌱 请选择你想拼装的经典植物</div>
+      <div class="select-modal-sub" id="char-select-sub">点击卡片头像，立即在拼装台装载专属乐高积木！</div>
+      <div class="char-grid" id="char-select-grid"></div>
+    </div>
+
+    <!-- 结算弹窗 -->
+    <div id="modal-overlay">
+      <div class="modal-card">
+        <div class="stars-row">
+          <span class="star-icon">⭐</span>
+          <span class="star-icon">⭐</span>
+          <span class="star-icon">⭐</span>
+        </div>
+        <div class="modal-title" id="modal-title-text">大胜利！乐高大侠太棒啦！</div>
+        <div class="modal-desc" id="modal-desc-text">你成功拼装并指挥英雄打倒了敌人！</div>
+        <div class="modal-btn-row">
+          <button class="modal-btn" onclick="resetCurrentLevel()">再拼一次 🔄</button>
+          <button class="modal-btn" style="background: linear-gradient(135deg, #10b981, #047857);" onclick="nextLevel()">进入下一关 🚀</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 选关弹窗 -->
+    <div id="level-select-modal">
+      <h2 style="font-size: 32px; color: #facc15; font-weight: 900;">🧱 乐高奇妙关卡选择</h2>
+      <div class="levels-grid" id="levels-grid"></div>
+      <button class="btn-icon" style="margin-top: 24px;" onclick="closeLevelSelect()">关闭 ✖️</button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. WEB AUDIO API 全能音效合成器
+       ========================================================================== */
+    class AudioSynthesizer {
+      constructor() { this.ctx = null; this.enabled = true; }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+      }
+      playSnap() {
+        if (!this.enabled) return; this.init();
+        const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(450, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.08);
+        gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.08);
+      }
+      playUpgrade() {
+        if (!this.enabled) return; this.init();
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+          osc.type = 'sine'; osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+          gain.gain.setValueAtTime(0.25, now + idx * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.2);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.06); osc.stop(now + idx * 0.06 + 0.2);
+        });
+      }
+      playPop() {
+        if (!this.enabled) return; this.init();
+        const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(250, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.06);
+        gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.06);
+      }
+      playHit() {
+        if (!this.enabled) return; this.init();
+        const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        osc.type = 'square'; osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+        gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.1);
+      }
+      playThunder() {
+        if (!this.enabled) return; this.init();
+        const now = this.ctx.currentTime, bufferSize = this.ctx.sampleRate * 0.5;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
+        const gain = this.ctx.createGain(); gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        noise.connect(gain); gain.connect(this.ctx.destination);
+        noise.start(now);
+      }
+      playFanfare() {
+        if (!this.enabled) return; this.init();
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+          osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+          gain.gain.setValueAtTime(0.3, now + idx * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.4);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.12); osc.stop(now + idx * 0.12 + 0.4);
+        });
+      }
+    }
+
+    const sound = new AudioSynthesizer();
+    function toggleAudio() {
+      sound.enabled = !sound.enabled;
+      document.getElementById('sound-btn').innerText = sound.enabled ? '🔊 音效: 开' : '🔇 音效: 关';
+      if (sound.enabled) sound.playSnap();
+    }
+
+    /* ==========================================================================
+       2. 经典角色定义库 (带经典头像与乐高骨架槽位)
+       ========================================================================== */
+    const PLANT_DATABASE = [
+      {
+        id: 'peashooter',
+        name: '豌豆射手',
+        icon: '🌱',
+        slots: [
+          { type: 'base', name: '花盆底座', color: '#854d0e', x: 220, y: 380, width: 90, height: 40 },
+          { type: 'stem', name: '翠绿茎干', color: '#22c55e', x: 250, y: 300, width: 30, height: 90 },
+          { type: 'arm', name: '嫩绿叶片', color: '#16a34a', x: 200, y: 320, width: 60, height: 30 },
+          { type: 'head', name: '豌豆炮头', color: '#4ade80', x: 235, y: 220, width: 70, height: 70 }
+        ]
+      },
+      {
+        id: 'sunflower',
+        name: '向日葵',
+        icon: '🌻',
+        slots: [
+          { type: 'base', name: '金土花盆', color: '#a16207', x: 220, y: 380, width: 90, height: 40 },
+          { type: 'stem', name: '阳光绿茎', color: '#22c55e', x: 250, y: 300, width: 30, height: 90 },
+          { type: 'arm', name: '双侧大叶', color: '#15803d', x: 195, y: 320, width: 70, height: 30 },
+          { type: 'head', name: '金灿笑脸头冠', color: '#eab308', x: 230, y: 210, width: 80, height: 80 }
+        ]
+      },
+      {
+        id: 'wallnut',
+        name: '坚果墙',
+        icon: '🥔',
+        slots: [
+          { type: 'base', name: '岩石基座', color: '#57534e', x: 220, y: 380, width: 100, height: 40 },
+          { type: 'body', name: '坚果圆浑身躯', color: '#d97706', x: 230, y: 280, width: 80, height: 110 },
+          { type: 'head', name: '微笑坚果头', color: '#f59e0b', x: 235, y: 210, width: 70, height: 70 }
+        ]
+      },
+      {
+        id: 'icepea',
+        name: '寒冰射手',
+        icon: '🥶',
+        slots: [
+          { type: 'base', name: '冰晶底座', color: '#0284c7', x: 220, y: 380, width: 90, height: 40 },
+          { type: 'stem', name: '冰蓝主干', color: '#38bdf8', x: 250, y: 300, width: 30, height: 90 },
+          { type: 'arm', name: '寒霜针叶', color: '#0369a1', x: 195, y: 320, width: 70, height: 30 },
+          { type: 'head', name: '冰晶发射头', color: '#7dd3fc', x: 230, y: 220, width: 75, height: 75 }
+        ]
+      },
+      {
+        id: 'chomper',
+        name: '大嘴花',
+        icon: '🍇',
+        slots: [
+          { type: 'base', name: '水生浮台', color: '#15803d', x: 210, y: 380, width: 110, height: 40 },
+          { type: 'stem', name: '粗壮藤蔓', color: '#16a34a', x: 250, y: 300, width: 35, height: 90 },
+          { type: 'head', name: '紫极大嘴咬合头', color: '#9333ea', x: 220, y: 200, width: 90, height: 100 }
+        ]
+      },
+      {
+        id: 'repeater',
+        name: '双发射手',
+        icon: '🌿',
+        slots: [
+          { type: 'base', name: '加固底盘', color: '#15803d', x: 220, y: 380, width: 90, height: 40 },
+          { type: 'stem', name: '强力支柱', color: '#22c55e', x: 250, y: 300, width: 30, height: 90 },
+          { type: 'head', name: '双管炮头', color: '#16a34a', x: 225, y: 210, width: 85, height: 85 }
+        ]
+      },
+      {
+        id: 'cabbagepult',
+        name: '卷心菜投手',
+        icon: '🥬',
+        slots: [
+          { type: 'base', name: '屋顶红砖盆', color: '#b91c1c', x: 220, y: 380, width: 90, height: 40 },
+          { type: 'stem', name: '弹射金属臂', color: '#65a30d', x: 250, y: 290, width: 30, height: 100 },
+          { type: 'head', name: '卷心菜篮头', color: '#4ade80', x: 225, y: 210, width: 80, height: 80 }
+        ]
+      },
+      {
+        id: 'lightningreed',
+        name: '电击蓝莓',
+        icon: '⚡',
+        slots: [
+          { type: 'base', name: '避雷针底座', color: '#475569', x: 220, y: 380, width: 90, height: 40 },
+          { type: 'stem', name: '电极导能茎', color: '#6366f1', x: 250, y: 300, width: 30, height: 90 },
+          { type: 'head', name: '雷光蓝莓头', color: '#818cf8', x: 225, y: 210, width: 80, height: 80 }
+        ]
+      },
+      {
+        id: 'jalapeno',
+        name: '火爆辣椒',
+        icon: '🌶️',
+        slots: [
+          { type: 'base', name: '耐热底座', color: '#9a3412', x: 220, y: 380, width: 90, height: 40 },
+          { type: 'body', name: '烈焰身体', color: '#dc2626', x: 240, y: 280, width: 60, height: 110 },
+          { type: 'head', name: '怒火辣椒头', color: '#ef4444', x: 235, y: 200, width: 70, height: 80 }
+        ]
+      },
+      {
+        id: 'megamech',
+        name: '黄金加特林超级机甲',
+        icon: '👑',
+        slots: [
+          { type: 'base', name: '黄金装甲底座', color: '#eab308', x: 200, y: 380, width: 130, height: 45 },
+          { type: 'stem', name: '四管激光基柱', color: '#ca8a04', x: 240, y: 290, width: 50, height: 100 },
+          { type: 'arm', name: '龙翼激光翅', color: '#fbbf24', x: 170, y: 310, width: 80, height: 40 },
+          { type: 'head', name: '黄金加特林龙头', color: '#fef08a', x: 215, y: 190, width: 100, height: 100 }
+        ]
+      }
+    ];
+
+    const ZOMBIE_DATABASE = [
+      {
+        id: 'regular',
+        name: '普通僵尸',
+        icon: '🧟',
+        slots: [
+          { type: 'foot', name: '双脚履带', color: '#1e293b', x: 720, y: 380, width: 90, height: 40 },
+          { type: 'body', name: '西装身子', color: '#475569', x: 735, y: 300, width: 60, height: 90 },
+          { type: 'arm', name: '灰绿手臂', color: '#84cc16', x: 790, y: 310, width: 50, height: 30 },
+          { type: 'head', name: '僵尸大脑头', color: '#65a30d', x: 730, y: 220, width: 70, height: 70 }
+        ]
+      },
+      {
+        id: 'conehead',
+        name: '路障僵尸',
+        icon: '⚠️',
+        slots: [
+          { type: 'foot', name: '黑色皮鞋', color: '#0f172a', x: 720, y: 380, width: 90, height: 40 },
+          { type: 'body', name: '棕色外套', color: '#78350f', x: 735, y: 300, width: 60, height: 90 },
+          { type: 'head', name: '僵尸脑袋', color: '#65a30d', x: 730, y: 235, width: 70, height: 70 },
+          { type: 'hat', name: '橙色路障帽', color: '#f97316', x: 735, y: 175, width: 60, height: 60 }
+        ]
+      },
+      {
+        id: 'buckethead',
+        name: '铁桶僵尸',
+        icon: '🪣',
+        slots: [
+          { type: 'foot', name: '铁甲履带', color: '#334155', x: 720, y: 380, width: 90, height: 40 },
+          { type: 'body', name: '铁板铠甲', color: '#475569', x: 735, y: 300, width: 60, height: 90 },
+          { type: 'head', name: '僵尸头颅', color: '#65a30d', x: 730, y: 235, width: 70, height: 70 },
+          { type: 'hat', name: '银光铁桶盔', color: '#94a3b8', x: 730, y: 175, width: 70, height: 60 }
+        ]
+      },
+      {
+        id: 'newspaper',
+        name: '读报僵尸',
+        icon: '📰',
+        slots: [
+          { type: 'foot', name: '拖鞋脚掌', color: '#475569', x: 720, y: 380, width: 90, height: 40 },
+          { type: 'body', name: '睡衣身躯', color: '#64748b', x: 735, y: 300, width: 60, height: 90 },
+          { type: 'head', name: '老花镜头', color: '#65a30d', x: 730, y: 220, width: 70, height: 70 },
+          { type: 'hat', name: '新闻报纸盾牌', color: '#e2e8f0', x: 670, y: 280, width: 65, height: 80 }
+        ]
+      },
+      {
+        id: 'duckring',
+        name: '鸭子救生圈僵尸',
+        icon: '🦆',
+        slots: [
+          { type: 'foot', name: '鸭脚蹼', color: '#f59e0b', x: 720, y: 380, width: 90, height: 40 },
+          { type: 'body', name: '黄鸭救生圈', color: '#facc15', x: 720, y: 300, width: 90, height: 90 },
+          { type: 'head', name: '潜水头', color: '#65a30d', x: 730, y: 220, width: 70, height: 70 }
+        ]
+      },
+      {
+        id: 'clown',
+        name: '惊吓小丑僵尸',
+        icon: '🤡',
+        slots: [
+          { type: 'foot', name: '小丑翘头靴', color: '#dc2626', x: 720, y: 380, width: 90, height: 40 },
+          { type: 'body', name: '彩色条纹衣', color: '#ea580c', x: 735, y: 300, width: 60, height: 90 },
+          { type: 'head', name: '狂欢小丑头', color: '#84cc16', x: 730, y: 220, width: 70, height: 70 },
+          { type: 'hat', name: '惊吓魔盒', color: '#ec4899', x: 670, y: 290, width: 60, height: 60 }
+        ]
+      },
+      {
+        id: 'ladder',
+        name: '木梯僵尸',
+        icon: '🪜',
+        slots: [
+          { type: 'foot', name: '工装靴', color: '#451a03', x: 720, y: 380, width: 90, height: 40 },
+          { type: 'body', name: '背带工作裤', color: '#2563eb', x: 735, y: 300, width: 60, height: 90 },
+          { type: 'head', name: '建筑工人头', color: '#65a30d', x: 730, y: 220, width: 70, height: 70 },
+          { type: 'hat', name: '折叠木梯', color: '#92400e', x: 670, y: 270, width: 65, height: 95 }
+        ]
+      },
+      {
+        id: 'football',
+        name: '橄榄球僵尸',
+        icon: '🏈',
+        slots: [
+          { type: 'foot', name: '防滑钉鞋', color: '#991b1b', x: 720, y: 380, width: 90, height: 40 },
+          { type: 'body', name: '橄榄球护甲', color: '#dc2626', x: 730, y: 290, width: 70, height: 100 },
+          { type: 'head', name: '强悍僵尸头', color: '#65a30d', x: 730, y: 225, width: 70, height: 70 },
+          { type: 'hat', name: '橄榄球头盔', color: '#b91c1c', x: 725, y: 170, width: 75, height: 65 }
+        ]
+      },
+      {
+        id: 'dancing',
+        name: '舞王僵尸',
+        icon: '🕺',
+        slots: [
+          { type: 'foot', name: '闪耀舞靴', color: '#facc15', x: 720, y: 380, width: 90, height: 40 },
+          { type: 'body', name: '复古派对外套', color: '#b91c1c', x: 735, y: 300, width: 60, height: 90 },
+          { type: 'head', name: '墨镜舞王头', color: '#1e293b', x: 725, y: 220, width: 80, height: 80 }
+        ]
+      },
+      {
+        id: 'gargantuar',
+        name: '大僵王 (巨型伽刚特尔)',
+        icon: '👹',
+        isBoss: true,
+        slots: [
+          { type: 'foot', name: '霸王巨靴履带', color: '#0f172a', x: 680, y: 370, width: 150, height: 50 },
+          { type: 'body', name: '钢铁装甲巨型身躯', color: '#334155', x: 700, y: 240, width: 110, height: 140 },
+          { type: 'arm', name: '电线杆霸王武器手', color: '#78350f', x: 800, y: 230, width: 60, height: 130 },
+          { type: 'head', name: '大僵王霸王头颅', color: '#3f6212', x: 700, y: 130, width: 110, height: 120 }
+        ]
+      }
+    ];
+
+    const GAME_LEVELS = [
+      { id: 1, name: "草地晴天", theme: "sunny", defaultPlant: 'peashooter', defaultZombie: 'regular' },
+      { id: 2, name: "太阳花园", theme: "sunny", defaultPlant: 'sunflower', defaultZombie: 'conehead' },
+      { id: 3, name: "狂风暴雨", theme: "storm", defaultPlant: 'wallnut', defaultZombie: 'buckethead' },
+      { id: 4, name: "神秘夜空", theme: "night", defaultPlant: 'icepea', defaultZombie: 'newspaper' },
+      { id: 5, name: "水上泳池", theme: "pool", defaultPlant: 'chomper', defaultZombie: 'duckring' },
+      { id: 6, name: "迷雾森林", theme: "fog", defaultPlant: 'repeater', defaultZombie: 'clown' },
+      { id: 7, name: "乐高屋顶", theme: "roof", defaultPlant: 'cabbagepult', defaultZombie: 'ladder' },
+      { id: 8, name: "闪电雷暴", theme: "storm", defaultPlant: 'lightningreed', defaultZombie: 'football' },
+      { id: 9, name: "火山熔岩", theme: "lava", defaultPlant: 'jalapeno', defaultZombie: 'dancing' },
+      { id: 10, name: "大僵王终极BOSS关", theme: "boss", defaultPlant: 'megamech', defaultZombie: 'gargantuar' }
+    ];
+
+    /* ==========================================================================
+       3. 游戏核心状态控制
+       ========================================================================== */
+    let currentLevelIdx = 0;
+    let selectedPlantObj = PLANT_DATABASE[0];
+    let selectedZombieObj = ZOMBIE_DATABASE[0];
+
+    let assembledPlantParts = {};
+    let assembledZombieParts = {};
+    let isUpgraded = false;
+    let gameState = 'ASSEMBLY';
+    let inactiveTimer = null;
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let animationFrameId = null;
+
+    let particles = [];
+    let battleBullets = [];
+    let plantHp = 100;
+    let zombieHp = 100;
+
+    function initGame() {
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      loadLevel(currentLevelIdx);
+      renderLevelGridModal();
+
+      cancelAnimationFrame(animationFrameId);
+      loop();
+    }
+
+    function resizeCanvas() {
+      const container = document.getElementById('canvas-container');
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
+
+    function loadLevel(idx) {
+      currentLevelIdx = idx;
+      const level = GAME_LEVELS[idx];
+
+      document.getElementById('level-title-display').innerHTML = `
+        <span>第 ${level.id} / 10 关</span>
+        <span style="font-size: 15px; color: #fef08a;">${level.name} 🔻</span>
+      `;
+
+      // 根据关卡默认设定选择
+      selectedPlantObj = PLANT_DATABASE.find(p => p.id === level.defaultPlant) || PLANT_DATABASE[0];
+      selectedZombieObj = ZOMBIE_DATABASE.find(z => z.id === level.defaultZombie) || ZOMBIE_DATABASE[0];
+
+      resetLevelState();
+    }
+
+    function resetLevelState() {
+      assembledPlantParts = {};
+      assembledZombieParts = {};
+      isUpgraded = false;
+      gameState = 'ASSEMBLY';
+      particles = [];
+      battleBullets = [];
+      plantHp = 100;
+      zombieHp = selectedZombieObj.isBoss ? 250 : 100;
+
+      document.getElementById('modal-overlay').style.display = 'none';
+      document.getElementById('character-select-modal').style.display = 'none';
+
+      buildPartsTray();
+      resetInactiveTimer();
+    }
+
+    /* ==========================================================================
+       4. 经典角色选择模态框逻辑
+       ========================================================================== */
+    function openPlantSelectModal() {
+      const grid = document.getElementById('char-select-grid');
+      grid.innerHTML = '';
+      document.getElementById('char-select-title').innerHTML = '🌱 请选择你想拼装的经典植物';
+      document.getElementById('char-select-sub').innerText = '点击头像卡片，立即将乐高骨架载入主拼装台！';
+
+      PLANT_DATABASE.forEach(plant => {
+        const card = document.createElement('div');
+        card.className = 'char-card';
+        card.innerHTML = `
+          <div class="char-avatar-icon">${plant.icon}</div>
+          <div class="char-name">${plant.name}</div>
+        `;
+        card.onclick = () => {
+          selectedPlantObj = plant;
+          closeCharacterSelectModal();
+          resetLevelState();
+          sound.playSnap();
+        };
+        grid.appendChild(card);
+      });
+
+      document.getElementById('character-select-modal').style.display = 'flex';
+    }
+
+    function openZombieSelectModal() {
+      const grid = document.getElementById('char-select-grid');
+      grid.innerHTML = '';
+      document.getElementById('char-select-title').innerHTML = '🧟 请选择你想拼装的经典僵尸对手';
+      document.getElementById('char-select-sub').innerText = '包含大僵王等经典僵尸！点击即刻挑战！';
+
+      ZOMBIE_DATABASE.forEach(zombie => {
+        const card = document.createElement('div');
+        card.className = `char-card ${zombie.isBoss ? 'boss-card' : ''}`;
+        card.innerHTML = `
+          <div class="char-avatar-icon">${zombie.icon}</div>
+          <div class="char-name">${zombie.name}</div>
+        `;
+        card.onclick = () => {
+          selectedZombieObj = zombie;
+          closeCharacterSelectModal();
+          resetLevelState();
+          sound.playSnap();
+        };
+        grid.appendChild(card);
+      });
+
+      document.getElementById('character-select-modal').style.display = 'flex';
+    }
+
+    function closeCharacterSelectModal() {
+      document.getElementById('character-select-modal').style.display = 'none';
+    }
+
+    /* ==========================================================================
+       5. 积木托盘构建与磁吸组装逻辑
+       ========================================================================== */
+    function buildPartsTray() {
+      const tray = document.getElementById('parts-tray');
+      tray.innerHTML = '';
+
+      const allParts = [];
+      selectedPlantObj.slots.forEach(slot => {
+        allParts.push({ ...slot, side: 'plant' });
+      });
+      selectedZombieObj.slots.forEach(slot => {
+        allParts.push({ ...slot, side: 'zombie' });
+      });
+
+      allParts.forEach(part => {
+        const card = document.createElement('div');
+        card.className = 'lego-part-card';
+        card.dataset.side = part.side;
+
+        const isZombie = part.side === 'zombie';
+        const tag = document.createElement('div');
+        tag.className = `part-tag ${isZombie ? 'zombie-tag' : ''}`;
+        tag.innerText = isZombie ? '僵尸零件' : '植物零件';
+
+        const preview = document.createElement('div');
+        preview.className = 'part-preview';
+        preview.appendChild(createPartCanvasPreview(part));
+
+        const label = document.createElement('div');
+        label.className = 'part-label';
+        label.innerText = part.name;
+
+        card.appendChild(tag);
+        card.appendChild(preview);
+        card.appendChild(label);
+
+        card.onclick = () => snapAssemblePart(part, card);
+
+        tray.appendChild(card);
+      });
+    }
+
+    function createPartCanvasPreview(part) {
+      const pCanvas = document.createElement('canvas');
+      pCanvas.width = 60;
+      pCanvas.height = 60;
+      const pCtx = pCanvas.getContext('2d');
+      drawLegoBrick(pCtx, 10, 10, 40, 40, part.color, false);
+      return pCanvas;
+    }
+
+    function snapAssemblePart(part, cardEl) {
+      if (gameState !== 'ASSEMBLY') return;
+      sound.playSnap();
+      resetInactiveTimer();
+
+      if (part.side === 'plant') {
+        assembledPlantParts[part.type] = part;
+      } else {
+        assembledZombieParts[part.type] = part;
+      }
+
+      if (cardEl) cardEl.classList.add('used');
+      createBurstParticles(part.x + part.width / 2, part.y + part.height / 2, part.color);
+      hideGuideFinger();
+    }
+
+    /* ==========================================================================
+       6. 右下角超级升级 & 开始大决战
+       ========================================================================== */
+    function triggerUpgrade() {
+      if (gameState !== 'ASSEMBLY') return;
+      sound.playUpgrade();
+      isUpgraded = true;
+
+      selectedPlantObj.slots.forEach(s => {
+        createBurstParticles(s.x + s.width / 2, s.y + s.height / 2, '#facc15');
+      });
+      selectedZombieObj.slots.forEach(s => {
+        createBurstParticles(s.x + s.width / 2, s.y + s.height / 2, '#fbbf24');
+      });
+    }
+
+    function startBattle() {
+      if (gameState === 'BATTLE') return;
+      sound.playFanfare();
+      gameState = 'BATTLE';
+      plantHp = 100;
+      zombieHp = selectedZombieObj.isBoss ? 250 : 100;
+      hideGuideFinger();
+
+      selectedPlantObj.slots.forEach(slot => {
+        if (!assembledPlantParts[slot.type]) assembledPlantParts[slot.type] = slot;
+      });
+      selectedZombieObj.slots.forEach(slot => {
+        if (!assembledZombieParts[slot.type]) assembledZombieParts[slot.type] = slot;
+      });
+
+      document.querySelectorAll('.lego-part-card').forEach(el => el.classList.add('used'));
+    }
+
+    /* ==========================================================================
+       7. 智能辅助指引小手系统 (👆 2秒未操作自动高亮提示)
+       ========================================================================== */
+    function resetInactiveTimer() {
+      hideGuideFinger();
+      clearTimeout(inactiveTimer);
+      inactiveTimer = setTimeout(showGuideFinger, 2200);
+    }
+
+    function showGuideFinger() {
+      if (gameState !== 'ASSEMBLY') return;
+
+      let unbuiltSlot = selectedPlantObj.slots.find(s => !assembledPlantParts[s.type]);
+      if (!unbuiltSlot) {
+        unbuiltSlot = selectedZombieObj.slots.find(s => !assembledZombieParts[s.type]);
+      }
+
+      if (unbuiltSlot) {
+        const cards = document.querySelectorAll('.lego-part-card:not(.used)');
+        if (cards.length > 0) {
+          const targetCard = cards[0];
+          targetCard.classList.add('active-target');
+
+          const rect = targetCard.getBoundingClientRect();
+          const finger = document.getElementById('guide-finger');
+          finger.style.left = `${rect.left + rect.width / 2 - 25}px`;
+          finger.style.top = `${rect.top - 50}px`;
+          finger.style.display = 'block';
+        }
+      } else {
+        const btn = document.getElementById('start-battle-btn');
+        const rect = btn.getBoundingClientRect();
+        const finger = document.getElementById('guide-finger');
+        finger.style.left = `${rect.left + rect.width / 2 - 25}px`;
+        finger.style.top = `${rect.top + rect.height + 10}px`;
+        finger.style.display = 'block';
+      }
+    }
+
+    function hideGuideFinger() {
+      const finger = document.getElementById('guide-finger');
+      finger.style.display = 'none';
+      document.querySelectorAll('.lego-part-card').forEach(c => c.classList.remove('active-target'));
+    }
+
+    /* ==========================================================================
+       8. CANVAS 渲染引擎 (大僵王BOSS渲染 + 天气环境 + 弹道对决)
+       ========================================================================== */
+    function loop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const level = GAME_LEVELS[currentLevelIdx];
+      drawEnvironmentScene(level.theme);
+      drawBasePlatforms();
+      drawSlotsAndCharacters();
+
+      if (gameState === 'BATTLE') {
+        updateAndDrawBattle();
+      }
+
+      updateAndDrawParticles();
+      animationFrameId = requestAnimationFrame(loop);
+    }
+
+    let weatherTick = 0;
+    function drawEnvironmentScene(theme) {
+      weatherTick++;
+      const w = canvas.width, h = canvas.height;
+
+      if (theme === 'sunny') {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#38bdf8'); grad.addColorStop(0.6, '#bfdbfe');
+        grad.addColorStop(0.61, '#4ade80'); grad.addColorStop(1, '#16a34a');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#fde047'; ctx.beginPath();
+        ctx.arc(w - 100, 80, 50, 0, Math.PI * 2); ctx.fill();
+      } else if (theme === 'storm') {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#0f172a'); grad.addColorStop(0.6, '#1e293b');
+        grad.addColorStop(0.61, '#334155'); grad.addColorStop(1, '#1e293b');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)'; ctx.lineWidth = 2;
+        for (let i = 0; i < 30; i++) {
+          const rx = (weatherTick * 12 + i * 40) % w;
+          const ry = (weatherTick * 20 + i * 30) % h;
+          ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 8, ry + 25); ctx.stroke();
+        }
+
+        if (Math.random() < 0.03) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.fillRect(0, 0, w, h);
+          sound.playThunder();
+        }
+      } else if (theme === 'night') {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#090d16'); grad.addColorStop(0.6, '#1e1b4b');
+        grad.addColorStop(0.61, '#064e3b'); grad.addColorStop(1, '#022c22');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#fef08a';
+        for (let i = 0; i < 20; i++) {
+          const sx = (i * 53) % w, sy = (i * 31) % (h * 0.5);
+          const size = (Math.sin(weatherTick * 0.1 + i) + 1) * 2 + 1;
+          ctx.beginPath(); ctx.arc(sx, sy, size, 0, Math.PI * 2); ctx.fill();
+        }
+      } else if (theme === 'pool') {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#38bdf8'); grad.addColorStop(0.55, '#0284c7');
+        grad.addColorStop(0.56, '#0369a1'); grad.addColorStop(1, '#0c4a6e');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.lineWidth = 4;
+        for (let i = 0; i < 5; i++) {
+          const wy = h * 0.6 + i * 40;
+          ctx.beginPath(); ctx.arc(w / 2, wy, (weatherTick * 2 + i * 50) % 200, 0, Math.PI * 2); ctx.stroke();
+        }
+      } else {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#450a0a'); grad.addColorStop(0.6, '#7f1d1d');
+        grad.addColorStop(0.61, '#b91c1c'); grad.addColorStop(1, '#7c2d12');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#f97316';
+        for (let i = 0; i < 25; i++) {
+          const lx = (i * 47) % w, ly = (h - (weatherTick * 3 + i * 25) % h);
+          ctx.beginPath(); ctx.arc(lx, ly, (i % 4) + 2, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    }
+
+    function drawBasePlatforms() {
+      drawLegoBrick(ctx, 160, 420, 210, 40, '#15803d', true);
+      const isBoss = selectedZombieObj.isBoss;
+      drawLegoBrick(ctx, 640, 420, isBoss ? 260 : 210, 40, '#475569', true);
+    }
+
+    function drawSlotsAndCharacters() {
+      // 植物侧
+      selectedPlantObj.slots.forEach(slot => {
+        const assembled = assembledPlantParts[slot.type];
+        if (assembled) {
+          const drawColor = isUpgraded ? '#facc15' : assembled.color;
+          drawLegoBrick(ctx, slot.x, slot.y, slot.width, slot.height, drawColor, true);
+          if (isUpgraded) {
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+            ctx.strokeRect(slot.x - 2, slot.y - 2, slot.width + 4, slot.height + 4);
+          }
+        } else {
+          ctx.save();
+          ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 3; ctx.setLineDash([8, 6]);
+          ctx.strokeRect(slot.x, slot.y, slot.width, slot.height);
+          ctx.fillStyle = 'rgba(74, 222, 128, 0.15)'; ctx.fillRect(slot.x, slot.y, slot.width, slot.height);
+          ctx.restore();
+        }
+      });
+
+      // 僵尸侧 (包含“大僵王”巨型加宽骨架)
+      selectedZombieObj.slots.forEach(slot => {
+        const assembled = assembledZombieParts[slot.type];
+        if (assembled) {
+          const drawColor = isUpgraded ? '#ef4444' : assembled.color;
+          drawLegoBrick(ctx, slot.x, slot.y, slot.width, slot.height, drawColor, true);
+          if (isUpgraded) {
+            ctx.strokeStyle = '#fca5a5'; ctx.lineWidth = 3;
+            ctx.strokeRect(slot.x - 2, slot.y - 2, slot.width + 4, slot.height + 4);
+          }
+        } else {
+          ctx.save();
+          ctx.strokeStyle = '#f87171'; ctx.lineWidth = 3; ctx.setLineDash([8, 6]);
+          ctx.strokeRect(slot.x, slot.y, slot.width, slot.height);
+          ctx.fillStyle = 'rgba(248, 113, 113, 0.15)'; ctx.fillRect(slot.x, slot.y, slot.width, slot.height);
+          ctx.restore();
+        }
+      });
+    }
+
+    function drawLegoBrick(c, x, y, width, height, colorHex, hasStuds = true) {
+      c.save();
+      c.fillStyle = colorHex; c.fillRect(x, y, width, height);
+
+      c.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      c.fillRect(x, y, width, 4); c.fillRect(x, y, 4, height);
+
+      c.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      c.fillRect(x, y + height - 4, width, 4); c.fillRect(x + width - 4, y, 4, height);
+
+      if (hasStuds) {
+        const studCount = Math.max(2, Math.floor(width / 25));
+        const spacing = width / studCount;
+        for (let i = 0; i < studCount; i++) {
+          const studX = x + spacing * i + spacing / 2, studY = y - 5;
+          c.fillStyle = colorHex; c.fillRect(studX - 6, studY, 12, 5);
+          c.fillStyle = 'rgba(255, 255, 255, 0.4)'; c.fillRect(studX - 6, studY, 12, 2);
+        }
+      }
+      c.restore();
+    }
+
+    let battleTick = 0;
+    function updateAndDrawBattle() {
+      battleTick++;
+
+      // 升级发射黄金多管炮，未升级发射标准豌豆/炮弹
+      if (battleTick % (isUpgraded ? 15 : 30) === 0) {
+        sound.playPop();
+        battleBullets.push({
+          x: 300,
+          y: 240,
+          vx: isUpgraded ? 12 : 9,
+          color: isUpgraded ? '#facc15' : '#4ade80',
+          size: isUpgraded ? 16 : 10,
+          side: 'plant'
+        });
+      }
+
+      // 僵尸/大僵王反击
+      const isBoss = selectedZombieObj.isBoss;
+      if (battleTick % (isBoss ? 25 : 45) === 0) {
+        battleBullets.push({
+          x: isBoss ? 680 : 720,
+          y: isBoss ? 220 : 250,
+          vx: isBoss ? -10 : -7,
+          color: isBoss ? '#ef4444' : '#f97316',
+          size: isBoss ? 18 : 12,
+          side: 'zombie'
+        });
+      }
+
+      for (let i = battleBullets.length - 1; i >= 0; i--) {
+        const b = battleBullets[i];
+        b.x += b.vx;
+
+        ctx.fillStyle = b.color; ctx.beginPath();
+        ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2); ctx.fill();
+
+        const hitX = isBoss ? 660 : 700;
+        if (b.side === 'plant' && b.x >= hitX) {
+          sound.playHit();
+          zombieHp -= isUpgraded ? 20 : 10;
+          createBurstParticles(b.x, b.y, '#65a30d');
+          battleBullets.splice(i, 1);
+        } else if (b.side === 'zombie' && b.x <= 310) {
+          sound.playHit();
+          plantHp -= 5;
+          createBurstParticles(b.x, b.y, '#16a34a');
+          battleBullets.splice(i, 1);
+        }
+      }
+
+      drawHealthBar(200, 160, plantHp, selectedPlantObj.name, '#22c55e', 100);
+      drawHealthBar(680, 140, zombieHp, selectedZombieObj.name, '#ef4444', isBoss ? 250 : 100);
+
+      if (zombieHp <= 0 || plantHp <= 0) {
+        gameState = 'VICTORY';
+        showVictoryModal();
+      }
+    }
+
+    function drawHealthBar(x, y, hp, name, color, maxHp) {
+      const width = 160;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+      ctx.fillRect(x, y, width, 24);
+
+      const currentW = Math.max(0, (hp / maxHp) * width);
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, currentW, 24);
+
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, width, 24);
+
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(name, x + 5, y - 6);
+    }
+
+    function createBurstParticles(x, y, color) {
+      for (let i = 0; i < 15; i++) {
+        particles.push({
+          x: x, y: y,
+          vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10,
+          size: Math.random() * 8 + 4, color: color, alpha: 1
+        });
+      }
+    }
+
+    function updateAndDrawParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.alpha -= 0.03;
+        if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+        ctx.save(); ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size); ctx.restore();
+      }
+    }
+
+    /* ==========================================================================
+       9. 结算弹窗与选关控制
+       ========================================================================== */
+    function showVictoryModal() {
+      sound.playFanfare();
+      document.getElementById('modal-overlay').style.display = 'flex';
+    }
+
+    function resetCurrentLevel() { resetLevelState(); }
+    function nextLevel() {
+      if (currentLevelIdx < GAME_LEVELS.length - 1) loadLevel(currentLevelIdx + 1);
+      else loadLevel(0);
+    }
+
+    function openLevelSelect() { document.getElementById('level-select-modal').style.display = 'flex'; }
+    function closeLevelSelect() { document.getElementById('level-select-modal').style.display = 'none'; }
+
+    function renderLevelGridModal() {
+      const grid = document.getElementById('levels-grid');
+      grid.innerHTML = '';
+      GAME_LEVELS.forEach((lvl, idx) => {
+        const item = document.createElement('div');
+        item.className = 'level-item-btn';
+        item.innerHTML = `
+          <div class="level-item-num">关卡 ${lvl.id}</div>
+          <div class="level-item-name">${lvl.name}</div>
+        `;
+        item.onclick = () => { loadLevel(idx); closeLevelSelect(); };
+        grid.appendChild(item);
+      });
+    }
+
+    window.onload = initGame;
+  </script>
+</body>
+</html>
