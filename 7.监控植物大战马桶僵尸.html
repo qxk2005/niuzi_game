@@ -796,6 +796,7 @@
     let levelProgress = 0;
 
     let bossObj = null;
+    let bossGiantBalls = [];
     let superLaserCd = 0;
 
     // 辅助引导状态 (5岁小朋友友好)
@@ -1417,33 +1418,111 @@
         this.y = canvas.height / 2;
         this.hp = 5000;
         this.maxHp = 5000;
-        this.timer = 0;
         this.phase = 1;
+
+        // 状态机: 'stand' (未露头/手放僵尸) -> 'down' (头降下露头) -> 'attack' (露头吐球) -> 'up' (头收回隐头)
+        this.state = 'stand';
+        this.stateTimer = 0;
+        this.headOffsetY = -110; // 初始未露头，头缩在黄金水箱后/上方
+        this.nextBallType = 'fire'; // 冰火球交替
+
+        // 机械手臂与放僵尸机制
+        this.armTargetRow = 2;
+        this.armProgress = 0;
+        this.hasSpawnedZombieInCycle = false;
       }
 
       update() {
-        this.timer++;
-
-        // 僵王固定在右侧防线（不上下浮动，保持稳固战术站位）
         this.y = canvas.height / 2;
 
         // BOSS 阶段切换 (50% 血量狂暴咆哮并召唤)
         if (this.hp < this.maxHp * 0.5 && this.phase === 1) {
           this.phase = 2;
           triggerScreenShake();
-          showToast('黄金马桶僵尸王狂暴啦！召唤马桶军团！');
+          showToast('👑 黄金马桶僵尸王狂暴啦！召唤马桶军团！');
           sound.playExplode();
-          // 召唤一波小马桶僵尸
           for (let r = 0; r < 5; r++) {
             zombies.push(new Zombie(r, 'conehead'));
           }
         }
 
-        // 攻击模式: 投掷卷纸弹飞弹
-        if (this.timer % 120 === 0) {
-          const targetRow = Math.floor(Math.random() * ROWS);
-          projectiles.push(new BossPaperMissile(this.x - 50, gridOffsetY + targetRow * gridHeight + gridHeight / 2, targetRow));
-          sound.playExplode();
+        // 狂暴模式下动作节奏加快
+        const speedMult = this.phase === 2 ? 1.4 : 1.0;
+        this.stateTimer += 1 * speedMult;
+
+        // 状态机调度
+        if (this.state === 'stand') {
+          // 未露头站立状态：缩头不动，机械手臂下探放置 1 个马桶僵尸
+          this.headOffsetY = -110;
+
+          if (this.stateTimer < 50) {
+            this.armProgress = this.stateTimer / 50;
+          } else if (this.stateTimer < 100) {
+            this.armProgress = 1 - (this.stateTimer - 50) / 50;
+          } else {
+            this.armProgress = 0;
+          }
+
+          // 机械手臂放到最低点时放 1 个僵尸
+          if (this.stateTimer >= 50 && !this.hasSpawnedZombieInCycle) {
+            this.hasSpawnedZombieInCycle = true;
+            this.armTargetRow = Math.floor(Math.random() * ROWS);
+            const zType = Math.random() < 0.5 ? 'conehead' : 'normal';
+            const spawnX = this.x - 130;
+            const newZ = new Zombie(this.armTargetRow, zType);
+            newZ.x = spawnX;
+            zombies.push(newZ);
+            sound.playFlush();
+            showToast('僵王用机械手放下了1个马桶僵尸！');
+          }
+
+          if (this.stateTimer >= 110) {
+            this.state = 'down';
+            this.stateTimer = 0;
+          }
+
+        } else if (this.state === 'down') {
+          // 黄金巨头缓缓下降露出来
+          const progress = Math.min(1, this.stateTimer / 30);
+          this.headOffsetY = -110 + progress * 110;
+
+          if (this.stateTimer >= 30) {
+            this.state = 'attack';
+            this.stateTimer = 0;
+          }
+
+        } else if (this.state === 'attack') {
+          // 露头攻击：张嘴吐出巨大冰球或火球
+          this.headOffsetY = 0;
+
+          if (Math.floor(this.stateTimer) === 15) {
+            const targetRow = Math.floor(Math.random() * ROWS);
+            const ballY = gridOffsetY + targetRow * gridHeight + gridHeight / 2;
+            bossGiantBalls.push(new BossGiantBall(this.x - 70, ballY, targetRow, this.nextBallType));
+            
+            triggerScreenShake();
+            sound.playExplode();
+            showToast(`僵王露头吐出了巨大【${this.nextBallType === 'fire' ? '火球' : '冰球'}】！`);
+
+            // 交替球类型
+            this.nextBallType = this.nextBallType === 'fire' ? 'ice' : 'fire';
+          }
+
+          if (this.stateTimer >= 60) {
+            this.state = 'up';
+            this.stateTimer = 0;
+          }
+
+        } else if (this.state === 'up') {
+          // 巨头向上收回隐藏
+          const progress = Math.min(1, this.stateTimer / 30);
+          this.headOffsetY = 0 - progress * 110;
+
+          if (this.stateTimer >= 30) {
+            this.state = 'stand';
+            this.stateTimer = 0;
+            this.hasSpawnedZombieInCycle = false;
+          }
         }
 
         // 更新 UI 血条
@@ -1454,6 +1533,7 @@
       }
 
       takeDamage(damage) {
+        // 植物任何时候击中都能打到僵王
         this.hp -= damage;
         visualEffects.push(new SparkEffect(this.x - 40 + (Math.random() - 0.5) * 40, this.y + (Math.random() - 0.5) * 160));
         if (this.hp <= 0) {
@@ -1469,7 +1549,30 @@
         const shake = this.phase === 2 ? (Math.random() - 0.5) * 4 : 0;
         ctx.translate(shake, shake);
 
-        // 霸气巨型黄金底座马桶 (覆盖右侧全行高度)
+        // 1. 机械手臂 (在 stand 放置僵尸阶段伸出)
+        if (this.state === 'stand' && this.armProgress > 0) {
+          const armTargetY = (this.armTargetRow - 2) * gridHeight;
+          const currentArmY = armTargetY * this.armProgress;
+
+          ctx.save();
+          ctx.strokeStyle = '#ca8a04';
+          ctx.lineWidth = 10;
+          ctx.beginPath();
+          ctx.moveTo(-30, 0);
+          ctx.lineTo(-100, currentArmY);
+          ctx.stroke();
+
+          // 机械爪
+          ctx.fillStyle = '#facc15';
+          ctx.beginPath();
+          ctx.arc(-100, currentArmY, 16, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#ca8a04';
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // 2. 霸气巨型黄金底座马桶 (覆盖右侧全行高度)
         ctx.fillStyle = '#eab308';
         ctx.strokeStyle = '#facc15';
         ctx.lineWidth = 6;
@@ -1482,7 +1585,11 @@
         ctx.fillRect(40, -140, 50, 280);
         ctx.strokeRect(40, -140, 50, 280);
 
-        // 黄金巨头
+        // 3. 黄金巨头 (受 headOffsetY 控制滑动露头/隐藏)
+        ctx.save();
+        ctx.translate(0, this.headOffsetY);
+
+        // 头画在水箱前面
         ctx.fillStyle = '#ca8a04';
         ctx.beginPath();
         ctx.arc(-20, -30, 48, 0, Math.PI * 2);
@@ -1502,48 +1609,109 @@
         // 发光红眼
         ctx.fillStyle = '#ef4444';
         ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = this.state === 'attack' ? 25 : 12;
         ctx.beginPath();
         ctx.arc(-35, -35, 10, 0, Math.PI * 2);
         ctx.arc(-10, -35, 10, 0, Math.PI * 2);
         ctx.fill();
 
+        // 张嘴吐球动画
+        if (this.state === 'attack') {
+          ctx.fillStyle = '#451a03';
+          ctx.beginPath();
+          ctx.ellipse(-30, -5, 18, 12, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore(); // restore head translate
+
         ctx.restore();
       }
     }
 
-    class BossPaperMissile {
-      constructor(x, y, r) {
+    class BossGiantBall {
+      constructor(x, y, r, type = 'ice') {
         this.x = x;
         this.y = y;
         this.r = r;
-        this.speed = 6;
+        this.type = type; // 'ice' 或 'fire'
+        this.radius = 36;
+        this.speed = 4.5;
+        this.rotation = 0;
       }
+
       update() {
         this.x -= this.speed;
+        this.rotation -= 0.08;
 
-        // 击中植物
-        const hitPlant = plants.find(p => p.r === this.r && Math.abs(p.x - this.x) < 25);
-        if (hitPlant) {
-          hitPlant.hp -= 250;
+        // 碾压植物
+        plants.forEach(p => {
+          if (p.r === this.r && Math.abs(p.x - this.x) < 40 && p.hp > 0) {
+            p.hp = 0;
+            if (this.type === 'fire') {
+              visualEffects.push(new ExplosionEffect(p.x, p.y, 45));
+              sound.playExplode();
+            } else {
+              visualEffects.push(new SparkEffect(p.x, p.y, '#38bdf8'));
+              sound.playIceLaser();
+            }
+          }
+        });
+
+        // 贯穿最左防线，不会被小推车/防守激光压扁，直到滚出屏幕 left < -100 销毁
+        if (this.x < -100) {
           this.destroy();
         }
-        if (this.x < 0) this.destroy();
       }
+
       destroy() {
-        projectiles = projectiles.filter(p => p !== this);
-        visualEffects.push(new ExplosionEffect(this.x, this.y, 40));
+        bossGiantBalls = bossGiantBalls.filter(b => b !== this);
       }
+
       draw(ctx) {
         ctx.save();
         ctx.translate(this.x, this.y);
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(0, 0, 14, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.lineWidth = 3;
-        ctx.stroke();
+        ctx.rotate(this.rotation);
+
+        if (this.type === 'fire') {
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 20;
+
+          const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, this.radius);
+          grad.addColorStop(0, '#fef08a');
+          grad.addColorStop(0.4, '#f97316');
+          grad.addColorStop(1, '#dc2626');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(0, 0, this.radius * 0.6, 0, Math.PI * 1.2);
+          ctx.stroke();
+
+        } else {
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 20;
+
+          const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, this.radius);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.5, '#38bdf8');
+          grad.addColorStop(1, '#0284c7');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#bae6fd';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(0, 0, this.radius * 0.6, 0, Math.PI * 1.2);
+          ctx.stroke();
+        }
+
         ctx.restore();
       }
     }
@@ -1807,6 +1975,8 @@
         bossObj.draw(ctx);
       }
 
+      bossGiantBalls.forEach(b => { b.update(); b.draw(ctx); });
+
       projectiles.forEach(p => { p.update(); p.draw(ctx); });
       energyParticles.forEach(e => { e.update(); e.draw(ctx); });
       visualEffects.forEach(v => { v.update(); v.draw(ctx); });
@@ -1992,6 +2162,7 @@
       visualEffects = [];
       tombstones = [];
       bossObj = null;
+      bossGiantBalls = [];
       currentWave = 0;
       waveTimer = 0;
       selectedPlantId = null;
