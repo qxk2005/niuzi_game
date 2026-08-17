@@ -1,0 +1,2085 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>除雪大作战 - 5岁小勇士的冰雪冒险</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    html, body {
+      width: 100vw; height: 100vh;
+      background: #0a0e1a;
+      overflow: hidden;
+      font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+      color: #fff;
+    }
+    canvas {
+      display: block;
+      width: 100vw; height: 100vh;
+      cursor: pointer;
+    }
+    /* Start Screen Overlay */
+    #start-screen {
+      position: fixed; inset: 0; z-index: 100;
+      background: radial-gradient(ellipse at center, #0d1b3e 0%, #060a14 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity 0.8s ease;
+    }
+    #start-screen.hidden { opacity: 0; pointer-events: none; }
+    .start-title {
+      font-size: 64px; font-weight: 900;
+      background: linear-gradient(180deg, #8ecfff 0%, #3b82f6 40%, #c4e0ff 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 30px rgba(59,130,246,0.5);
+      margin-bottom: 16px;
+      animation: titlePulse 2s infinite ease-in-out;
+    }
+    @keyframes titlePulse {
+      0%,100% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.05); filter: brightness(1.2); }
+    }
+    .start-subtitle {
+      font-size: 22px; color: #94b8db; margin-bottom: 40px;
+      text-align: center; line-height: 1.6;
+    }
+    .start-btn {
+      font-size: 28px; font-weight: 900; color: #1e3a5f;
+      background: linear-gradient(180deg, #7dd3fc 0%, #38bdf8 50%, #0ea5e9 100%);
+      border: 4px solid #bae6fd; border-radius: 50px;
+      padding: 18px 60px; cursor: pointer;
+      box-shadow: 0 0 40px rgba(56,189,248,0.5), 0 8px 20px rgba(0,0,0,0.4);
+      transition: all 0.2s; outline: none;
+      animation: btnGlow 1.5s infinite ease-in-out;
+    }
+    @keyframes btnGlow {
+      0%,100% { box-shadow: 0 0 40px rgba(56,189,248,0.5), 0 8px 20px rgba(0,0,0,0.4); }
+      50% { box-shadow: 0 0 60px rgba(56,189,248,0.8), 0 8px 30px rgba(0,0,0,0.4); }
+    }
+    .start-btn:hover { transform: scale(1.08); filter: brightness(1.15); }
+    .start-btn:active { transform: scale(0.95); }
+    .snowflake-bg {
+      position: absolute; color: #fff; opacity: 0.3; pointer-events: none;
+      animation: snowFall linear infinite;
+    }
+    @keyframes snowFall {
+      0% { transform: translateY(-10vh) rotate(0deg); opacity: 0.5; }
+      100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+    }
+    /* Victory Screen */
+    #victory-screen {
+      position: fixed; inset: 0; z-index: 200;
+      background: radial-gradient(ellipse at center, rgba(16,40,80,0.95) 0%, rgba(5,10,20,0.98) 100%);
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+    }
+    #victory-screen.show { display: flex; }
+    .victory-title {
+      font-size: 72px; font-weight: 900;
+      background: linear-gradient(180deg, #fde68a, #f59e0b, #fde68a);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      animation: titlePulse 1.5s infinite ease-in-out;
+      margin-bottom: 20px;
+    }
+    .victory-subtitle { font-size: 28px; color: #fbbf24; margin-bottom: 40px; }
+    .victory-btn {
+      font-size: 24px; font-weight: 900; color: #451a03;
+      background: linear-gradient(180deg, #fde68a 0%, #f59e0b 100%);
+      border: 4px solid #fef08a; border-radius: 40px;
+      padding: 16px 50px; cursor: pointer;
+      box-shadow: 0 0 40px rgba(245,158,11,0.5); outline: none;
+      transition: all 0.2s;
+    }
+    .victory-btn:hover { transform: scale(1.08); }
+    /* Tutorial Overlay */
+    #tutorial-overlay {
+      position: fixed; inset: 0; z-index: 150;
+      background: rgba(0,0,0,0.7);
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+    }
+    #tutorial-overlay.show { display: flex; }
+    .tutorial-box {
+      background: linear-gradient(180deg, #1e293b, #0f172a);
+      border: 4px solid #38bdf8; border-radius: 24px;
+      padding: 30px 40px; max-width: 500px; text-align: center;
+      box-shadow: 0 0 50px rgba(56,189,248,0.3);
+    }
+    .tutorial-text { font-size: 22px; color: #e2e8f0; line-height: 1.8; margin-bottom: 24px; }
+    .tutorial-next {
+      font-size: 20px; font-weight: bold; color: #0c4a6e;
+      background: linear-gradient(180deg, #7dd3fc, #0ea5e9);
+      border: 3px solid #bae6fd; border-radius: 30px;
+      padding: 12px 40px; cursor: pointer; outline: none;
+      transition: all 0.2s;
+    }
+    .tutorial-next:hover { transform: scale(1.05); }
+  </style>
+</head>
+<body>
+
+<!-- Start Screen -->
+<div id="start-screen">
+  <div class="start-title">❄️ 除雪大作战 ❄️</div>
+  <div class="start-subtitle">
+    冰天雪地里，你的营地需要温暖！<br>
+    采集资源 · 升级熔炉 · 拯救伙伴 · 消灭怪物！
+  </div>
+  <button class="start-btn" id="start-btn">▶️ 开始冒险！</button>
+</div>
+
+<!-- Tutorial Overlay -->
+<div id="tutorial-overlay">
+  <div class="tutorial-box">
+    <div class="tutorial-text" id="tutorial-text"></div>
+    <button class="tutorial-next" id="tutorial-next">知道了！👍</button>
+  </div>
+</div>
+
+<!-- Victory Screen -->
+<div id="victory-screen">
+  <div class="victory-title">🎉 胜利！🎉</div>
+  <div class="victory-subtitle">你融化了所有的雪，消灭了全部怪物！<br>营地安全了！🏕️</div>
+  <button class="victory-btn" onclick="location.reload()">🔄 再玩一次！</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+// ============================================================
+// 除雪大作战 - Snow Clearing Battle
+// 参考《无尽冬日》风格的俯视角生存策略游戏
+// ============================================================
+
+// --- Audio System (Web Audio API) ---
+class AudioSystem {
+  constructor() {
+    this.ctx = null;
+    this.initialized = false;
+  }
+  init() {
+    if (this.initialized) return;
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.initialized = true;
+    } catch(e) { console.warn('Audio not available'); }
+  }
+  // Generate a tone
+  tone(freq, duration, type='sine', vol=0.15, detune=0) {
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    osc.detune.value = detune;
+    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + duration);
+  }
+  // Noise burst
+  noise(duration, vol=0.08) {
+    if (!this.ctx) return;
+    const bufferSize = this.ctx.sampleRate * duration;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const src = this.ctx.createBufferSource();
+    const gain = this.ctx.createGain();
+    src.buffer = buffer;
+    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+    src.connect(gain);
+    gain.connect(this.ctx.destination);
+    src.start();
+  }
+  // Sound effects
+  footstep() { this.noise(0.08, 0.04); this.tone(200, 0.08, 'sine', 0.03); }
+  chopWood() { this.noise(0.15, 0.15); this.tone(150, 0.12, 'square', 0.08); this.tone(100, 0.15, 'sawtooth', 0.05); }
+  breakIce() { this.tone(800, 0.15, 'sine', 0.1); this.tone(1200, 0.1, 'sine', 0.08); this.noise(0.1, 0.1); }
+  wolfHowl() { this.tone(300, 0.4, 'sawtooth', 0.08); this.tone(400, 0.5, 'sawtooth', 0.06, 50); }
+  monsterRoar() { this.tone(80, 0.6, 'sawtooth', 0.12); this.tone(60, 0.8, 'square', 0.08); this.noise(0.3, 0.06); }
+  rescuePerson() {
+    this.tone(523, 0.15, 'sine', 0.12);
+    setTimeout(() => this.tone(659, 0.15, 'sine', 0.12), 100);
+    setTimeout(() => this.tone(784, 0.2, 'sine', 0.12), 200);
+  }
+  furnaceUpgrade() {
+    for (let i = 0; i < 6; i++) {
+      setTimeout(() => this.tone(400 + i * 100, 0.3, 'sine', 0.1), i * 80);
+    }
+    setTimeout(() => this.noise(0.4, 0.08), 400);
+  }
+  depositResource() { this.tone(440, 0.1, 'sine', 0.08); this.tone(660, 0.15, 'sine', 0.1); }
+  hitPlayer() { this.tone(150, 0.2, 'square', 0.1); this.noise(0.15, 0.08); }
+  attackMonster() { this.tone(300, 0.1, 'sawtooth', 0.08); this.tone(200, 0.15, 'square', 0.06); }
+  victory() {
+    const notes = [523, 659, 784, 1047, 784, 1047, 1319];
+    notes.forEach((n, i) => setTimeout(() => this.tone(n, 0.3, 'sine', 0.12), i * 150));
+  }
+  pickUp() { this.tone(600, 0.08, 'sine', 0.08); this.tone(800, 0.1, 'sine', 0.06); }
+  wrongSlot() { this.tone(200, 0.15, 'square', 0.08); this.tone(150, 0.2, 'square', 0.06); }
+  clickUI() { this.tone(500, 0.06, 'sine', 0.06); }
+}
+
+const audio = new AudioSystem();
+
+// --- Constants ---
+const MAP_RADIUS = 1800; // Total map radius in world units
+const RING_COUNT = 10;
+const RING_WIDTH = MAP_RADIUS / RING_COUNT;
+const CAMP_RADIUS = 120;
+const PLAYER_SPEED = 2.5;
+const FOLLOWER_SPEED = 2.2;
+const MONSTER_SPEED_WOLF = 1.2;
+const MONSTER_SPEED_SNOW = 0.8;
+const MAX_INVENTORY = 10;
+
+// Furnace upgrade requirements
+const FURNACE_REQS = [];
+for (let i = 0; i < 10; i++) {
+  FURNACE_REQS.push({
+    wood: i + 1,
+    ice: i === 0 ? 0 : i + 1
+  });
+}
+
+// --- Canvas Setup ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, scale;
+
+function resizeCanvas() {
+  W = canvas.width = window.innerWidth * window.devicePixelRatio;
+  H = canvas.height = window.innerHeight * window.devicePixelRatio;
+  scale = Math.min(W, H) / 900;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// --- Game State ---
+const game = {
+  running: false,
+  time: 0,
+  camera: { x: 0, y: 0 },
+  // Player
+  player: {
+    x: 0, y: -60,
+    targetX: 0, targetY: -60,
+    moving: false,
+    wood: 0, ice: 0,
+    radius: 18,
+    facing: 0, // angle
+    footstepTimer: 0,
+    hitCooldown: 0,
+    flashTimer: 0,
+  },
+  // Furnace
+  furnace: {
+    x: 0, y: 0,
+    level: 1,
+    woodDeposited: 0,
+    iceDeposited: 0,
+    upgradeAnim: 0, // countdown for upgrade animation
+    fireParticles: [],
+    glowRadius: 60,
+  },
+  // Deposit slots (near furnace)
+  slots: {
+    wood: { x: -50, y: 50, radius: 25 },
+    ice: { x: 50, y: 50, radius: 25 },
+  },
+  // Resources on map
+  resources: [],
+  // Monsters
+  monsters: [],
+  // Frozen people
+  frozenPeople: [],
+  // Followers (rescued)
+  followers: [],
+  // Particles
+  particles: [],
+  // Snow particles (ambient)
+  snowflakes: [],
+  // Melted rings (which rings are melted)
+  meltedRings: new Set([0]), // ring 0 (center) is always clear
+  meltingRing: -1, // currently melting ring
+  meltProgress: 0,
+  // Tutorial
+  tutorialStep: 0,
+  tutorialShown: false,
+  // Messages
+  messages: [],
+  // Victory
+  victory: false,
+  // Guide arrow
+  guideTarget: null,
+  guideText: '',
+};
+
+// --- Helper Functions ---
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function angle(a, b) { return Math.atan2(b.y - a.y, b.x - a.x); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function randRange(min, max) { return min + Math.random() * (max - min); }
+function randInt(min, max) { return Math.floor(randRange(min, max + 1)); }
+
+// Get which ring a position is in (0 = center, 9 = outermost)
+function getRing(x, y) {
+  const d = Math.hypot(x, y);
+  return Math.min(RING_COUNT - 1, Math.floor(d / RING_WIDTH));
+}
+
+// --- World Generation ---
+function generateWorld() {
+  // Resources: Trees and Ice deposits
+  game.resources = [];
+  
+  // Trees (wood) - spread across rings 1-8
+  for (let i = 0; i < 35; i++) {
+    const ring = randInt(1, 8);
+    const a = Math.random() * Math.PI * 2;
+    const r = ring * RING_WIDTH + randRange(20, RING_WIDTH - 20);
+    game.resources.push({
+      type: 'tree',
+      x: Math.cos(a) * r,
+      y: Math.sin(a) * r,
+      hp: 3,
+      maxHp: 3,
+      radius: 20,
+      respawnTimer: 0,
+      alive: true,
+    });
+  }
+  
+  // Ice deposits - spread across rings 2-9
+  for (let i = 0; i < 25; i++) {
+    const ring = randInt(2, 9);
+    const a = Math.random() * Math.PI * 2;
+    const r = ring * RING_WIDTH + randRange(20, RING_WIDTH - 20);
+    game.resources.push({
+      type: 'ice',
+      x: Math.cos(a) * r,
+      y: Math.sin(a) * r,
+      hp: 2,
+      maxHp: 2,
+      radius: 16,
+      respawnTimer: 0,
+      alive: true,
+    });
+  }
+  
+  // Wolves - in rings 2-5
+  game.monsters = [];
+  for (let i = 0; i < 5; i++) {
+    const ring = randInt(2, 5);
+    const a = Math.random() * Math.PI * 2;
+    const r = ring * RING_WIDTH + randRange(40, RING_WIDTH - 40);
+    game.monsters.push({
+      type: 'wolf',
+      x: Math.cos(a) * r,
+      y: Math.sin(a) * r,
+      hp: 3,
+      maxHp: 3,
+      speed: MONSTER_SPEED_WOLF,
+      radius: 16,
+      damage: 1, // drops 1 resource
+      state: 'patrol', // patrol, chase, attack
+      patrolAngle: a,
+      patrolCenter: { x: Math.cos(a) * r, y: Math.sin(a) * r },
+      attackCooldown: 0,
+      flashTimer: 0,
+      alive: true,
+    });
+  }
+  
+  // Snow monsters - in rings 6-9
+  for (let i = 0; i < 3; i++) {
+    const ring = randInt(6, 9);
+    const a = Math.random() * Math.PI * 2;
+    const r = ring * RING_WIDTH + randRange(40, RING_WIDTH - 40);
+    game.monsters.push({
+      type: 'snowMonster',
+      x: Math.cos(a) * r,
+      y: Math.sin(a) * r,
+      hp: 6,
+      maxHp: 6,
+      speed: MONSTER_SPEED_SNOW,
+      radius: 28,
+      damage: 2, // drops 2 resources
+      state: 'patrol',
+      patrolAngle: a,
+      patrolCenter: { x: Math.cos(a) * r, y: Math.sin(a) * r },
+      attackCooldown: 0,
+      flashTimer: 0,
+      alive: true,
+    });
+  }
+  
+  // Frozen people - in rings 2-8
+  game.frozenPeople = [];
+  for (let i = 0; i < 6; i++) {
+    const ring = randInt(2, 8);
+    const a = (Math.PI * 2 / 6) * i + randRange(-0.3, 0.3);
+    const r = ring * RING_WIDTH + randRange(30, RING_WIDTH - 30);
+    const weapons = ['spear', 'bow', 'sword', 'spear', 'bow', 'sword'];
+    game.frozenPeople.push({
+      x: Math.cos(a) * r,
+      y: Math.sin(a) * r,
+      clicksNeeded: 3,
+      clicksDone: 0,
+      rescued: false,
+      radius: 18,
+      weapon: weapons[i],
+    });
+  }
+  
+  // Ambient snowflakes
+  game.snowflakes = [];
+  for (let i = 0; i < 80; i++) {
+    game.snowflakes.push({
+      x: randRange(-MAP_RADIUS, MAP_RADIUS),
+      y: randRange(-MAP_RADIUS, MAP_RADIUS),
+      size: randRange(2, 5),
+      speed: randRange(0.3, 1.0),
+      drift: randRange(-0.2, 0.2),
+      opacity: randRange(0.2, 0.6),
+    });
+  }
+}
+
+// --- Particle System ---
+function spawnParticle(x, y, color, life=60, vx=0, vy=0, size=3) {
+  game.particles.push({ x, y, vx: vx || randRange(-1, 1), vy: vy || randRange(-2, -0.5), life, maxLife: life, color, size });
+}
+
+function spawnFireParticles(x, y, count=3, intensity=1) {
+  for (let i = 0; i < count; i++) {
+    const colors = ['#ff6b35', '#ff8c42', '#ffd166', '#ff4500', '#ffaa00'];
+    spawnParticle(x + randRange(-15*intensity, 15*intensity), y + randRange(-10, 5),
+      colors[randInt(0, colors.length-1)], randInt(20, 50),
+      randRange(-0.5, 0.5), randRange(-2, -0.5) * intensity, randRange(2, 5) * intensity);
+  }
+}
+
+function spawnIceParticles(x, y, count=5) {
+  for (let i = 0; i < count; i++) {
+    spawnParticle(x, y, '#a5f3fc', randInt(20, 40), randRange(-2, 2), randRange(-2, 2), randRange(2, 4));
+  }
+}
+
+function spawnUpgradeParticles(intensity=1) {
+  for (let i = 0; i < 30 * intensity; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const speed = randRange(1, 4) * intensity;
+    spawnParticle(game.furnace.x, game.furnace.y,
+      ['#fbbf24', '#f59e0b', '#fde68a', '#ff6b35', '#38bdf8'][randInt(0, 4)],
+      randInt(40, 80), Math.cos(a) * speed, Math.sin(a) * speed, randRange(3, 7));
+  }
+}
+
+// --- Update Functions ---
+function updatePlayer() {
+  const p = game.player;
+  
+  if (p.moving) {
+    const dx = p.targetX - p.x;
+    const dy = p.targetY - p.y;
+    const d = Math.hypot(dx, dy);
+    
+    if (d > 3) {
+      p.facing = Math.atan2(dy, dx);
+      p.x += (dx / d) * PLAYER_SPEED;
+      p.y += (dy / d) * PLAYER_SPEED;
+      
+      // Footstep sound
+      p.footstepTimer--;
+      if (p.footstepTimer <= 0) {
+        audio.footstep();
+        p.footstepTimer = 25;
+      }
+    } else {
+      p.moving = false;
+    }
+  }
+  
+  // Hit cooldown
+  if (p.hitCooldown > 0) p.hitCooldown--;
+  if (p.flashTimer > 0) p.flashTimer--;
+  
+  // Keep player in map bounds
+  const pd = Math.hypot(p.x, p.y);
+  if (pd > MAP_RADIUS - 30) {
+    p.x *= (MAP_RADIUS - 30) / pd;
+    p.y *= (MAP_RADIUS - 30) / pd;
+  }
+}
+
+function updateCamera() {
+  game.camera.x = lerp(game.camera.x, game.player.x, 0.08);
+  game.camera.y = lerp(game.camera.y, game.player.y, 0.08);
+}
+
+function updateFurnace() {
+  const f = game.furnace;
+  
+  // Fire particles
+  if (game.time % 3 === 0) {
+    spawnFireParticles(f.x, f.y - 10, Math.ceil(f.level / 2), 0.5 + f.level * 0.15);
+  }
+  
+  // Upgrade animation
+  if (f.upgradeAnim > 0) {
+    f.upgradeAnim--;
+    if (f.upgradeAnim > 30) {
+      spawnUpgradeParticles(0.5);
+    }
+  }
+  
+  // Glow radius based on level
+  f.glowRadius = 60 + f.level * 30;
+  
+  // Check if we can upgrade
+  const req = FURNACE_REQS[f.level - 1];
+  if (req && f.woodDeposited >= req.wood && f.iceDeposited >= req.ice && f.level < 10) {
+    // UPGRADE!
+    f.level++;
+    f.woodDeposited = 0;
+    f.iceDeposited = 0;
+    f.upgradeAnim = 90;
+    audio.furnaceUpgrade();
+    
+    // Melt the next ring
+    const ringToMelt = f.level - 1;
+    game.meltingRing = ringToMelt;
+    game.meltProgress = 0;
+    
+    addMessage(`🔥 熔炉升到 ${f.level} 级了！`, '#fbbf24');
+    
+    if (f.level >= 10) {
+      addMessage('🔥🔥🔥 熔炉满级！所有雪都融化了！', '#ff6b35');
+    }
+    
+    // Check victory
+    checkVictory();
+  }
+}
+
+function updateMelting() {
+  if (game.meltingRing >= 0) {
+    game.meltProgress += 0.01;
+    if (game.meltProgress >= 1) {
+      game.meltedRings.add(game.meltingRing);
+      game.meltingRing = -1;
+      game.meltProgress = 0;
+    }
+  }
+}
+
+function updateDepositSlots() {
+  const p = game.player;
+  const woodSlot = game.slots.wood;
+  const iceSlot = game.slots.ice;
+  
+  // Check if player is on wood slot
+  if (dist(p, woodSlot) < woodSlot.radius + p.radius) {
+    if (p.wood > 0) {
+      const f = game.furnace;
+      const req = FURNACE_REQS[f.level - 1];
+      if (req && f.woodDeposited < req.wood) {
+        f.woodDeposited++;
+        p.wood--;
+        audio.depositResource();
+        spawnFireParticles(woodSlot.x, woodSlot.y, 5, 0.8);
+        addMessage(`🪵 投入木头！(${f.woodDeposited}/${req.wood})`, '#c4a882');
+      }
+    }
+  }
+  
+  // Check if player is on ice slot
+  if (dist(p, iceSlot) < iceSlot.radius + p.radius) {
+    if (p.ice > 0) {
+      const f = game.furnace;
+      const req = FURNACE_REQS[f.level - 1];
+      if (req && f.iceDeposited < req.ice) {
+        f.iceDeposited++;
+        p.ice--;
+        audio.depositResource();
+        spawnIceParticles(iceSlot.x, iceSlot.y, 5);
+        addMessage(`🧊 投入冰块！(${f.iceDeposited}/${req.ice})`, '#67e8f9');
+      }
+    }
+  }
+}
+
+function updateResources() {
+  for (const res of game.resources) {
+    if (!res.alive) {
+      res.respawnTimer--;
+      if (res.respawnTimer <= 0) {
+        res.alive = true;
+        res.hp = res.maxHp;
+      }
+    }
+  }
+}
+
+function updateMonsters() {
+  for (const m of game.monsters) {
+    if (!m.alive) continue;
+    
+    const distToPlayer = dist(m, game.player);
+    const chaseRange = m.type === 'wolf' ? 250 : 300;
+    const attackRange = m.radius + game.player.radius + 5;
+    
+    m.attackCooldown = Math.max(0, m.attackCooldown - 1);
+    if (m.flashTimer > 0) m.flashTimer--;
+    
+    if (distToPlayer < chaseRange) {
+      m.state = 'chase';
+      
+      // Move toward player
+      const a = angle(m, game.player);
+      m.x += Math.cos(a) * m.speed;
+      m.y += Math.sin(a) * m.speed;
+      
+      // Attack player
+      if (distToPlayer < attackRange && m.attackCooldown <= 0) {
+        m.attackCooldown = 90; // 1.5 seconds
+        const p = game.player;
+        
+        if (p.hitCooldown <= 0) {
+          p.hitCooldown = 60;
+          p.flashTimer = 30;
+          audio.hitPlayer();
+          
+          // Drop resources
+          let dropped = 0;
+          for (let i = 0; i < m.damage; i++) {
+            if (p.wood > 0 && (Math.random() > 0.5 || p.ice <= 0)) {
+              p.wood--;
+              dropped++;
+              // Spawn dropped resource on ground
+              const da = Math.random() * Math.PI * 2;
+              game.resources.push({
+                type: 'tree', x: p.x + Math.cos(da) * 40, y: p.y + Math.sin(da) * 40,
+                hp: 1, maxHp: 1, radius: 12, respawnTimer: 0, alive: true, isDropped: true,
+              });
+            } else if (p.ice > 0) {
+              p.ice--;
+              dropped++;
+              const da = Math.random() * Math.PI * 2;
+              game.resources.push({
+                type: 'ice', x: p.x + Math.cos(da) * 40, y: p.y + Math.sin(da) * 40,
+                hp: 1, maxHp: 1, radius: 12, respawnTimer: 0, alive: true, isDropped: true,
+              });
+            }
+          }
+          if (dropped > 0) addMessage(`😵 被攻击！掉落了 ${dropped} 个资源！`, '#f87171');
+          
+          // Knockback player
+          const ka = angle(m, p);
+          p.x += Math.cos(ka) * 30;
+          p.y += Math.sin(ka) * 30;
+          p.moving = false;
+        }
+      }
+    } else {
+      m.state = 'patrol';
+      // Patrol in circle
+      m.patrolAngle += 0.008;
+      m.x = m.patrolCenter.x + Math.cos(m.patrolAngle) * 60;
+      m.y = m.patrolCenter.y + Math.sin(m.patrolAngle) * 60;
+    }
+  }
+}
+
+function updateFollowers() {
+  for (let i = 0; i < game.followers.length; i++) {
+    const f = game.followers[i];
+    
+    // Follow player in a chain
+    let target;
+    if (i === 0) {
+      target = game.player;
+    } else {
+      target = game.followers[i - 1];
+    }
+    
+    const d = dist(f, target);
+    const followDist = 45 + i * 10;
+    
+    if (d > followDist) {
+      const a = angle(f, target);
+      f.x += Math.cos(a) * FOLLOWER_SPEED;
+      f.y += Math.sin(a) * FOLLOWER_SPEED;
+      f.facing = a;
+    }
+    
+    // Auto-attack nearby monsters
+    f.attackCooldown = Math.max(0, f.attackCooldown - 1);
+    let nearestMonster = null;
+    let nearestDist = Infinity;
+    
+    for (const m of game.monsters) {
+      if (!m.alive) continue;
+      const md = dist(f, m);
+      const attackRange = f.weapon === 'bow' ? 150 : 60;
+      if (md < attackRange && md < nearestDist) {
+        nearestMonster = m;
+        nearestDist = md;
+      }
+    }
+    
+    if (nearestMonster && f.attackCooldown <= 0) {
+      f.attackCooldown = f.weapon === 'bow' ? 50 : 35;
+      const dmg = f.weapon === 'sword' ? 2 : 1;
+      nearestMonster.hp -= dmg;
+      nearestMonster.flashTimer = 10;
+      audio.attackMonster();
+      
+      // Arrow particle for bow
+      if (f.weapon === 'bow') {
+        const a = angle(f, nearestMonster);
+        for (let j = 0; j < 3; j++) {
+          spawnParticle(f.x, f.y, '#fbbf24', 15,
+            Math.cos(a) * 5, Math.sin(a) * 5, 2);
+        }
+      }
+      
+      if (nearestMonster.hp <= 0) {
+        nearestMonster.alive = false;
+        addMessage(`⚔️ ${nearestMonster.type === 'wolf' ? '狼' : '雪怪'}被消灭了！`, '#4ade80');
+        // Spawn death particles
+        for (let j = 0; j < 15; j++) {
+          spawnParticle(nearestMonster.x, nearestMonster.y,
+            nearestMonster.type === 'wolf' ? '#666' : '#a5f3fc',
+            randInt(20, 40), randRange(-3, 3), randRange(-3, 3), randRange(2, 5));
+        }
+        checkVictory();
+      }
+    }
+    
+    // Auto-collect nearby resources
+    f.collectCooldown = Math.max(0, (f.collectCooldown || 0) - 1);
+    if (f.collectCooldown <= 0) {
+      for (const res of game.resources) {
+        if (!res.alive) continue;
+        if (dist(f, res) < 50) {
+          const p = game.player;
+          if (p.wood + p.ice < MAX_INVENTORY) {
+            res.hp--;
+            if (res.hp <= 0) {
+              res.alive = false;
+              res.respawnTimer = res.isDropped ? 0 : 600; // dropped items don't respawn
+              if (res.isDropped) {
+                // Remove dropped items permanently
+                const idx = game.resources.indexOf(res);
+                if (idx >= 0) game.resources.splice(idx, 1);
+              }
+              if (res.type === 'tree') {
+                p.wood++;
+                addMessage('🪵 伙伴采集了木头！', '#c4a882');
+              } else {
+                p.ice++;
+                addMessage('🧊 伙伴采集了冰块！', '#67e8f9');
+              }
+              audio.pickUp();
+            }
+            f.collectCooldown = 40;
+            break;
+          }
+        }
+      }
+    }
+  }
+}
+
+function updateParticles() {
+  for (let i = game.particles.length - 1; i >= 0; i--) {
+    const p = game.particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+    if (p.life <= 0) game.particles.splice(i, 1);
+  }
+  
+  // Ambient snowflakes
+  for (const s of game.snowflakes) {
+    s.y += s.speed;
+    s.x += s.drift;
+    // Wrap around
+    if (s.y > MAP_RADIUS) s.y = -MAP_RADIUS;
+    if (s.x > MAP_RADIUS) s.x = -MAP_RADIUS;
+    if (s.x < -MAP_RADIUS) s.x = MAP_RADIUS;
+  }
+}
+
+function updateMessages() {
+  for (let i = game.messages.length - 1; i >= 0; i--) {
+    game.messages[i].life--;
+    if (game.messages[i].life <= 0) game.messages.splice(i, 1);
+  }
+}
+
+function addMessage(text, color='#fff') {
+  game.messages.push({ text, color, life: 180 }); // 3 seconds
+  if (game.messages.length > 5) game.messages.shift();
+}
+
+function updateGuide() {
+  const p = game.player;
+  const f = game.furnace;
+  
+  // Dynamic guide logic
+  if (p.wood + p.ice === 0 && f.woodDeposited === 0 && f.iceDeposited === 0) {
+    // Need resources - find nearest tree
+    let nearest = null, nd = Infinity;
+    for (const res of game.resources) {
+      if (!res.alive) continue;
+      const d = dist(p, res);
+      if (d < nd) { nd = d; nearest = res; }
+    }
+    if (nearest) {
+      game.guideTarget = nearest;
+      game.guideText = nearest.type === 'tree' ? '点击树木采集木头！🪵' : '点击冰堆采集冰块！🧊';
+    }
+  } else if (p.wood > 0 || p.ice > 0) {
+    // Have resources - guide to furnace slots
+    const req = FURNACE_REQS[f.level - 1];
+    if (req) {
+      if (p.wood > 0 && f.woodDeposited < req.wood) {
+        game.guideTarget = game.slots.wood;
+        game.guideText = '走到木头格子投放木头！🪵';
+      } else if (p.ice > 0 && f.iceDeposited < req.ice) {
+        game.guideTarget = game.slots.ice;
+        game.guideText = '走到冰块格子投放冰块！🧊';
+      } else {
+        game.guideTarget = null;
+        game.guideText = '';
+      }
+    }
+  } else {
+    game.guideTarget = null;
+    game.guideText = '';
+  }
+}
+
+function checkVictory() {
+  if (game.victory) return;
+  const allMonstersDead = game.monsters.every(m => !m.alive);
+  const furnaceMaxed = game.furnace.level >= 10;
+  
+  if (allMonstersDead && furnaceMaxed) {
+    game.victory = true;
+    audio.victory();
+    setTimeout(() => {
+      document.getElementById('victory-screen').classList.add('show');
+    }, 1500);
+  }
+}
+
+// --- Click Handler ---
+function handleClick(worldX, worldY) {
+  const p = game.player;
+  
+  // Check if clicked on a resource
+  for (const res of game.resources) {
+    if (!res.alive) continue;
+    if (dist({x: worldX, y: worldY}, res) < res.radius + 15) {
+      // Move to resource and harvest
+      p.targetX = res.x + (res.radius + 10) * Math.cos(angle(res, p));
+      p.targetY = res.y + (res.radius + 10) * Math.sin(angle(res, p));
+      p.moving = true;
+      
+      // If close enough, harvest now
+      if (dist(p, res) < res.radius + p.radius + 20) {
+        if (p.wood + p.ice < MAX_INVENTORY) {
+          res.hp--;
+          if (res.type === 'tree') {
+            audio.chopWood();
+            spawnParticle(res.x, res.y - 10, '#8B4513', 30, randRange(-1,1), -2, 4);
+            spawnParticle(res.x, res.y - 10, '#228B22', 30, randRange(-1,1), -1.5, 3);
+          } else {
+            audio.breakIce();
+            spawnIceParticles(res.x, res.y);
+          }
+          if (res.hp <= 0) {
+            res.alive = false;
+            res.respawnTimer = res.isDropped ? 0 : 500;
+            if (res.isDropped) {
+              const idx = game.resources.indexOf(res);
+              if (idx >= 0) game.resources.splice(idx, 1);
+            }
+            if (res.type === 'tree') {
+              p.wood++;
+              addMessage('🪵 获得木头！', '#c4a882');
+            } else {
+              p.ice++;
+              addMessage('🧊 获得冰块！', '#67e8f9');
+            }
+            audio.pickUp();
+          }
+        } else {
+          addMessage('🎒 背包满了！先去投放资源吧！', '#fbbf24');
+        }
+      }
+      return;
+    }
+  }
+  
+  // Check if clicked on a frozen person
+  for (const fp of game.frozenPeople) {
+    if (fp.rescued) continue;
+    if (dist({x: worldX, y: worldY}, fp) < fp.radius + 15) {
+      p.targetX = fp.x + (fp.radius + 10) * Math.cos(angle(fp, p));
+      p.targetY = fp.y + (fp.radius + 10) * Math.sin(angle(fp, p));
+      p.moving = true;
+      
+      if (dist(p, fp) < fp.radius + p.radius + 25) {
+        fp.clicksDone++;
+        audio.breakIce();
+        spawnIceParticles(fp.x, fp.y, 8);
+        addMessage(`⛏️ 铲冰中！(${fp.clicksDone}/${fp.clicksNeeded})`, '#67e8f9');
+        
+        if (fp.clicksDone >= fp.clicksNeeded) {
+          fp.rescued = true;
+          audio.rescuePerson();
+          addMessage(`🎉 救出一个伙伴！他带着${fp.weapon === 'bow' ? '🏹弓箭' : fp.weapon === 'sword' ? '🗡️宝剑' : '🔱长枪'}！`, '#4ade80');
+          
+          // Add as follower
+          game.followers.push({
+            x: fp.x, y: fp.y,
+            facing: 0,
+            weapon: fp.weapon,
+            attackCooldown: 0,
+            collectCooldown: 0,
+          });
+          
+          // Victory particles
+          for (let i = 0; i < 20; i++) {
+            spawnParticle(fp.x, fp.y, ['#4ade80', '#fbbf24', '#38bdf8'][randInt(0,2)],
+              randInt(30, 60), randRange(-3, 3), randRange(-3, 3), randRange(3, 6));
+          }
+        }
+      }
+      return;
+    }
+  }
+  
+  // Check if clicked on a monster (player attacks)
+  for (const m of game.monsters) {
+    if (!m.alive) continue;
+    if (dist({x: worldX, y: worldY}, m) < m.radius + 20) {
+      p.targetX = m.x + (m.radius + 15) * Math.cos(angle(m, p));
+      p.targetY = m.y + (m.radius + 15) * Math.sin(angle(m, p));
+      p.moving = true;
+      
+      if (dist(p, m) < m.radius + p.radius + 25) {
+        m.hp -= 1;
+        m.flashTimer = 10;
+        audio.attackMonster();
+        spawnParticle(m.x, m.y, '#f87171', 20, randRange(-2,2), randRange(-2,0), 4);
+        
+        if (m.hp <= 0) {
+          m.alive = false;
+          addMessage(`⚔️ ${m.type === 'wolf' ? '狼' : '雪怪'}被消灭了！`, '#4ade80');
+          for (let j = 0; j < 15; j++) {
+            spawnParticle(m.x, m.y,
+              m.type === 'wolf' ? '#666' : '#a5f3fc',
+              randInt(20, 40), randRange(-3, 3), randRange(-3, 3), randRange(2, 5));
+          }
+          checkVictory();
+        }
+      }
+      return;
+    }
+  }
+  
+  // Default: move to clicked position
+  p.targetX = worldX;
+  p.targetY = worldY;
+  p.moving = true;
+}
+
+// --- Drawing Functions ---
+function worldToScreen(wx, wy) {
+  const sx = (wx - game.camera.x) * scale + W / 2;
+  const sy = (wy - game.camera.y) * scale + H / 2;
+  return [sx, sy];
+}
+
+function drawGround() {
+  // Draw rings from outside in
+  for (let ring = RING_COUNT - 1; ring >= 0; ring--) {
+    const outerR = (ring + 1) * RING_WIDTH * scale;
+    const [cx, cy] = worldToScreen(0, 0);
+    
+    const isMelted = game.meltedRings.has(ring);
+    const isMelting = game.meltingRing === ring;
+    
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+    
+    if (isMelted) {
+      // Green grass
+      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, outerR);
+      gradient.addColorStop(0, '#2d5a27');
+      gradient.addColorStop(1, '#1a4220');
+      ctx.fillStyle = gradient;
+    } else if (isMelting) {
+      // Transition: blend snow and grass
+      const t = game.meltProgress;
+      const r = Math.floor(lerp(200, 45, t));
+      const g = Math.floor(lerp(220, 90, t));
+      const b = Math.floor(lerp(240, 39, t));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+    } else {
+      // Snow - outer rings are darker/colder
+      const coldness = ring / RING_COUNT;
+      const r = Math.floor(lerp(220, 140, coldness));
+      const g = Math.floor(lerp(235, 160, coldness));
+      const b = Math.floor(lerp(250, 200, coldness));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+    }
+    ctx.fill();
+    
+    // Ring border
+    ctx.strokeStyle = isMelted ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  
+  // Map boundary
+  const [cx, cy] = worldToScreen(0, 0);
+  ctx.beginPath();
+  ctx.arc(cx, cy, MAP_RADIUS * scale, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(100,150,200,0.3)';
+  ctx.lineWidth = 3 * scale;
+  ctx.stroke();
+}
+
+function drawCamp() {
+  const [cx, cy] = worldToScreen(0, 0);
+  const r = CAMP_RADIUS * scale;
+  
+  // Camp circle (warm zone)
+  const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  gradient.addColorStop(0, 'rgba(180, 100, 30, 0.3)');
+  gradient.addColorStop(0.7, 'rgba(120, 60, 20, 0.15)');
+  gradient.addColorStop(1, 'rgba(80, 40, 10, 0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Camp border (wooden fence-like)
+  ctx.strokeStyle = 'rgba(160, 120, 80, 0.4)';
+  ctx.lineWidth = 3 * scale;
+  ctx.setLineDash([8 * scale, 4 * scale]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawFurnace() {
+  const f = game.furnace;
+  const [fx, fy] = worldToScreen(f.x, f.y);
+  const s = scale;
+  
+  // Furnace glow
+  const glowR = f.glowRadius * s;
+  const glow = ctx.createRadialGradient(fx, fy, 0, fx, fy, glowR);
+  const intensity = 0.1 + f.level * 0.03;
+  glow.addColorStop(0, `rgba(255, 150, 50, ${intensity})`);
+  glow.addColorStop(0.5, `rgba(255, 100, 30, ${intensity * 0.5})`);
+  glow.addColorStop(1, 'rgba(255, 80, 20, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(fx, fy, glowR, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Furnace body - stone base
+  const bw = 36 * s;
+  const bh = 40 * s;
+  
+  // Stone base
+  ctx.fillStyle = '#4a4a4a';
+  ctx.beginPath();
+  ctx.roundRect(fx - bw, fy - bh * 0.6, bw * 2, bh * 1.2, 6 * s);
+  ctx.fill();
+  
+  // Stone details
+  ctx.fillStyle = '#5a5a5a';
+  ctx.fillRect(fx - bw + 3*s, fy - bh*0.5, bw*0.4, bh*0.35);
+  ctx.fillRect(fx + bw*0.2, fy - bh*0.5, bw*0.6, bh*0.35);
+  ctx.fillRect(fx - bw + 3*s, fy, bw*0.5, bh*0.35);
+  ctx.fillRect(fx + bw*0.1, fy, bw*0.7, bh*0.35);
+  
+  // Fire opening
+  ctx.fillStyle = '#1a0a00';
+  ctx.beginPath();
+  ctx.arc(fx, fy - 2*s, 14 * s, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Fire inside
+  const fireColors = ['#ff4500', '#ff6b35', '#ffa500', '#ffd700'];
+  const fireSize = 8 + f.level * 1.5;
+  for (let i = 0; i < 4; i++) {
+    const flicker = Math.sin(game.time * 0.15 + i) * 2;
+    ctx.fillStyle = fireColors[i];
+    ctx.beginPath();
+    ctx.arc(fx + flicker * s, fy - (2 + i * 1.5) * s, (fireSize - i * 2) * s, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  // Level text
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = `bold ${14 * s}px 'Microsoft YaHei', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`Lv.${f.level}`, fx, fy + bh * 0.8);
+  
+  // Upgrade animation flash
+  if (f.upgradeAnim > 0) {
+    const alpha = (f.upgradeAnim / 90) * 0.5;
+    const flashR = (90 - f.upgradeAnim) * 3 * s;
+    const flash = ctx.createRadialGradient(fx, fy, 0, fx, fy, flashR);
+    flash.addColorStop(0, `rgba(255, 200, 50, ${alpha})`);
+    flash.addColorStop(1, 'rgba(255, 200, 50, 0)');
+    ctx.fillStyle = flash;
+    ctx.beginPath();
+    ctx.arc(fx, fy, flashR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawDepositSlots() {
+  const f = game.furnace;
+  const req = FURNACE_REQS[f.level - 1];
+  if (!req) return;
+  
+  const s = scale;
+  
+  // Wood slot
+  const ws = game.slots.wood;
+  const [wx, wy] = worldToScreen(ws.x, ws.y);
+  const wr = ws.radius * s;
+  
+  // Slot background
+  ctx.fillStyle = f.woodDeposited >= req.wood ? 'rgba(74,222,128,0.3)' : 'rgba(196,168,130,0.25)';
+  ctx.strokeStyle = f.woodDeposited >= req.wood ? '#4ade80' : '#c4a882';
+  ctx.lineWidth = 2.5 * s;
+  ctx.beginPath();
+  ctx.arc(wx, wy, wr, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  
+  // Pulsing if player has wood
+  if (game.player.wood > 0 && f.woodDeposited < req.wood) {
+    const pulse = Math.sin(game.time * 0.1) * 0.3 + 0.3;
+    ctx.strokeStyle = `rgba(196,168,130,${pulse})`;
+    ctx.lineWidth = 4 * s;
+    ctx.beginPath();
+    ctx.arc(wx, wy, wr + 5 * s, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  
+  // Wood icon and count
+  ctx.font = `${16 * s}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🪵', wx, wy - 4*s);
+  ctx.fillStyle = '#c4a882';
+  ctx.font = `bold ${10 * s}px 'Microsoft YaHei', sans-serif`;
+  ctx.fillText(`${f.woodDeposited}/${req.wood}`, wx, wy + 12*s);
+  
+  // Ice slot
+  const is = game.slots.ice;
+  const [ix, iy] = worldToScreen(is.x, is.y);
+  const ir = is.radius * s;
+  
+  ctx.fillStyle = f.iceDeposited >= (req.ice || 0) ? 'rgba(74,222,128,0.3)' : 'rgba(103,232,249,0.2)';
+  ctx.strokeStyle = f.iceDeposited >= (req.ice || 0) ? '#4ade80' : '#67e8f9';
+  ctx.lineWidth = 2.5 * s;
+  ctx.beginPath();
+  ctx.arc(ix, iy, ir, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  
+  if (game.player.ice > 0 && f.iceDeposited < (req.ice || 0)) {
+    const pulse = Math.sin(game.time * 0.1) * 0.3 + 0.3;
+    ctx.strokeStyle = `rgba(103,232,249,${pulse})`;
+    ctx.lineWidth = 4 * s;
+    ctx.beginPath();
+    ctx.arc(ix, iy, ir + 5 * s, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  
+  ctx.font = `${16 * s}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🧊', ix, iy - 4*s);
+  ctx.fillStyle = '#67e8f9';
+  ctx.font = `bold ${10 * s}px 'Microsoft YaHei', sans-serif`;
+  ctx.fillText(`${f.iceDeposited}/${req.ice || 0}`, ix, iy + 12*s);
+}
+
+function drawResources() {
+  const s = scale;
+  
+  for (const res of game.resources) {
+    if (!res.alive) continue;
+    
+    const [rx, ry] = worldToScreen(res.x, res.y);
+    
+    // Check if on screen
+    if (rx < -50 || rx > W + 50 || ry < -50 || ry > H + 50) continue;
+    
+    if (res.type === 'tree') {
+      // Draw tree
+      const treeH = (res.isDropped ? 12 : 24) * s;
+      const trunkW = (res.isDropped ? 3 : 5) * s;
+      
+      if (!res.isDropped) {
+        // Trunk
+        ctx.fillStyle = '#6b4226';
+        ctx.fillRect(rx - trunkW/2, ry - treeH*0.3, trunkW, treeH * 0.5);
+        
+        // Foliage (snow-covered)
+        ctx.fillStyle = '#2d5a27';
+        ctx.beginPath();
+        ctx.moveTo(rx, ry - treeH);
+        ctx.lineTo(rx - treeH*0.4, ry - treeH*0.2);
+        ctx.lineTo(rx + treeH*0.4, ry - treeH*0.2);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Snow on top
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.beginPath();
+        ctx.moveTo(rx, ry - treeH);
+        ctx.lineTo(rx - treeH*0.25, ry - treeH*0.6);
+        ctx.lineTo(rx + treeH*0.25, ry - treeH*0.6);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // Dropped wood - small log
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(rx - 8*s, ry - 4*s, 16*s, 8*s);
+        ctx.strokeStyle = '#6b4226';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(rx - 8*s, ry - 4*s, 16*s, 8*s);
+      }
+      
+      // HP bar if damaged
+      if (res.hp < res.maxHp && !res.isDropped) {
+        const bw = 24 * s;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(rx - bw/2, ry - treeH - 8*s, bw, 4*s);
+        ctx.fillStyle = '#4ade80';
+        ctx.fillRect(rx - bw/2, ry - treeH - 8*s, bw * (res.hp/res.maxHp), 4*s);
+      }
+    } else {
+      // Draw ice deposit
+      const iceR = (res.isDropped ? 8 : 14) * s;
+      
+      if (!res.isDropped) {
+        // Crystal shape
+        ctx.fillStyle = 'rgba(165, 243, 252, 0.7)';
+        ctx.strokeStyle = '#67e8f9';
+        ctx.lineWidth = 1.5 * s;
+        ctx.beginPath();
+        ctx.moveTo(rx, ry - iceR);
+        ctx.lineTo(rx + iceR * 0.7, ry - iceR * 0.3);
+        ctx.lineTo(rx + iceR * 0.5, ry + iceR * 0.5);
+        ctx.lineTo(rx - iceR * 0.5, ry + iceR * 0.5);
+        ctx.lineTo(rx - iceR * 0.7, ry - iceR * 0.3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Shine effect
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.beginPath();
+        ctx.arc(rx - 3*s, ry - 3*s, 3*s, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Small ice chunk
+        ctx.fillStyle = 'rgba(165, 243, 252, 0.8)';
+        ctx.fillRect(rx - iceR, ry - iceR * 0.8, iceR * 2, iceR * 1.6);
+        ctx.strokeStyle = '#67e8f9';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(rx - iceR, ry - iceR * 0.8, iceR * 2, iceR * 1.6);
+      }
+      
+      // HP bar
+      if (res.hp < res.maxHp && !res.isDropped) {
+        const bw = 24 * s;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(rx - bw/2, ry - iceR - 8*s, bw, 4*s);
+        ctx.fillStyle = '#67e8f9';
+        ctx.fillRect(rx - bw/2, ry - iceR - 8*s, bw * (res.hp/res.maxHp), 4*s);
+      }
+    }
+  }
+}
+
+function drawPlayer() {
+  const p = game.player;
+  const [px, py] = worldToScreen(p.x, p.y);
+  const s = scale;
+  const r = p.radius * s;
+  
+  // Flash effect when hit
+  if (p.flashTimer > 0 && Math.floor(p.flashTimer / 4) % 2 === 0) return;
+  
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(px, py + r * 0.8, r * 0.9, r * 0.35, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Body
+  ctx.fillStyle = '#3b82f6';
+  ctx.beginPath();
+  ctx.arc(px, py, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#1d4ed8';
+  ctx.lineWidth = 2 * s;
+  ctx.stroke();
+  
+  // Head
+  ctx.fillStyle = '#fcd34d';
+  ctx.beginPath();
+  ctx.arc(px, py - r * 0.7, r * 0.55, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Eyes (direction based)
+  const eyeX = Math.cos(p.facing) * 3 * s;
+  const eyeY = Math.sin(p.facing) * 2 * s;
+  ctx.fillStyle = '#1e293b';
+  ctx.beginPath();
+  ctx.arc(px - 3*s + eyeX, py - r*0.75 + eyeY, 2*s, 0, Math.PI * 2);
+  ctx.arc(px + 3*s + eyeX, py - r*0.75 + eyeY, 2*s, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Scarf (winter gear)
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.arc(px, py - r * 0.2, r * 0.4, 0, Math.PI);
+  ctx.fill();
+  
+  // Name label
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${10 * s}px 'Microsoft YaHei', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('我', px, py - r * 1.5);
+}
+
+function drawMonsters() {
+  const s = scale;
+  
+  for (const m of game.monsters) {
+    if (!m.alive) continue;
+    
+    const [mx, my] = worldToScreen(m.x, m.y);
+    if (mx < -100 || mx > W + 100 || my < -100 || my > H + 100) continue;
+    
+    // Flash when hit
+    if (m.flashTimer > 0 && Math.floor(m.flashTimer / 3) % 2 === 0) continue;
+    
+    const r = m.radius * s;
+    
+    if (m.type === 'wolf') {
+      // Wolf - gray body
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.beginPath();
+      ctx.ellipse(mx, my + r*0.7, r*0.8, r*0.3, 0, 0, Math.PI*2);
+      ctx.fill();
+      
+      ctx.fillStyle = '#6b7280';
+      ctx.beginPath();
+      ctx.ellipse(mx, my, r, r * 0.65, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#4b5563';
+      ctx.lineWidth = 1.5 * s;
+      ctx.stroke();
+      
+      // Wolf head
+      ctx.fillStyle = '#9ca3af';
+      ctx.beginPath();
+      const headAngle = m.state === 'chase' ? angle(m, game.player) : m.patrolAngle;
+      const hx = mx + Math.cos(headAngle) * r * 0.7;
+      const hy = my + Math.sin(headAngle) * r * 0.5;
+      ctx.arc(hx, hy, r * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Ears
+      ctx.fillStyle = '#6b7280';
+      ctx.beginPath();
+      ctx.moveTo(hx - 4*s, hy - 6*s);
+      ctx.lineTo(hx - 8*s, hy - 12*s);
+      ctx.lineTo(hx, hy - 6*s);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(hx + 4*s, hy - 6*s);
+      ctx.lineTo(hx + 8*s, hy - 12*s);
+      ctx.lineTo(hx, hy - 6*s);
+      ctx.fill();
+      
+      // Eyes (red when chasing)
+      ctx.fillStyle = m.state === 'chase' ? '#ef4444' : '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(hx - 3*s, hy - 2*s, 2*s, 0, Math.PI*2);
+      ctx.arc(hx + 3*s, hy - 2*s, 2*s, 0, Math.PI*2);
+      ctx.fill();
+      
+      // Label
+      ctx.fillStyle = '#f87171';
+      ctx.font = `bold ${9 * s}px 'Microsoft YaHei', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('🐺', mx, my - r * 1.3);
+    } else {
+      // Snow Monster - large white/blue creature
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.beginPath();
+      ctx.ellipse(mx, my + r*0.7, r*0.9, r*0.35, 0, 0, Math.PI*2);
+      ctx.fill();
+      
+      // Body
+      ctx.fillStyle = '#dbeafe';
+      ctx.beginPath();
+      ctx.arc(mx, my, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#93c5fd';
+      ctx.lineWidth = 2 * s;
+      ctx.stroke();
+      
+      // Snow texture
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.beginPath();
+      ctx.arc(mx - 5*s, my - 5*s, 6*s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(mx + 7*s, my + 3*s, 4*s, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Face
+      ctx.fillStyle = m.state === 'chase' ? '#ef4444' : '#3b82f6';
+      ctx.beginPath();
+      ctx.arc(mx - 8*s, my - 6*s, 4*s, 0, Math.PI * 2);
+      ctx.arc(mx + 8*s, my - 6*s, 4*s, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Angry mouth
+      ctx.strokeStyle = '#1e3a5f';
+      ctx.lineWidth = 2 * s;
+      ctx.beginPath();
+      ctx.arc(mx, my + 5*s, 8*s, 0, Math.PI);
+      ctx.stroke();
+      
+      // Horns/icicles
+      ctx.fillStyle = '#bfdbfe';
+      ctx.beginPath();
+      ctx.moveTo(mx - 10*s, my - r);
+      ctx.lineTo(mx - 6*s, my - r - 12*s);
+      ctx.lineTo(mx - 2*s, my - r);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(mx + 2*s, my - r);
+      ctx.lineTo(mx + 6*s, my - r - 12*s);
+      ctx.lineTo(mx + 10*s, my - r);
+      ctx.fill();
+      
+      // Label
+      ctx.fillStyle = '#f87171';
+      ctx.font = `bold ${12 * s}px 'Microsoft YaHei', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('☃️', mx, my - r * 1.4);
+    }
+    
+    // HP bar
+    const bw = 30 * s;
+    const bx = mx - bw / 2;
+    const by = my - r * 1.8;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(bx - 1, by - 1, bw + 2, 5 * s + 2);
+    ctx.fillStyle = m.hp / m.maxHp > 0.5 ? '#4ade80' : m.hp / m.maxHp > 0.25 ? '#fbbf24' : '#ef4444';
+    ctx.fillRect(bx, by, bw * (m.hp / m.maxHp), 5 * s);
+  }
+}
+
+function drawFrozenPeople() {
+  const s = scale;
+  
+  for (const fp of game.frozenPeople) {
+    if (fp.rescued) continue;
+    
+    const [fx, fy] = worldToScreen(fp.x, fp.y);
+    if (fx < -50 || fx > W + 50 || fy < -50 || fy > H + 50) continue;
+    
+    const r = fp.radius * s;
+    
+    // Ice encasing (pulsing)
+    const pulse = Math.sin(game.time * 0.05) * 0.1 + 0.4;
+    ctx.fillStyle = `rgba(165, 243, 252, ${pulse})`;
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2 * s;
+    ctx.beginPath();
+    ctx.arc(fx, fy, r * 1.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    
+    // Person inside
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath();
+    ctx.arc(fx, fy, r * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Head
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.arc(fx, fy - r * 0.5, r * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Progress indicator
+    if (fp.clicksDone > 0) {
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = `bold ${10 * s}px 'Microsoft YaHei', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`⛏️ ${fp.clicksDone}/${fp.clicksNeeded}`, fx, fy - r * 2);
+    }
+    
+    // "Help!" text
+    if (Math.sin(game.time * 0.03) > 0) {
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = `bold ${11 * s}px 'Microsoft YaHei', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('救命！', fx, fy + r * 2);
+    }
+    
+    // Weapon icon
+    const weaponIcon = fp.weapon === 'bow' ? '🏹' : fp.weapon === 'sword' ? '🗡️' : '🔱';
+    ctx.font = `${10 * s}px sans-serif`;
+    ctx.fillText(weaponIcon, fx + r * 1.5, fy);
+  }
+}
+
+function drawFollowers() {
+  const s = scale;
+  
+  for (let i = 0; i < game.followers.length; i++) {
+    const f = game.followers[i];
+    const [fx, fy] = worldToScreen(f.x, f.y);
+    const r = 14 * s;
+    
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath();
+    ctx.ellipse(fx, fy + r*0.7, r*0.8, r*0.3, 0, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Body (green - ally)
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.arc(fx, fy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#16a34a';
+    ctx.lineWidth = 1.5 * s;
+    ctx.stroke();
+    
+    // Head
+    ctx.fillStyle = '#fcd34d';
+    ctx.beginPath();
+    ctx.arc(fx, fy - r * 0.6, r * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Eyes
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.arc(fx - 2*s, fy - r*0.65, 1.5*s, 0, Math.PI*2);
+    ctx.arc(fx + 2*s, fy - r*0.65, 1.5*s, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Smile
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1 * s;
+    ctx.beginPath();
+    ctx.arc(fx, fy - r*0.5, 3*s, 0.1*Math.PI, 0.9*Math.PI);
+    ctx.stroke();
+    
+    // Weapon
+    const weaponIcon = f.weapon === 'bow' ? '🏹' : f.weapon === 'sword' ? '🗡️' : '🔱';
+    ctx.font = `${10 * s}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(weaponIcon, fx + r * 1.2, fy - r * 0.2);
+    
+    // Name
+    ctx.fillStyle = '#86efac';
+    ctx.font = `bold ${8 * s}px 'Microsoft YaHei', sans-serif`;
+    ctx.fillText(`伙伴${i + 1}`, fx, fy - r * 1.4);
+  }
+}
+
+function drawParticles() {
+  const s = scale;
+  
+  // Game particles
+  for (const p of game.particles) {
+    const [px, py] = worldToScreen(p.x, p.y);
+    const alpha = p.life / p.maxLife;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(px, py, p.size * s, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  
+  // Ambient snowflakes (only on unmelted areas)
+  for (const sf of game.snowflakes) {
+    const ring = getRing(sf.x, sf.y);
+    if (game.meltedRings.has(ring)) continue;
+    
+    const [sx, sy] = worldToScreen(sf.x, sf.y);
+    if (sx < -10 || sx > W + 10 || sy < -10 || sy > H + 10) continue;
+    
+    ctx.globalAlpha = sf.opacity;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(sx, sy, sf.size * s, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawGuideArrow() {
+  if (!game.guideTarget) return;
+  
+  const s = scale;
+  const p = game.player;
+  const t = game.guideTarget;
+  const d = dist(p, t);
+  
+  if (d < 60) return; // Too close, no arrow needed
+  
+  const a = angle(p, t);
+  const arrowDist = Math.min(80, d * 0.4);
+  const [ax, ay] = worldToScreen(
+    p.x + Math.cos(a) * arrowDist,
+    p.y + Math.sin(a) * arrowDist
+  );
+  
+  // Pulsing arrow
+  const pulse = Math.sin(game.time * 0.1) * 3;
+  const arrowSize = (12 + pulse) * s;
+  
+  ctx.save();
+  ctx.translate(ax, ay);
+  ctx.rotate(a);
+  
+  ctx.fillStyle = '#fbbf24';
+  ctx.globalAlpha = 0.7 + Math.sin(game.time * 0.1) * 0.3;
+  ctx.beginPath();
+  ctx.moveTo(arrowSize, 0);
+  ctx.lineTo(-arrowSize * 0.5, -arrowSize * 0.6);
+  ctx.lineTo(-arrowSize * 0.2, 0);
+  ctx.lineTo(-arrowSize * 0.5, arrowSize * 0.6);
+  ctx.closePath();
+  ctx.fill();
+  
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function drawUI() {
+  const s = scale;
+  const p = game.player;
+  const f = game.furnace;
+  const req = FURNACE_REQS[f.level - 1];
+  
+  // Top status bar
+  const barH = 50 * s;
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+  ctx.fillRect(0, 0, W, barH);
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, barH);
+  ctx.lineTo(W, barH);
+  ctx.stroke();
+  
+  // Furnace level
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = `bold ${16 * s}px 'Microsoft YaHei', sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.fillText(`🔥 熔炉 Lv.${f.level}/10`, 16 * s, barH * 0.55);
+  
+  // Furnace progress bar
+  const progX = 160 * s;
+  const progW = 120 * s;
+  const progH = 12 * s;
+  const progY = barH * 0.35;
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(progX, progY, progW, progH);
+  ctx.fillStyle = '#f59e0b';
+  ctx.fillRect(progX, progY, progW * (f.level / 10), progH);
+  ctx.strokeStyle = '#fbbf24';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(progX, progY, progW, progH);
+  
+  // Resources
+  ctx.fillStyle = '#c4a882';
+  ctx.font = `bold ${14 * s}px 'Microsoft YaHei', sans-serif`;
+  ctx.fillText(`🪵 ×${p.wood}`, 300 * s, barH * 0.55);
+  
+  ctx.fillStyle = '#67e8f9';
+  ctx.fillText(`🧊 ×${p.ice}`, 380 * s, barH * 0.55);
+  
+  // Bag info
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = `${11 * s}px 'Microsoft YaHei', sans-serif`;
+  ctx.fillText(`🎒 ${p.wood + p.ice}/${MAX_INVENTORY}`, 460 * s, barH * 0.55);
+  
+  // Monsters remaining
+  const monstersAlive = game.monsters.filter(m => m.alive).length;
+  ctx.fillStyle = monstersAlive > 0 ? '#f87171' : '#4ade80';
+  ctx.font = `bold ${13 * s}px 'Microsoft YaHei', sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.fillText(`🐺 怪物: ${monstersAlive}/${game.monsters.length}`, W - 16 * s, barH * 0.4);
+  
+  // Followers count
+  ctx.fillStyle = '#86efac';
+  ctx.fillText(`👥 伙伴: ${game.followers.length}/6`, W - 16 * s, barH * 0.75);
+  
+  // Bottom bar - upgrade requirements
+  if (req && f.level < 10) {
+    const bottomH = 44 * s;
+    const bottomY = H - bottomH;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillRect(0, bottomY, W, bottomH);
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, bottomY);
+    ctx.lineTo(W, bottomY);
+    ctx.stroke();
+    
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = `bold ${13 * s}px 'Microsoft YaHei', sans-serif`;
+    
+    const woodOk = f.woodDeposited >= req.wood;
+    const iceOk = f.iceDeposited >= (req.ice || 0);
+    
+    let statusText = `升级到 Lv.${f.level + 1} 需要：`;
+    statusText += ` 🪵 ${f.woodDeposited}/${req.wood}`;
+    if (req.ice > 0) statusText += ` 🧊 ${f.iceDeposited}/${req.ice}`;
+    
+    ctx.fillText(statusText, W / 2, bottomY + bottomH * 0.55);
+    
+    // Show if all deposited
+    if (woodOk && iceOk) {
+      ctx.fillStyle = '#4ade80';
+      ctx.fillText('✅ 资源充足！即将升级！', W / 2, bottomY + bottomH * 0.55);
+    }
+  } else if (f.level >= 10) {
+    const bottomH = 44 * s;
+    const bottomY = H - bottomH;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillRect(0, bottomY, W, bottomH);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = `bold ${14 * s}px 'Microsoft YaHei', sans-serif`;
+    ctx.fillText('🔥 熔炉满级！消灭所有怪物即可胜利！', W / 2, bottomY + bottomH * 0.55);
+  }
+  
+  // Guide text (below top bar)
+  if (game.guideText) {
+    ctx.textAlign = 'center';
+    const boxW = Math.min(W * 0.8, 400 * s);
+    const boxH = 32 * s;
+    const boxX = W / 2 - boxW / 2;
+    const boxY = barH + 10 * s;
+    
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+    ctx.beginPath();
+    ctx.roundRect(boxX, boxY, boxW, boxH, 10 * s);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    
+    ctx.fillStyle = '#fde68a';
+    ctx.font = `bold ${12 * s}px 'Microsoft YaHei', sans-serif`;
+    ctx.fillText(game.guideText, W / 2, boxY + boxH * 0.58);
+  }
+  
+  // Messages (left side)
+  ctx.textAlign = 'left';
+  for (let i = 0; i < game.messages.length; i++) {
+    const msg = game.messages[i];
+    const alpha = Math.min(1, msg.life / 30);
+    const my = H - 100 * s - i * 28 * s;
+    
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    ctx.beginPath();
+    ctx.roundRect(12 * s, my - 10 * s, ctx.measureText(msg.text).width + 24 * s, 24 * s, 6 * s);
+    ctx.fill();
+    
+    ctx.fillStyle = msg.color;
+    ctx.font = `bold ${11 * s}px 'Microsoft YaHei', sans-serif`;
+    ctx.fillText(msg.text, 24 * s, my + 4 * s);
+  }
+  ctx.globalAlpha = 1;
+  
+  // Mini map (bottom right)
+  drawMiniMap();
+}
+
+function drawMiniMap() {
+  const s = scale;
+  const mmSize = 80 * s;
+  const mmX = W - mmSize - 12 * s;
+  const mmY = H - mmSize - 60 * s;
+  const mmScale = mmSize / (MAP_RADIUS * 2);
+  
+  // Background
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(mmX + mmSize/2, mmY + mmSize/2, mmSize/2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  
+  const mmCX = mmX + mmSize / 2;
+  const mmCY = mmY + mmSize / 2;
+  
+  // Rings
+  for (let ring = 0; ring < RING_COUNT; ring++) {
+    const ringR = (ring + 1) * RING_WIDTH * mmScale;
+    ctx.beginPath();
+    ctx.arc(mmCX, mmCY, ringR, 0, Math.PI * 2);
+    ctx.fillStyle = game.meltedRings.has(ring) ? 'rgba(74,222,128,0.15)' : 'rgba(200,220,240,0.08)';
+    ctx.fill();
+  }
+  
+  // Furnace
+  ctx.fillStyle = '#f59e0b';
+  ctx.beginPath();
+  ctx.arc(mmCX, mmCY, 3 * s, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Monsters
+  for (const m of game.monsters) {
+    if (!m.alive) continue;
+    ctx.fillStyle = m.type === 'wolf' ? '#f87171' : '#c084fc';
+    ctx.beginPath();
+    ctx.arc(mmCX + m.x * mmScale, mmCY + m.y * mmScale, 2 * s, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  // Frozen people
+  for (const fp of game.frozenPeople) {
+    if (fp.rescued) continue;
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(mmCX + fp.x * mmScale, mmCY + fp.y * mmScale, 2 * s, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  // Player
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(mmCX + game.player.x * mmScale, mmCY + game.player.y * mmScale, 2.5 * s, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// --- Tutorial System ---
+const tutorials = [
+  '👋 欢迎来到除雪大作战！\n\n你的营地被冰雪包围了！\n点击地面可以移动。',
+  '🪵 点击树木可以砍木头！\n🧊 点击冰堆可以采集冰块！\n\n这些资源可以升级熔炉。',
+  '🔥 营地中心有一座熔炉！\n\n旁边有两个格子：\n🪵 木头格 和 🧊 冰块格\n\n走到对应格子上就能投放资源！',
+  '⬆️ 投放足够的资源后，\n熔炉会自动升级！\n\n每升一级，周围的雪就会融化！',
+  '❄️ 雪地里有被冻住的人！\n走过去点击 3 次铲冰就能救出！\n\n他们会跟着你，帮你采集和战斗！',
+  '🐺 小心！外面有狼和雪怪！\n被攻击会掉落资源。\n\n伙伴们会自动帮你打怪！',
+  '🏆 目标：\n1️⃣ 熔炉升到 10 级\n2️⃣ 消灭所有怪物\n\n加油，小勇士！出发吧！🚀',
+];
+
+let currentTutorial = 0;
+
+function showTutorial(step) {
+  if (step >= tutorials.length) {
+    document.getElementById('tutorial-overlay').classList.remove('show');
+    game.tutorialShown = true;
+    return;
+  }
+  currentTutorial = step;
+  document.getElementById('tutorial-text').innerText = tutorials[step];
+  document.getElementById('tutorial-overlay').classList.add('show');
+}
+
+document.getElementById('tutorial-next').addEventListener('click', () => {
+  audio.init();
+  audio.clickUI();
+  currentTutorial++;
+  showTutorial(currentTutorial);
+});
+
+// --- Main Game Loop ---
+function gameLoop() {
+  if (!game.running) {
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+  
+  game.time++;
+  
+  // Update
+  updatePlayer();
+  updateCamera();
+  updateFurnace();
+  updateMelting();
+  updateDepositSlots();
+  updateResources();
+  updateMonsters();
+  updateFollowers();
+  updateParticles();
+  updateMessages();
+  updateGuide();
+  
+  // Draw
+  ctx.clearRect(0, 0, W, H);
+  
+  // Dark background
+  ctx.fillStyle = '#0a0e1a';
+  ctx.fillRect(0, 0, W, H);
+  
+  drawGround();
+  drawCamp();
+  drawResources();
+  drawFrozenPeople();
+  drawMonsters();
+  drawFollowers();
+  drawPlayer();
+  drawFurnace();
+  drawDepositSlots();
+  drawParticles();
+  drawGuideArrow();
+  drawUI();
+  
+  requestAnimationFrame(gameLoop);
+}
+
+// --- Input Handling ---
+canvas.addEventListener('click', (e) => {
+  if (!game.running || game.victory) return;
+  
+  const rect = canvas.getBoundingClientRect();
+  const clickX = (e.clientX - rect.left) * window.devicePixelRatio;
+  const clickY = (e.clientY - rect.top) * window.devicePixelRatio;
+  
+  // Convert to world coordinates
+  const worldX = (clickX - W / 2) / scale + game.camera.x;
+  const worldY = (clickY - H / 2) / scale + game.camera.y;
+  
+  handleClick(worldX, worldY);
+});
+
+// Touch support
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (!game.running || game.victory) return;
+  
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const clickX = (touch.clientX - rect.left) * window.devicePixelRatio;
+  const clickY = (touch.clientY - rect.top) * window.devicePixelRatio;
+  
+  const worldX = (clickX - W / 2) / scale + game.camera.x;
+  const worldY = (clickY - H / 2) / scale + game.camera.y;
+  
+  handleClick(worldX, worldY);
+}, { passive: false });
+
+// --- Start Screen ---
+function createStartSnowflakes() {
+  const screen = document.getElementById('start-screen');
+  for (let i = 0; i < 30; i++) {
+    const sf = document.createElement('div');
+    sf.className = 'snowflake-bg';
+    sf.innerText = '❄';
+    sf.style.left = Math.random() * 100 + 'vw';
+    sf.style.fontSize = (Math.random() * 20 + 10) + 'px';
+    sf.style.animationDuration = (Math.random() * 5 + 4) + 's';
+    sf.style.animationDelay = (Math.random() * 5) + 's';
+    screen.appendChild(sf);
+  }
+}
+createStartSnowflakes();
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  audio.init();
+  audio.clickUI();
+  
+  document.getElementById('start-screen').classList.add('hidden');
+  
+  // Generate world
+  generateWorld();
+  
+  // Start tutorial after a short delay
+  setTimeout(() => {
+    showTutorial(0);
+  }, 500);
+  
+  game.running = true;
+});
+
+// Start the game loop
+gameLoop();
+
+// --- Speech Synthesis for key events ---
+function speak(text) {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = 'zh-CN';
+    msg.pitch = 1.2;
+    msg.rate = 0.9;
+    window.speechSynthesis.speak(msg);
+  }
+}
+
+// Override addMessage to also speak important messages
+const originalAddMessage = addMessage;
+// We use a throttle to avoid too many speech calls
+let lastSpeechTime = 0;
+const SPEECH_COOLDOWN = 3000; // ms
+
+function addMessageWithSpeech(text, color) {
+  // Call original
+  game.messages.push({ text, color: color || '#fff', life: 180 });
+  if (game.messages.length > 5) game.messages.shift();
+  
+  // Speak important messages (throttled)
+  const now = Date.now();
+  if (now - lastSpeechTime > SPEECH_COOLDOWN) {
+    // Only speak upgrade and rescue messages
+    if (text.includes('熔炉升') || text.includes('救出') || text.includes('满级') || text.includes('被消灭')) {
+      speak(text.replace(/[🔥⚔️🎉❄️🪵🧊😵⛏️🎒👥]/g, ''));
+      lastSpeechTime = now;
+    }
+  }
+}
+
+// Replace the addMessage function
+// We need to reassign carefully
+window._addMsg = addMessageWithSpeech;
+// Patch all calls - since addMessage is used directly, let's just redefine it
+// Actually the simplest approach: just modify the existing function directly
+</script>
+</body>
+</html>
