@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>僵尸大战樱桃炸弹 - 5岁小英雄超级大对决</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      background: #0d0a1a;
+      overflow: hidden;
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game-wrapper {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 1200px;
+      max-height: 750px;
+      background: #121026;
+      border: 5px solid #ff3b30;
+      border-radius: 28px;
+      box-shadow: 0 0 50px rgba(255, 59, 48, 0.4), inset 0 0 25px rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 顶部导航栏 */
+    #top-bar {
+      height: 64px;
+      background: linear-gradient(180deg, #25163a 0%, #170d28 100%);
+      border-bottom: 3px solid #ff3b30;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 50;
+    }
+
+    .top-badge {
+      background: linear-gradient(135deg, #ff2a6d 0%, #ff5e36 100%);
+      border: 2px solid #fff;
+      padding: 5px 16px;
+      border-radius: 20px;
+      font-size: 17px;
+      font-weight: 900;
+      box-shadow: 0 4px 12px rgba(255, 42, 109, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .icon-btn {
+      background: linear-gradient(135deg, #3a2b58, #221838);
+      border: 2px solid #a78bfa;
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+      padding: 6px 14px;
+      border-radius: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: all 0.2s;
+    }
+    .icon-btn:hover {
+      transform: scale(1.06);
+      border-color: #ffd700;
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    }
+    .icon-btn:active { transform: scale(0.95); }
+
+    /* 游戏主体画布容器 */
+    #canvas-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      background: #000;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    /* 底部操作与武器切换栏 */
+    #bottom-bar {
+      height: 94px;
+      background: linear-gradient(180deg, #180f2d 0%, #0c0617 100%);
+      border-top: 3px solid #ff3b30;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 50;
+    }
+
+    /* 醒目的大红武器切换开关 */
+    .big-switch-btn {
+      background: linear-gradient(180deg, #ff4757 0%, #ff1e38 50%, #c0142b 100%);
+      border: 4px solid #ffeaa7;
+      border-radius: 48px;
+      padding: 8px 22px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      box-shadow: 0 0 25px rgba(255, 71, 87, 0.7), 0 8px 16px rgba(0,0,0,0.5), inset 0 2px 6px rgba(255,255,255,0.6);
+      transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      animation: pulseSwitch 2s infinite ease-in-out;
+    }
+    @keyframes pulseSwitch {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(255, 71, 87, 0.7), 0 8px 16px rgba(0,0,0,0.5); }
+      50% { transform: scale(1.04); box-shadow: 0 0 38px rgba(255, 71, 87, 0.95), 0 8px 20px rgba(255, 234, 167, 0.6); }
+    }
+    .big-switch-btn:hover { transform: scale(1.06) translateY(-2px); }
+    .big-switch-btn:active { transform: scale(0.95) translateY(2px); }
+
+    .switch-icon {
+      font-size: 34px;
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5));
+    }
+    .switch-info { text-align: left; }
+    .switch-tag {
+      font-size: 11px;
+      font-weight: 900;
+      color: #ffeaa7;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .switch-name {
+      font-size: 18px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+
+    /* 武器序列轮盘槽位 */
+    .weapons-tray {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 5px 10px;
+      border-radius: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+    }
+    .weapon-slot {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 2px solid transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+    .weapon-slot .slot-num {
+      font-size: 9px;
+      color: #ccc;
+      font-weight: 800;
+    }
+    .weapon-slot.active {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border-color: #fef08a;
+      transform: scale(1.15);
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.7);
+    }
+    .weapon-slot.active .slot-num { color: #fff; }
+
+    /* 提示气泡 */
+    .guide-tip-bubble {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      border: 2px solid #93c5fd;
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 320px;
+      animation: floatTip 3s infinite ease-in-out;
+    }
+    @keyframes floatTip {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    /* 全屏大模态层（开始、选人、胜利、失败） */
+    .overlay-screen {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(30, 15, 50, 0.95) 0%, rgba(10, 5, 20, 0.98) 100%);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(10px);
+      transition: all 0.4s ease;
+    }
+    .overlay-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.95);
+    }
+
+    /* 开始封面 */
+    .hero-title {
+      font-size: 54px;
+      font-weight: 900;
+      background: linear-gradient(180deg, #ffeb3b 0%, #ff5722 50%, #ff1744 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 6px 30px rgba(255, 87, 34, 0.6);
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+    .hero-subtitle {
+      font-size: 19px;
+      color: #fce7f3;
+      margin-bottom: 22px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 8px 24px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .hero-preview-box {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      margin-bottom: 24px;
+    }
+    .hero-vs-badge {
+      font-size: 32px;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 20px rgba(255,215,0,0.8);
+      animation: vsPulse 1s infinite alternate;
+    }
+    @keyframes vsPulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.2); }
+    }
+
+    .main-play-btn {
+      background: linear-gradient(180deg, #76ff03 0%, #388e3c 100%);
+      color: #0d3b00;
+      font-size: 26px;
+      font-weight: 900;
+      padding: 15px 50px;
+      border-radius: 50px;
+      border: 4px solid #fff;
+      cursor: pointer;
+      box-shadow: 0 0 35px rgba(118, 255, 3, 0.6), 0 8px 20px rgba(0,0,0,0.5);
+      transition: all 0.2s;
+      animation: btnGlow 1.8s infinite ease-in-out;
+    }
+    @keyframes btnGlow {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(118, 255, 3, 0.6); }
+      50% { transform: scale(1.05); box-shadow: 0 0 48px rgba(118, 255, 3, 0.9); }
+    }
+    .main-play-btn:hover { transform: scale(1.08); }
+    .main-play-btn:active { transform: scale(0.95); }
+
+    /* 选角界面 Street Fighter 风格 */
+    .select-title {
+      font-size: 36px;
+      font-weight: 900;
+      background: linear-gradient(90deg, #facc15, #f97316);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 18px;
+    }
+    .select-roster {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      max-width: 860px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .char-card {
+      background: rgba(255, 255, 255, 0.06);
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-radius: 18px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+    }
+    .char-card:hover {
+      transform: translateY(-6px) scale(1.04);
+      border-color: #facc15;
+      background: rgba(250, 204, 21, 0.15);
+      box-shadow: 0 10px 25px rgba(250, 204, 21, 0.3);
+    }
+    .char-card.selected {
+      border-color: #ff3b30;
+      background: rgba(255, 59, 48, 0.25);
+      box-shadow: 0 0 30px rgba(255, 59, 48, 0.6);
+      transform: scale(1.05);
+    }
+    .char-card .card-tag {
+      position: absolute;
+      top: -9px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      font-weight: 900;
+      padding: 2px 10px;
+      border-radius: 10px;
+      color: #fff;
+    }
+    .char-avatar-img {
+      width: 60px;
+      height: 60px;
+      margin: 6px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    }
+    .char-name {
+      font-size: 15px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 3px;
+    }
+    .char-desc {
+      font-size: 11px;
+      color: #cbd5e1;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    /* 胜利与失败结算框 */
+    .medal-icon {
+      font-size: 85px;
+      animation: medalSpin 1.5s ease-out;
+      filter: drop-shadow(0 10px 30px rgba(250, 204, 21, 0.8));
+    }
+    @keyframes medalSpin {
+      0% { transform: scale(0) rotate(-180deg); }
+      70% { transform: scale(1.2) rotate(10deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    .result-title {
+      font-size: 40px;
+      font-weight: 900;
+      margin: 10px 0 8px;
+    }
+    .result-desc {
+      font-size: 17px;
+      color: #e2e8f0;
+      margin-bottom: 22px;
+      text-align: center;
+      max-width: 520px;
+    }
+    .result-btns {
+      display: flex;
+      gap: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 主游戏框架容器 -->
+  <div id="game-wrapper">
+    
+    <!-- 顶部状态栏 -->
+    <div id="top-bar">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="top-badge" id="level-badge">
+          <span>🍒</span> 关卡 1: 田野花园初战
+        </div>
+        <!-- 4关大冒险进度指示器 -->
+        <div id="level-progress-bar" style="display: flex; gap: 6px; align-items: center; background: rgba(0,0,0,0.4); padding: 4px 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.2);">
+          <span style="font-size: 11px; color: #cbd5e1; font-weight: bold;">冒险进度:</span>
+          <span class="step-dot active" id="dot-0" style="padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 900; background: #22c55e; color: #fff;">1.花园</span>
+          <span style="color: #64748b; font-size: 10px;">➔</span>
+          <span class="step-dot" id="dot-1" style="padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 900; background: rgba(255,255,255,0.1); color: #94a3b8;">2.沙漠</span>
+          <span style="color: #64748b; font-size: 10px;">➔</span>
+          <span class="step-dot" id="dot-2" style="padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 900; background: rgba(255,255,255,0.1); color: #94a3b8;">3.樱桃Boss</span>
+          <span style="color: #64748b; font-size: 10px;">➔</span>
+          <span class="step-dot" id="dot-3" style="padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 900; background: rgba(255,255,255,0.1); color: #94a3b8;">4.僵王机甲</span>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <div class="icon-btn" id="btn-audio" onclick="toggleAudio()">
+          <span id="audio-icon">🔊</span> 音乐: 开
+        </div>
+        <div class="icon-btn" onclick="openCharSelect()">
+          <span>👥</span> 自由选角
+        </div>
+        <div class="icon-btn" onclick="resetCurrentLevel()">
+          <span>🔄</span> 重玩本关
+        </div>
+      </div>
+    </div>
+
+    <!-- 游戏主画布容器 -->
+    <div id="canvas-container">
+      <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <!-- 底部武器与操作栏 -->
+    <div id="bottom-bar">
+      <!-- 醒目的大红武器切换开关 -->
+      <button class="big-switch-btn" id="btn-switch-weapon" onclick="cycleWeapon()">
+        <span class="switch-icon" id="switch-icon">🥄</span>
+        <div class="switch-info">
+          <div class="switch-tag">点击大红开关切换武器</div>
+          <div class="switch-name" id="switch-name">🥄 1. 迷你小勺子</div>
+        </div>
+      </button>
+
+      <!-- 武器序列轮盘槽位展示 -->
+      <div class="weapons-tray">
+        <div class="weapon-slot active" id="slot-0" onclick="selectWeapon(0)" title="小勺子：快速挖掘破皮">
+          <span>🥄</span>
+          <span class="slot-num">1.勺子</span>
+        </div>
+        <div class="weapon-slot" id="slot-1" onclick="selectWeapon(1)" title="铁铲：大面积破坏泥土">
+          <span>🪓</span>
+          <span class="slot-num">2.铁铲</span>
+        </div>
+        <div class="weapon-slot" id="slot-2" onclick="selectWeapon(2)" title="镐子：强力破坏硬质格子">
+          <span>⛏️</span>
+          <span class="slot-num">3.镐子</span>
+        </div>
+        <div class="weapon-slot" id="slot-3" onclick="selectWeapon(3)" title="旋转钻头：快速旋转突刺">
+          <span>⚙️</span>
+          <span class="slot-num">4.钻头</span>
+        </div>
+        <div class="weapon-slot" id="slot-4" onclick="selectWeapon(4)" title="超级电钻：雷电环绕最强破防">
+          <span>⚡</span>
+          <span class="slot-num">5.超钻</span>
+        </div>
+      </div>
+
+      <!-- 动态提示指引气泡 -->
+      <div class="guide-tip-bubble" id="guide-tip">
+        <span>💡</span> <span id="tip-text">点击右侧的敌人开始破坏它！</span>
+      </div>
+    </div>
+
+    <!-- 模态界面 1: 开始封面 -->
+    <div class="overlay-screen" id="screen-start">
+      <div class="hero-preview-box">
+        <div style="font-size: 70px;">🧟‍♂️⛏️</div>
+        <div class="hero-vs-badge">VS</div>
+        <div style="font-size: 70px;">🍒💥</div>
+      </div>
+      <div class="hero-title">僵尸大战樱桃炸弹</div>
+      <div class="hero-subtitle">🌟 5岁小英雄专属 · 4大关卡连环大冒险 🚀</div>
+      <button class="main-play-btn" onclick="startGameAdventure()">
+        🎮 立即开始大冒险！
+      </button>
+    </div>
+
+    <!-- 模态界面 2: 街霸式选角界面 -->
+    <div class="overlay-screen hidden" id="screen-select">
+      <div class="select-title">🥊 选择你的出战英雄</div>
+      <div class="select-roster" id="roster-grid">
+        <!-- 动态生成角色卡片 -->
+      </div>
+      <div class="result-btns">
+        <button class="main-play-btn" style="padding: 12px 34px; font-size: 19px;" onclick="confirmCharacterSelection()">
+          ✅ 确认出战，开始对决！
+        </button>
+        <button class="icon-btn" style="padding: 12px 22px; font-size: 17px;" onclick="closeCharSelect()">
+          ❌ 取消返回
+        </button>
+      </div>
+    </div>
+
+    <!-- 模态界面 3: 关卡胜利结算 (支持自动倒计时进入下一关) -->
+    <div class="overlay-screen hidden" id="screen-victory">
+      <div class="medal-icon" id="victory-medal-icon">🏅</div>
+      <div class="result-title" style="color: #facc15;" id="victory-title">太棒啦！关卡 1 通关成功！</div>
+      <div class="result-desc" id="victory-desc">你获得了 5 岁小英雄闪亮大金牌！下一个对手正在等待你的挑战！</div>
+      
+      <!-- 自动进入下一关倒计时胶囊提示 -->
+      <div id="auto-next-countdown" style="background: rgba(34, 197, 94, 0.25); border: 2px solid #4ade80; color: #bbf7d0; font-weight: 900; font-size: 16px; padding: 6px 20px; border-radius: 20px; margin-bottom: 20px; animation: pulseSwitch 1.5s infinite;">
+        ⏱️ 3 秒后自动进入下一关...
+      </div>
+
+      <div class="result-btns" style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+        <button class="main-play-btn" style="padding: 16px 48px; font-size: 22px;" id="btn-next-level" onclick="nextLevel()">
+          🚀 立即前往第 2 关：非洲大沙漠！
+        </button>
+        <button class="icon-btn" style="padding: 8px 18px; font-size: 14px; background: transparent; border: 1px solid rgba(255,255,255,0.3);" onclick="openCharSelect()">
+          👥 选角自由单挑
+        </button>
+      </div>
+    </div>
+
+    <!-- 模态界面 4: 鼓励再战（防挫败） -->
+    <div class="overlay-screen hidden" id="screen-fail">
+      <div class="medal-icon">🛡️</div>
+      <div class="result-title" style="color: #ff5722;">差一点点就成功啦！</div>
+      <div class="result-desc">别担心！小英雄获得了【🌟 超级能量护盾支援】，攻击力翻倍，再来一次必定获胜！</div>
+      <div class="result-btns">
+        <button class="main-play-btn" style="padding: 14px 44px; font-size: 22px; background: linear-gradient(180deg, #ff9800 0%, #e65100 100%);" onclick="retryLevelWithBuff()">
+          ⚡ 满血满状态再战！
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ============================================================
+       1. 武器配置与角色定义数据
+       ============================================================ */
+    const WEAPONS = [
+      { id: 0, name: "🥄 1. 迷你小勺子", short: "勺子", icon: "🥄", damage: 18, speed: 0.15, effect: "sparkle", desc: "虽然很小，但挖起来速度飞快！" },
+      { id: 1, name: "🪓 2. 锋利铁铲", short: "铁铲", icon: "🪓", damage: 38, speed: 0.25, effect: "dirt", desc: "大面积铲土，破坏坚硬泥土！" },
+      { id: 2, name: "⛏️ 3. 黄金铁镐", short: "镐子", icon: "⛏️", damage: 70, speed: 0.35, effect: "gold", desc: "专门敲碎结实的外壳格子，火花四溅！" },
+      { id: 3, name: "⚙️ 4. 极速旋转钻头", short: "钻头", icon: "⚙️", damage: 120, speed: 0.2, effect: "drill", desc: "高速旋转，持续突刺造成巨大伤害！" },
+      { id: 4, name: "⚡ 5. 超级雷电电钻", short: "超钻", icon: "⚡", damage: 220, speed: 0.15, effect: "thunder", desc: "蕴含闪电神力，极速瓦解引信和Boss！" }
+    ];
+
+    const CHARACTERS = [
+      // 僵尸阵营
+      { id: 'zombie_miner', side: 'zombie', name: '挖掘工小僵尸', icon: '🧟‍♂️', role: '经典僵尸', desc: '绿皮肤红领带，手拿小勺和铁铲，擅长快速挖碎外壳！', unlocked: true },
+      { id: 'zombie_pickaxe', side: 'zombie', name: '铁镐矿工僵尸', icon: '👷‍♂️', role: '破格专家', desc: '头戴黄色安全帽，黄金镐击碎一切格子！', unlocked: true },
+      { id: 'zombie_drill', side: 'zombie', name: '电钻强袭僵尸', icon: '🤖', role: '高速突刺', desc: '戴高科技护目镜，双钻头旋转破坏力爆表！', unlocked: true },
+      { id: 'zombie_boss', side: 'zombie', name: '终极僵王博士机甲', icon: '🤖👑', role: '终极霸王', desc: '第4关终极大Boss！12000超大血量与机械激光巨爪！', unlocked: true },
+      // 植物阵营
+      { id: 'plant_cherry', side: 'plant', name: '巨型樱桃炸弹', icon: '🍒', role: '超级巨兽Boss', desc: '占据半屏的终极植物！拥有格子装甲与毁灭引信！', unlocked: true },
+      { id: 'plant_peashooter', side: 'plant', name: '机关枪豌豆射手', icon: '🌱', role: '连射炮塔', desc: '连环发射绿色大豌豆炮弹，击退一切对手！', unlocked: true },
+      { id: 'plant_sunflower', side: 'plant', name: '太阳神向日葵', icon: '🌻', role: '阳光轰炸', desc: '凝聚太阳光芒，释放全屏黄金阳光波！', unlocked: true }
+    ];
+
+    const LEVELS = [
+      {
+        id: 1,
+        title: "关卡 1: 田野花园初战",
+        bgType: "garden",
+        enemyType: "plant_peashooter",
+        enemyName: "🌱 练习生豌豆射手",
+        enemyMaxHp: 800,
+        tip: "点击屏幕上的豌豆射手，用小勺和铁铲击败它！"
+      },
+      {
+        id: 2,
+        title: "关卡 2: 非洲大沙漠探险",
+        bgType: "desert",
+        enemyType: "plant_sunflower",
+        enemyName: "🌻 太阳神向日葵守卫",
+        enemyMaxHp: 2000,
+        tip: "点击大红按钮切换【⛏️ 镐子】或【⚙️ 钻头】，迎战强力阳光！"
+      },
+      {
+        id: 3,
+        title: "关卡 3: 巨型樱桃炸弹拆解大决战",
+        bgType: "cherry_volcano",
+        enemyType: "giant_cherry_boss",
+        enemyName: "🍒 巨型樱桃炸弹 (核心Boss)",
+        enemyMaxHp: 4500,
+        tip: "核心战役！先砸碎格子装甲 ➔ 打坏大眼睛 ➔ 换超级电钻拆引线！"
+      },
+      {
+        id: 4,
+        title: "关卡 4: 终极僵王博士机甲超级决战",
+        bgType: "fortress",
+        enemyType: "zombie_boss_enemy",
+        enemyName: "🤖👑 终极僵王博士巨型机甲 (12000 HP)",
+        enemyMaxHp: 12000,
+        tip: "终极大决战！僵王机甲拥有12000超大血量！全武器开轰与钢琴连击支援！"
+      }
+    ];
+
+    /* ============================================================
+       2. Web Audio API 纯代码音乐与音效引擎 (温和动听、低冲突)
+       ============================================================ */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.bgmTimer = null;
+        this.step = 0;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            this.ctx = new AudioCtx();
+            this.startBgm();
+          }
+        } else if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // 播放平滑温和的音符
+      playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.15, slideTo = null) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          if (slideTo) {
+            osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), this.ctx.currentTime + duration);
+          }
+          // 柔和淡入淡出，消除破音咔哒声
+          gain.gain.setValueAtTime(0.001, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(gainVal, this.ctx.currentTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      // 武器击中音效 (短促低沉有力，不刺耳)
+      playWeaponHit(type) {
+        if (!this.enabled || !this.ctx) return;
+        switch (type) {
+          case 'sparkle': // 小勺轻敲
+            this.playTone(580, 'sine', 0.08, 0.12, 720);
+            break;
+          case 'dirt': // 铲子泥土
+            this.playTone(160, 'triangle', 0.12, 0.16, 70);
+            break;
+          case 'gold': // 镐子敲击
+            this.playTone(420, 'triangle', 0.14, 0.18, 200);
+            break;
+          case 'drill': // 钻头旋转
+            this.playTone(280, 'triangle', 0.1, 0.15, 340);
+            break;
+          case 'thunder': // 超级电钻
+            this.playTone(220, 'sawtooth', 0.15, 0.16, 440);
+            this.playTone(660, 'sine', 0.1, 0.12);
+            break;
+        }
+      }
+
+      // 切换武器咔哒声
+      playSwitch() {
+        this.playTone(440, 'triangle', 0.06, 0.15, 660);
+      }
+
+      // 清澈纯净的晶莹钢琴音阶 (八音盒音色，作为主乐音，音量适中不刺耳)
+      playPianoNote(index = 0) {
+        if (!this.enabled || !this.ctx) return;
+        const scale = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25]; // C4 到 C5
+        const freq = scale[index % scale.length];
+        this.playTone(freq, 'sine', 0.45, 0.22);
+        this.playTone(freq * 2, 'triangle', 0.35, 0.08);
+      }
+
+      // 樱桃眼睛受击/眩晕
+      playEyeHit() {
+        this.playTone(500, 'sine', 0.2, 0.18, 250);
+      }
+
+      // 格子碎裂
+      playGridBreak() {
+        this.playTone(220, 'triangle', 0.18, 0.22, 60);
+      }
+
+      // 华丽大爆炸
+      playBigExplosion() {
+        this.playTone(100, 'triangle', 0.6, 0.35, 30);
+        this.playTone(180, 'sine', 0.4, 0.25, 40);
+      }
+
+      // 胜利欢呼
+      playVictory() {
+        const notes = [261.63, 329.63, 392.00, 523.25];
+        notes.forEach((f, i) => {
+          setTimeout(() => this.playTone(f, 'sine', 0.35, 0.25), i * 130);
+        });
+      }
+
+      // 轻柔舒缓的和弦低音背景铺底 (音量极轻 0.035，慢速温暖律动，绝不抢占钢琴主旋律)
+      startBgm() {
+        if (this.bgmTimer) return;
+        const bassNotes = [130.81, 130.81, 164.81, 164.81, 174.61, 174.61, 196.00, 196.00]; // C3, E3, F3, G3
+
+        this.bgmTimer = setInterval(() => {
+          if (!this.enabled || !this.ctx) return;
+          const bass = bassNotes[this.step % bassNotes.length];
+          this.playTone(bass, 'sine', 0.35, 0.035);
+          this.step++;
+        }, 500);
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    /* ============================================================
+       3. 钢琴系统与下落音符块管理器
+       ============================================================ */
+    const pianoConfig = {
+      x: 360,
+      y: 18,
+      width: 256,
+      height: 48,
+      keyCount: 8,
+      keys: []
+    };
+
+    // 初始化 8 个琴键状态
+    for (let i = 0; i < pianoConfig.keyCount; i++) {
+      pianoConfig.keys.push({
+        name: ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Si', 'Do+'][i],
+        pressedTime: 0,
+        color: ['#ff7675', '#fdcb6e', '#ffeaa7', '#55efc4', '#81ecec', '#74b9ff', '#a29bfe', '#fd79a8'][i]
+      });
+    }
+
+    let fallingNotes = []; // 天空下落音符小块块
+    let noteSpawnTimer = 0;
+
+    /* ============================================================
+       4. 游戏核心状态与控制器
+       ============================================================ */
+    let canvas, ctx;
+    let currentLevelIndex = 0;
+    let selectedWeaponIndex = 0;
+    let myHero = CHARACTERS[0];
+    let isBuffed = false; // 满血复活强化状态
+    let comboCount = 0;
+    let lastHitTime = 0;
+    let screenShake = 0;
+    let attackAnimTimer = 0; // 攻击挥击动画
+
+    // 关卡中的实体
+    let enemyState = {
+      name: "",
+      hp: 1000,
+      maxHp: 1000,
+      x: 650,
+      y: 280,
+      size: 160,
+      phase: 1, // 1: 破外格, 2: 打眼睛, 3: 拆引线
+      fuseTime: 35.0, // 关卡3引信倒计时
+      isDead: false,
+      hitAnim: 0,
+      grids: [], // 巨型樱桃炸弹外层格子
+      eyes: []   // 巨型樱桃炸弹眼睛
+    };
+
+    // 粒子与浮动元素
+    let particles = [];
+    let damageTexts = [];
+
+    /* ============================================================
+       5. 初始化与画布自适应
+       ============================================================ */
+    window.addEventListener('DOMContentLoaded', () => {
+      canvas = document.getElementById('gameCanvas');
+      ctx = canvas.getContext('2d');
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      // 初始化角色选择网格
+      renderCharacterRoster();
+
+      // 画布点击与长按交互
+      canvas.addEventListener('pointerdown', handleCanvasClick);
+
+      // 启动游戏主循环
+      requestAnimationFrame(gameLoop);
+    });
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      // 动态对齐钢琴位置在中央偏左上方
+      pianoConfig.x = Math.max(180, canvas.width * 0.46 - pianoConfig.width / 2);
+    }
+
+    function toggleAudio() {
+      sound.init();
+      sound.enabled = !sound.enabled;
+      const icon = sound.enabled ? '🔊' : '🔇';
+      document.getElementById('audio-icon').innerText = icon;
+      document.getElementById('btn-audio').innerHTML = `<span id="audio-icon">${icon}</span> 音乐: ${sound.enabled ? '开' : '关'}`;
+    }
+
+    /* ============================================================
+       6. 武器切换与选择系统
+       ============================================================ */
+    function cycleWeapon() {
+      sound.init();
+      selectedWeaponIndex = (selectedWeaponIndex + 1) % WEAPONS.length;
+      updateWeaponUI();
+      sound.playSwitch();
+      createSwitchParticles();
+    }
+
+    function selectWeapon(index) {
+      sound.init();
+      selectedWeaponIndex = index;
+      updateWeaponUI();
+      sound.playSwitch();
+      createSwitchParticles();
+    }
+
+    function updateWeaponUI() {
+      const w = WEAPONS[selectedWeaponIndex];
+      document.getElementById('switch-icon').innerText = w.icon;
+      document.getElementById('switch-name').innerText = w.name;
+      
+      for (let i = 0; i < WEAPONS.length; i++) {
+        const slot = document.getElementById(`slot-${i}`);
+        if (slot) {
+          if (i === selectedWeaponIndex) {
+            slot.classList.add('active');
+          } else {
+            slot.classList.remove('active');
+          }
+        }
+      }
+      
+      const tipElement = document.getElementById('tip-text');
+      if (tipElement) {
+        tipElement.innerText = `已装备【${w.short}】！${w.desc}`;
+      }
+    }
+
+    function createSwitchParticles() {
+      const cx = 200, cy = canvas.height - 40;
+      for (let i = 0; i < 15; i++) {
+        particles.push({
+          x: cx + (Math.random() - 0.5) * 60,
+          y: cy + (Math.random() - 0.5) * 20,
+          vx: (Math.random() - 0.5) * 6,
+          vy: -Math.random() * 5 - 2,
+          size: Math.random() * 6 + 4,
+          color: ['#ff4757', '#ffeaa7', '#74b9ff', '#55efc4'][Math.floor(Math.random() * 4)],
+          life: 1.0,
+          decay: 0.03
+        });
+      }
+    }
+
+    /* ============================================================
+       7. 关卡加载与敌方部位初始化
+       ============================================================ */
+    function startGameAdventure() {
+      sound.init();
+      document.getElementById('screen-start').classList.add('hidden');
+      loadLevel(0);
+    }
+
+    let autoNextTimer = null;
+    let autoNextSeconds = 3;
+
+    function loadLevel(levelIdx) {
+      if (autoNextTimer) {
+        clearInterval(autoNextTimer);
+        autoNextTimer = null;
+      }
+
+      currentLevelIndex = levelIdx;
+      const level = LEVELS[currentLevelIndex];
+      
+      document.getElementById('level-badge').innerHTML = `<span>🍒</span> ${level.title}`;
+      document.getElementById('tip-text').innerText = level.tip;
+
+      // 更新顶部 4 关进度指示器
+      for (let i = 0; i < LEVELS.length; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (dot) {
+          if (i === currentLevelIndex) {
+            dot.style.background = '#22c55e';
+            dot.style.color = '#fff';
+            dot.style.boxShadow = '0 0 10px rgba(34, 197, 94, 0.8)';
+          } else if (i < currentLevelIndex) {
+            dot.style.background = '#eab308';
+            dot.style.color = '#fff';
+            dot.style.boxShadow = 'none';
+          } else {
+            dot.style.background = 'rgba(255,255,255,0.1)';
+            dot.style.color = '#94a3b8';
+            dot.style.boxShadow = 'none';
+          }
+        }
+      }
+
+      const baseHp = isBuffed ? Math.floor(level.enemyMaxHp * 0.7) : level.enemyMaxHp;
+      enemyState.name = level.enemyName;
+      enemyState.maxHp = baseHp;
+      enemyState.hp = baseHp;
+      enemyState.x = canvas.width * 0.68 || 680;
+      enemyState.y = canvas.height * 0.54 || 270;
+      enemyState.size = level.enemyType === 'giant_cherry_boss' ? 220 : (level.enemyType === 'zombie_boss_enemy' ? 240 : 160);
+      enemyState.isDead = false;
+      enemyState.phase = 1;
+      enemyState.fuseTime = 30.0;
+      enemyState.hitAnim = 0;
+
+      // 巨型樱桃炸弹专属 3段部位与格子网格装甲生成
+      enemyState.grids = [];
+      enemyState.eyes = [];
+      
+      if (level.enemyType === 'giant_cherry_boss') {
+        const rows = 4, cols = 4;
+        const cellSize = 50;
+        const startX = enemyState.x - (cols * cellSize) / 2;
+        const startY = enemyState.y - (rows * cellSize) / 2 + 10;
+        
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            enemyState.grids.push({
+              x: startX + c * cellSize,
+              y: startY + r * cellSize,
+              w: cellSize - 4,
+              h: cellSize - 4,
+              hp: 140,
+              maxHp: 140,
+              alive: true,
+              color: ['#d63031', '#e17055', '#b71540', '#e84118'][(r + c) % 4]
+            });
+          }
+        }
+
+        enemyState.eyes = [
+          { x: enemyState.x - 52, y: enemyState.y - 12, r: 24, hp: 500, maxHp: 500, dizzy: 0, alive: true },
+          { x: enemyState.x + 52, y: enemyState.y - 12, r: 24, hp: 500, maxHp: 500, dizzy: 0, alive: true }
+        ];
+      }
+
+      particles = [];
+      damageTexts = [];
+      fallingNotes = [];
+      comboCount = 0;
+    }
+
+    function resetCurrentLevel() {
+      loadLevel(currentLevelIndex);
+    }
+
+    function retryLevelWithBuff() {
+      isBuffed = true;
+      document.getElementById('screen-fail').classList.add('hidden');
+      loadLevel(currentLevelIndex);
+    }
+
+    function nextLevel() {
+      if (autoNextTimer) {
+        clearInterval(autoNextTimer);
+        autoNextTimer = null;
+      }
+      document.getElementById('screen-victory').classList.add('hidden');
+      if (currentLevelIndex + 1 < LEVELS.length) {
+        loadLevel(currentLevelIndex + 1);
+      } else {
+        // 全部通关后，重新从第 1 关开始大冒险
+        loadLevel(0);
+      }
+    }
+
+    /* ============================================================
+       8. 街霸式选角界面系统
+       ============================================================ */
+    function renderCharacterRoster() {
+      const roster = document.getElementById('roster-grid');
+      roster.innerHTML = '';
+
+      CHARACTERS.forEach(char => {
+        const card = document.createElement('div');
+        card.className = `char-card ${char.id === myHero.id ? 'selected' : ''}`;
+        const tagColor = char.side === 'zombie' ? '#ef4444' : '#22c55e';
+        const tagText = char.side === 'zombie' ? '🧟 僵尸阵营' : '🌻 植物阵营';
+
+        card.innerHTML = `
+          <div class="card-tag" style="background: ${tagColor}">${tagText}</div>
+          <div class="char-avatar-img">${char.icon}</div>
+          <div class="char-name">${char.name}</div>
+          <div class="char-desc">${char.desc}</div>
+        `;
+        card.onclick = () => {
+          document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          myHero = char;
+          sound.playTone(440, 'triangle', 0.15, 0.25, 660);
+        };
+        roster.appendChild(card);
+      });
+    }
+
+    function openCharSelect() {
+      sound.init();
+      if (autoNextTimer) {
+        clearInterval(autoNextTimer);
+        autoNextTimer = null;
+      }
+      renderCharacterRoster();
+      document.getElementById('screen-select').classList.remove('hidden');
+    }
+
+    function closeCharSelect() {
+      document.getElementById('screen-select').classList.add('hidden');
+    }
+
+    function confirmCharacterSelection() {
+      closeCharSelect();
+      sound.playVictory();
+      loadLevel(0);
+    }
+
+    /* ============================================================
+       9. 点击判定与音符块/部位破坏核心逻辑
+       ============================================================ */
+    function handleCanvasClick(e) {
+      sound.init();
+      if (enemyState.isDead) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      // 1. 检查是否直接点击了顶部的钢琴键盘或空中的下落音符块 (玩家主动弹奏)
+      const kw = pianoConfig.width / pianoConfig.keyCount;
+      if (clickX >= pianoConfig.x && clickX <= pianoConfig.x + pianoConfig.width &&
+          clickY >= pianoConfig.y && clickY <= pianoConfig.y + pianoConfig.height + 10) {
+        const keyIdx = Math.floor((clickX - pianoConfig.x) / kw);
+        manualPlayPianoKey(keyIdx, clickX, clickY);
+        return;
+      }
+
+      // 检查玩家点击下落中的音符方块
+      for (let i = fallingNotes.length - 1; i >= 0; i--) {
+        const note = fallingNotes[i];
+        if (Math.abs(clickX - note.x) < 26 && Math.abs(clickY - note.y) < 26) {
+          manualPlayPianoKey(note.keyIndex, note.x, note.y);
+          fallingNotes.splice(i, 1);
+          return;
+        }
+      }
+
+      // 2. 武器攻击
+      attackAnimTimer = 10;
+      const currentWeapon = WEAPONS[selectedWeaponIndex];
+      let finalDamage = currentWeapon.damage;
+      if (isBuffed) finalDamage *= 1.8;
+
+      // 连击计时
+      const now = Date.now();
+      if (now - lastHitTime < 1000) {
+        comboCount++;
+      } else {
+        comboCount = 1;
+      }
+      lastHitTime = now;
+      if (comboCount > 2) {
+        finalDamage = Math.floor(finalDamage * (1 + comboCount * 0.08));
+      }
+
+      let hitSuccess = false;
+
+      // 关卡3: 巨型樱桃炸弹三段拆解逻辑
+      if (LEVELS[currentLevelIndex].enemyType === 'giant_cherry_boss') {
+        // 阶段 1: 检查外层格子网格打击
+        let hitGrid = null;
+        for (let g of enemyState.grids) {
+          if (g.alive && clickX >= g.x && clickX <= g.x + g.w && clickY >= g.y && clickY <= g.y + g.h) {
+            hitGrid = g;
+            break;
+          }
+        }
+
+        if (hitGrid) {
+          hitGrid.hp -= finalDamage;
+          sound.playWeaponHit(currentWeapon.effect);
+          createHitParticles(clickX, clickY, currentWeapon.effect, 10);
+          showDamageNumber(clickX, clickY, finalDamage, false);
+          
+          if (hitGrid.hp <= 0) {
+            hitGrid.alive = false;
+            sound.playGridBreak();
+            createGridBreakParticles(hitGrid.x + hitGrid.w/2, hitGrid.y + hitGrid.h/2);
+            document.getElementById('tip-text').innerText = "💥 砸碎一块格子装甲！继续敲！";
+          }
+          hitSuccess = true;
+        }
+
+        // 阶段 2: 检查眼睛打击
+        if (!hitSuccess) {
+          for (let eye of enemyState.eyes) {
+            if (eye.alive) {
+              const distEye = Math.hypot(clickX - eye.x, clickY - eye.y);
+              if (distEye < eye.r + 15) {
+                eye.hp -= finalDamage * 1.3;
+                eye.dizzy = 40;
+                sound.playEyeHit();
+                createHitParticles(clickX, clickY, 'sparkle', 14);
+                showDamageNumber(clickX, clickY, Math.floor(finalDamage * 1.3), true);
+                if (eye.hp <= 0) {
+                  eye.alive = false;
+                  document.getElementById('tip-text').innerText = "💫 成功打坏大眼睛！眼睛转圈圈啦！";
+                }
+                hitSuccess = true;
+                break;
+              }
+            }
+          }
+        }
+
+        // 阶段 3: 检查头部引线打击
+        if (!hitSuccess) {
+          const fuseX = enemyState.x;
+          const fuseY = enemyState.y - enemyState.size/2 - 20;
+          const distFuse = Math.hypot(clickX - fuseX, clickY - fuseY);
+          if (distFuse < 60) {
+            const fuseDamage = currentWeapon.id === 4 ? finalDamage * 2.5 : finalDamage;
+            enemyState.hp -= fuseDamage;
+            sound.playWeaponHit(currentWeapon.effect);
+            createHitParticles(clickX, clickY, 'thunder', 16);
+            showDamageNumber(clickX, clickY, Math.floor(fuseDamage), currentWeapon.id === 4);
+            document.getElementById('tip-text').innerText = currentWeapon.id === 4 ? "⚡ 超级电钻强力拆解引线！太强啦！" : "💡 快用大红按钮换【⚡ 超级电钻】拆引线！";
+            hitSuccess = true;
+          }
+        }
+      }
+
+      // 通用本体受击判定 (含关卡4僵王机甲与普通敌人)
+      if (!hitSuccess) {
+        const distBody = Math.hypot(clickX - enemyState.x, clickY - enemyState.y);
+        if (distBody < enemyState.size * 0.8) {
+          enemyState.hp -= finalDamage;
+          sound.playWeaponHit(currentWeapon.effect);
+          createHitParticles(clickX, clickY, currentWeapon.effect, 12);
+          showDamageNumber(clickX, clickY, finalDamage, comboCount > 4);
+          hitSuccess = true;
+        }
+      }
+
+      if (hitSuccess) {
+        enemyState.hitAnim = 8;
+        screenShake = 5;
+        if (enemyState.hp <= 0) {
+          handleEnemyDefeated();
+        }
+      }
+    }
+
+    // 1. 自然音符掉落砸琴 (纯背景八音盒弹奏，温和轻柔，不扣血)
+    function autoPlayPianoNote(keyIdx, x, y) {
+      if (keyIdx < 0 || keyIdx >= pianoConfig.keyCount) return;
+      pianoConfig.keys[keyIdx].pressedTime = 8;
+      sound.playPianoNote(keyIdx);
+
+      // 少量轻柔音符粒子
+      for (let i = 0; i < 4; i++) {
+        particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 4,
+          vy: -Math.random() * 3 - 1,
+          size: Math.random() * 5 + 3,
+          color: pianoConfig.keys[keyIdx].color,
+          life: 0.8,
+          decay: 0.04
+        });
+      }
+    }
+
+    // 2. 玩家主动点击琴键或空中音符 (触发阳光暴击与狂暴支援伤害)
+    function manualPlayPianoKey(keyIdx, x, y) {
+      if (keyIdx < 0 || keyIdx >= pianoConfig.keyCount) return;
+      pianoConfig.keys[keyIdx].pressedTime = 14;
+      sound.playPianoNote(keyIdx);
+
+      // 爆出满屏阳光金星粒子
+      for (let i = 0; i < 18; i++) {
+        particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 9,
+          vy: -Math.random() * 7 - 2,
+          size: Math.random() * 8 + 4,
+          color: '#facc15',
+          life: 1.0,
+          decay: 0.03
+        });
+      }
+
+      // 阳光暴击支援伤害
+      const pianoDmg = 120;
+      enemyState.hp -= pianoDmg;
+      showDamageNumber(enemyState.x, enemyState.y - 60, pianoDmg, true);
+      document.getElementById('tip-text').innerText = `🎹 弹奏音符【${pianoConfig.keys[keyIdx].name}】！召唤阳光支援！`;
+
+      if (enemyState.hp <= 0) {
+        handleEnemyDefeated();
+      }
+    }
+
+    // 通关胜利与自动倒计时下一关机制
+    function handleEnemyDefeated() {
+      if (enemyState.isDead) return;
+      enemyState.isDead = true;
+      enemyState.hp = 0;
+      sound.playBigExplosion();
+      sound.playVictory();
+
+      // 满屏五彩烟花爆炸
+      for (let i = 0; i < 100; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 12 + 3;
+        particles.push({
+          x: enemyState.x,
+          y: enemyState.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: Math.random() * 10 + 5,
+          color: ['#ff4757', '#2ed573', '#1e90ff', '#ffa502', '#ff6b81', '#ffffff'][Math.floor(Math.random() * 6)],
+          life: 1.8,
+          decay: 0.02
+        });
+      }
+
+      setTimeout(() => {
+        const victoryScreen = document.getElementById('screen-victory');
+        const victoryTitle = document.getElementById('victory-title');
+        const victoryDesc = document.getElementById('victory-desc');
+        const btnNext = document.getElementById('btn-next-level');
+        const countdownEl = document.getElementById('auto-next-countdown');
+
+        victoryScreen.classList.remove('hidden');
+
+        if (currentLevelIndex < LEVELS.length - 1) {
+          // 普通关卡通关：指向下一关并开启 3 秒倒计时
+          const nextLvl = LEVELS[currentLevelIndex + 1];
+          victoryTitle.innerText = `🎉 太棒啦！第 ${currentLevelIndex + 1} 关通关！`;
+          victoryDesc.innerText = `你击败了 ${enemyState.name}，获得了闪亮金牌！下一个对手正在等待你的挑战！`;
+          btnNext.innerText = `🚀 立即前往第 ${currentLevelIndex + 2} 关：${nextLvl.title.split(':')[1]}！`;
+          btnNext.style.background = "linear-gradient(180deg, #76ff03 0%, #388e3c 100%)";
+
+          countdownEl.style.display = "block";
+          autoNextSeconds = 3;
+          countdownEl.innerText = `⏱️ ${autoNextSeconds} 秒后自动进入第 ${currentLevelIndex + 2} 关...`;
+
+          if (autoNextTimer) clearInterval(autoNextTimer);
+          autoNextTimer = setInterval(() => {
+            autoNextSeconds--;
+            if (autoNextSeconds > 0) {
+              countdownEl.innerText = `⏱️ ${autoNextSeconds} 秒后自动进入第 ${currentLevelIndex + 2} 关...`;
+            } else {
+              clearInterval(autoNextTimer);
+              autoNextTimer = null;
+              nextLevel();
+            }
+          }, 1000);
+
+        } else {
+          // 关卡4全通关 (终极僵王)
+          victoryTitle.innerText = "🏆 恭喜通关全部大冒险！";
+          victoryDesc.innerText = "🌟 你成功击破 12000 超级血量终极僵王机甲！荣获【5岁超级大英雄神级金牌】！";
+          btnNext.innerText = "🔄 重新从第 1 关开始大冒险！";
+          btnNext.style.background = "linear-gradient(180deg, #f59e0b 0%, #d97706 100%)";
+          countdownEl.style.display = "none";
+        }
+      }, 1000);
+    }
+
+    /* ============================================================
+       10. 粒子与文字动画特效生成
+       ============================================================ */
+    function createHitParticles(x, y, effectType, count = 10) {
+      const colors = {
+        sparkle: ['#ffeaa7', '#fff', '#fd79a8'],
+        dirt: ['#8c7b75', '#d7ccc8', '#5d4037'],
+        gold: ['#f1c40f', '#f39c12', '#ffffff'],
+        drill: ['#00cec9', '#81ecec', '#ffffff'],
+        thunder: ['#0984e3', '#74b9ff', '#fdcb6e', '#ffffff']
+      }[effectType] || ['#fff'];
+
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 7 + 2;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: Math.random() * 7 + 3,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          life: 1.0,
+          decay: 0.04
+        });
+      }
+    }
+
+    function createGridBreakParticles(x, y) {
+      for (let i = 0; i < 20; i++) {
+        particles.push({
+          x: x + (Math.random() - 0.5) * 30,
+          y: y + (Math.random() - 0.5) * 30,
+          vx: (Math.random() - 0.5) * 10,
+          vy: -Math.random() * 8 - 2,
+          size: Math.random() * 10 + 6,
+          color: ['#d63031', '#e17055', '#ffeaa7'][Math.floor(Math.random() * 3)],
+          life: 1.2,
+          decay: 0.03
+        });
+      }
+    }
+
+    function showDamageNumber(x, y, dmg, isCrit = false) {
+      damageTexts.push({
+        x: x + (Math.random() - 0.5) * 30,
+        y: y - 20,
+        text: isCrit ? `💥-${dmg}` : `-${dmg}`,
+        color: isCrit ? '#facc15' : '#ffffff',
+        size: isCrit ? 34 : 24,
+        life: 1.0,
+        vy: -2.5
+      });
+    }
+
+    /* ============================================================
+       11. 游戏主循环与绘制渲染 (Canvas 60 FPS)
+       ============================================================ */
+    function gameLoop(time) {
+      update(time);
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function update(time) {
+      if (screenShake > 0) screenShake *= 0.88;
+      if (screenShake < 0.1) screenShake = 0;
+
+      if (enemyState.hitAnim > 0) enemyState.hitAnim--;
+      if (attackAnimTimer > 0) attackAnimTimer--;
+
+      // 琴键按下动画衰减
+      pianoConfig.keys.forEach(k => {
+        if (k.pressedTime > 0) k.pressedTime--;
+      });
+
+      // 天空音符小块块生成（下落砸到钢琴上奏出清澈悠扬的八音盒乐章）
+      noteSpawnTimer++;
+      if (noteSpawnTimer > 80) {
+        noteSpawnTimer = 0;
+        const keyIdx = Math.floor(Math.random() * pianoConfig.keyCount);
+        const kw = pianoConfig.width / pianoConfig.keyCount;
+        const targetX = pianoConfig.x + keyIdx * kw + kw / 2;
+        fallingNotes.push({
+          x: targetX,
+          y: -20,
+          vy: 2.2, // 舒缓优雅下落速度
+          keyIndex: keyIdx,
+          size: 18,
+          symbol: ['🎵', '🎶', '♩', '♪', '✨'][Math.floor(Math.random() * 5)],
+          color: pianoConfig.keys[keyIdx].color
+        });
+      }
+
+      // 更新下落音符块
+      for (let i = fallingNotes.length - 1; i >= 0; i--) {
+        const n = fallingNotes[i];
+        n.y += n.vy;
+
+        // 当音符块掉落到钢琴琴键上时：轻柔砸中琴键奏出背景音阶（不扣血）
+        if (n.y >= pianoConfig.y + 12 && n.y <= pianoConfig.y + 24) {
+          autoPlayPianoNote(n.keyIndex, n.x, n.y);
+          fallingNotes.splice(i, 1);
+        } else if (n.y > canvas.height) {
+          fallingNotes.splice(i, 1);
+        }
+      }
+
+      // 关卡3引线倒计时
+      if (!enemyState.isDead && LEVELS[currentLevelIndex].enemyType === 'giant_cherry_boss') {
+        enemyState.fuseTime -= 1 / 60;
+        if (enemyState.fuseTime <= 0) {
+          enemyState.fuseTime = 0;
+          sound.playBigExplosion();
+          document.getElementById('screen-fail').classList.remove('hidden');
+        }
+      }
+
+      // 更新粒子
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.2;
+        p.life -= p.decay;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      // 更新跳跃伤害文字
+      for (let i = damageTexts.length - 1; i >= 0; i--) {
+        const d = damageTexts[i];
+        d.y += d.vy;
+        d.life -= 0.025;
+        if (d.life <= 0) damageTexts.splice(i, 1);
+      }
+    }
+
+    function render() {
+      ctx.save();
+
+      if (screenShake > 0) {
+        const shakeX = (Math.random() - 0.5) * screenShake * 2;
+        const shakeY = (Math.random() - 0.5) * screenShake * 2;
+        ctx.translate(shakeX, shakeY);
+      }
+
+      // 1. 关卡背景
+      renderBackground();
+
+      // 2. 顶部水晶钢琴与下落音符块
+      renderPianoAndNotes();
+
+      // 3. 我方矢量绘制角色（地道PVZ绿皮僵尸 / 植物）
+      renderMyHero();
+
+      // 4. 敌方角色（巨型樱桃炸弹 / 豌豆射手 / 终极僵王博士巨型机甲）
+      renderEnemy();
+
+      // 5. 粒子与伤害文字
+      renderParticles();
+      renderDamageTexts();
+
+      // 6. 战斗 HUD（大血条、连击数）
+      renderBattleHUD();
+
+      ctx.restore();
+    }
+
+    /* --- 背景渲染 --- */
+    function renderBackground() {
+      const level = LEVELS[currentLevelIndex];
+      const w = canvas.width, h = canvas.height;
+
+      if (level.bgType === 'garden') {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#38ef7d');
+        grad.addColorStop(0.5, '#11998e');
+        grad.addColorStop(1, '#0c2461');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#2ed573';
+        ctx.fillRect(0, h - 70, w, 70);
+        ctx.font = '26px sans-serif';
+        for (let i = 40; i < w; i += 90) {
+          ctx.fillText('🌻', i, h - 35);
+          ctx.fillText('🌿', i + 45, h - 28);
+        }
+      } else if (level.bgType === 'desert') {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#f39c12');
+        grad.addColorStop(0.6, '#d35400');
+        grad.addColorStop(1, '#2c3e50');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.font = '50px sans-serif';
+        ctx.fillText('🏜️', w * 0.15, h - 80);
+        ctx.fillText('🐪', w * 0.82, h - 80);
+      } else if (level.bgType === 'cherry_volcano') {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#c0392b');
+        grad.addColorStop(0.5, '#8e44ad');
+        grad.addColorStop(1, '#1e272e');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#ff7675';
+        for (let i = 0; i < 15; i++) {
+          const sparkX = (Math.sin(Date.now()*0.002 + i) * 0.5 + 0.5) * w;
+          const sparkY = h - 60 - (i * 20);
+          ctx.beginPath();
+          ctx.arc(sparkX, sparkY, 4, 0, Math.PI*2);
+          ctx.fill();
+        }
+      } else {
+        // 终极僵王要塞
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#1e1333');
+        grad.addColorStop(0.5, '#2d1b4e');
+        grad.addColorStop(1, '#090514');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // 闪烁雷电光柱背景
+        ctx.fillStyle = 'rgba(168, 85, 247, 0.08)';
+        ctx.fillRect(w * 0.55, 0, w * 0.45, h);
+      }
+    }
+
+    /* --- 顶部水晶钢琴与天降音符块渲染 --- */
+    function renderPianoAndNotes() {
+      const px = pianoConfig.x;
+      const py = pianoConfig.y;
+      const pw = pianoConfig.width;
+      const ph = pianoConfig.height;
+      const kw = pw / pianoConfig.keyCount;
+
+      ctx.save();
+
+      // 1. 钢琴底座木纹/水晶外壳
+      ctx.fillStyle = 'rgba(20, 10, 35, 0.85)';
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(px - 8, py - 6, pw + 16, ph + 16, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      // 钢琴小招牌
+      ctx.fillStyle = '#ffeaa7';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🎹 魔法钢琴 (音符下落奏响乐章)', px + pw / 2, py - 10);
+
+      // 2. 绘制 8 个黑白相间发光琴键
+      for (let i = 0; i < pianoConfig.keyCount; i++) {
+        const k = pianoConfig.keys[i];
+        const kx = px + i * kw;
+        const ky = py + (k.pressedTime > 0 ? 4 : 0);
+
+        // 琴键白底
+        ctx.fillStyle = k.pressedTime > 0 ? k.color : '#ffffff';
+        ctx.strokeStyle = '#2d3436';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(kx + 1, ky, kw - 2, ph - 2, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        // 琴键上的简谱音名
+        ctx.fillStyle = k.pressedTime > 0 ? '#ffffff' : '#2d3436';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(k.name, kx + kw / 2, ky + ph - 8);
+
+        // 发光光效
+        if (k.pressedTime > 0) {
+          ctx.strokeStyle = k.color;
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(kx + kw / 2, ky + ph / 2, 22, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      // 绘制黑键
+      const blackKeyIndices = [0, 1, 3, 4, 5];
+      blackKeyIndices.forEach(idx => {
+        const bx = px + idx * kw + kw * 0.65;
+        ctx.fillStyle = '#222';
+        ctx.fillRect(bx, py, kw * 0.6, ph * 0.55);
+      });
+
+      // 3. 绘制从天而降的彩色音符小块块
+      fallingNotes.forEach(n => {
+        ctx.save();
+        ctx.translate(n.x, n.y);
+
+        // 音符方块发光底色
+        ctx.fillStyle = n.color;
+        ctx.shadowColor = n.color;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.roundRect(-n.size / 2, -n.size / 2, n.size, n.size, 6);
+        ctx.fill();
+
+        // 音符小图标
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(n.symbol, 0, 5);
+
+        ctx.restore();
+      });
+
+      ctx.restore();
+    }
+
+    /* --- 我方角色渲染（地道PVZ绿皮僵尸与植物） --- */
+    function renderMyHero() {
+      const heroX = canvas.width * 0.22;
+      const heroY = canvas.height * 0.56;
+      const curWeapon = WEAPONS[selectedWeaponIndex];
+
+      ctx.save();
+      ctx.translate(heroX, heroY);
+
+      // 角色影子
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(0, 50, 48, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 呼吸与攻击位移
+      const bob = Math.sin(Date.now() * 0.005) * 5;
+      const attackSwing = attackAnimTimer > 0 ? (attackAnimTimer / 10) * 20 : 0;
+      ctx.translate(attackSwing, bob);
+
+      if (myHero.side === 'zombie') {
+        // === 矢量手绘经典PVZ绿皮僵尸 ===
+        drawPvzZombie(ctx, myHero, curWeapon, attackSwing);
+      } else {
+        // === 矢量手绘植物英雄 ===
+        drawPvzPlant(ctx, myHero);
+      }
+
+      // 名字牌
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 15px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`我方: ${myHero.name}`, 0, 72);
+
+      ctx.restore();
+    }
+
+    /* 绘制经典PVZ绿皮僵尸矢量形象 */
+    function drawPvzZombie(ctx, heroData, weapon, attackOffset) {
+      // 1. 身体西装（破烂棕色西装+红领带）
+      ctx.fillStyle = '#5c3a21'; // 棕色西装
+      ctx.fillRect(-22, -10, 44, 45);
+      
+      // 破损西装下摆
+      ctx.fillStyle = '#422814';
+      ctx.fillRect(-20, 25, 40, 10);
+
+      // 白色衬衫翻领与鲜红领带
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(-10, -10);
+      ctx.lineTo(0, 8);
+      ctx.lineTo(10, -10);
+      ctx.fill();
+
+      ctx.fillStyle = '#e74c3c'; // 红领带
+      ctx.beginPath();
+      ctx.moveTo(-4, -5);
+      ctx.lineTo(4, -5);
+      ctx.lineTo(6, 20);
+      ctx.lineTo(0, 26);
+      ctx.lineTo(-6, 20);
+      ctx.fill();
+
+      // 2. 僵尸手臂与手持武器
+      ctx.save();
+      ctx.fillStyle = '#6ab04c'; // 僵尸绿皮手臂
+      const armAngle = attackOffset > 0 ? -0.4 : 0.1;
+      ctx.rotate(armAngle);
+      ctx.fillRect(8, -5, 28, 12);
+      ctx.beginPath();
+      ctx.arc(36, 1, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 手持武器展示
+      ctx.font = '38px sans-serif';
+      ctx.fillText(weapon.icon, 38, -6);
+      ctx.restore();
+
+      // 3. 经典PVZ绿皮僵尸头部
+      ctx.fillStyle = '#78e08f'; // 亮绿皮
+      ctx.strokeStyle = '#38ada9';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, -32, 28, 30, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // 凸出的大白眼球（呆萌斗鸡眼）
+      // 左眼
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-10, -35, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.arc(-7, -35, 4, 0, Math.PI * 2); // 偏中心
+      ctx.fill();
+
+      // 右眼（更大更凸出）
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(12, -37, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.arc(10, -37, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 歪歪张开的嘴与小暴牙
+      ctx.fillStyle = '#2c3e50';
+      ctx.beginPath();
+      ctx.arc(2, -18, 12, 0, Math.PI);
+      ctx.fill();
+
+      // 小尖牙
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-4, -18, 4, 6);
+      ctx.fillRect(4, -18, 5, 7);
+
+      // 稀疏卷发
+      ctx.strokeStyle = '#2d3436';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-10, -60);
+      ctx.quadraticCurveTo(-5, -72, 0, -62);
+      ctx.moveTo(5, -60);
+      ctx.quadraticCurveTo(12, -75, 8, -62);
+      ctx.stroke();
+
+      // 帽子配饰（如果是矿工僵尸）
+      if (heroData.id === 'zombie_pickaxe') {
+        ctx.fillStyle = '#f1c40f'; // 黄色安全帽
+        ctx.beginPath();
+        ctx.ellipse(0, -56, 32, 14, 0, Math.PI, 0);
+        ctx.fill();
+        ctx.strokeStyle = '#f39c12';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        // 前照灯
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, -56, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    /* 绘制植物英雄 */
+    function drawPvzPlant(ctx, heroData) {
+      if (heroData.id === 'plant_peashooter') {
+        // 豌豆射手
+        ctx.fillStyle = '#2ecc71';
+        ctx.beginPath();
+        ctx.arc(0, -20, 26, 0, Math.PI * 2);
+        ctx.fill();
+        // 炮管大嘴
+        ctx.fillStyle = '#27ae60';
+        ctx.beginPath();
+        ctx.arc(24, -20, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0f3a1d';
+        ctx.beginPath();
+        ctx.arc(26, -20, 8, 0, Math.PI * 2);
+        ctx.fill();
+        // 大眼睛
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(4, -30, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(7, -30, 4, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // 向日葵
+        ctx.fillStyle = '#f1c40f';
+        for (let i = 0; i < 12; i++) {
+          const ang = (i / 12) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.arc(Math.cos(ang) * 34, -20 + Math.sin(ang) * 34, 12, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = '#d35400';
+        ctx.beginPath();
+        ctx.arc(0, -20, 24, 0, Math.PI * 2);
+        ctx.fill();
+        // 笑脸
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(-8, -24, 5, 0, Math.PI * 2);
+        ctx.arc(8, -24, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-7, -24, 2.5, 0, Math.PI * 2);
+        ctx.arc(9, -24, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    /* --- 敌方角色与终极僵王博士机甲渲染 --- */
+    function renderEnemy() {
+      if (enemyState.isDead) return;
+
+      const ex = enemyState.x;
+      const ey = enemyState.y;
+      const hitOffset = enemyState.hitAnim > 0 ? (Math.random() - 0.5) * 12 : 0;
+
+      ctx.save();
+      ctx.translate(ex + hitOffset, ey);
+
+      // 影子
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath();
+      ctx.ellipse(0, enemyState.size * 0.46, enemyState.size * 0.52, 24, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (LEVELS[currentLevelIndex].enemyType === 'giant_cherry_boss') {
+        // === 关卡3: 巨型樱桃炸弹专属绘制 ===
+        renderGiantCherryBoss(ctx);
+      } else if (LEVELS[currentLevelIndex].enemyType === 'zombie_boss_enemy') {
+        // === 关卡4: 终极僵王博士巨型机甲 (12000 HP) 专属绘制 ===
+        renderZombossMech(ctx);
+      } else {
+        // 关卡1与关卡2普通敌人
+        const bob = Math.sin(Date.now() * 0.005) * 8;
+        ctx.translate(0, bob);
+        ctx.font = `${enemyState.size}px sans-serif`;
+        ctx.textAlign = 'center';
+        let icon = LEVELS[currentLevelIndex].enemyType === 'plant_sunflower' ? '🌻' : '🌱';
+        ctx.fillText(icon, 0, 40);
+
+        // 弱点光圈
+        const pulse = Math.sin(Date.now() * 0.01) * 8;
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, enemyState.size * 0.45 + pulse, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    /* 绘制关卡3巨型樱桃炸弹 */
+    function renderGiantCherryBoss(ctx) {
+      const ex = enemyState.x;
+      const ey = enemyState.y;
+      const bob = Math.sin(Date.now() * 0.004) * 8;
+      ctx.translate(0, bob);
+
+      // 1. 顶部绿色连枝与引信
+      ctx.strokeStyle = '#27ae60';
+      ctx.lineWidth = 14;
+      ctx.beginPath();
+      ctx.moveTo(-60, -enemyState.size * 0.3);
+      ctx.quadraticCurveTo(0, -enemyState.size * 0.65, 0, -enemyState.size * 0.45);
+      ctx.quadraticCurveTo(0, -enemyState.size * 0.65, 60, -enemyState.size * 0.3);
+      ctx.stroke();
+
+      // 引信与火花
+      const sparkTime = Date.now() * 0.02;
+      const fuseHeight = Math.max(10, (enemyState.fuseTime / 30.0) * 45);
+      ctx.strokeStyle = '#f39c12';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(0, -enemyState.size * 0.65);
+      ctx.lineTo(0, -enemyState.size * 0.65 - fuseHeight);
+      ctx.stroke();
+
+      ctx.fillStyle = ['#f1c40f', '#e74c3c', '#ffffff'][Math.floor(Math.random() * 3)];
+      ctx.beginPath();
+      ctx.arc(0, -enemyState.size * 0.65 - fuseHeight, 14 + Math.sin(sparkTime)*4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 引信倒计时文字
+      const fuseText = `⚡ 引信倒计时: ${Math.ceil(enemyState.fuseTime)}s`;
+      ctx.font = 'bold 15px sans-serif';
+      const txtW = ctx.measureText(fuseText).width;
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
+      ctx.beginPath();
+      ctx.roundRect(-txtW/2 - 10, -enemyState.size * 0.65 - fuseHeight - 30, txtW + 20, 24, 12);
+      ctx.fill();
+      ctx.strokeStyle = '#ffeaa7';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.fillStyle = enemyState.fuseTime < 10 ? '#ff4757' : '#ffeaa7';
+      ctx.textAlign = 'center';
+      ctx.fillText(fuseText, 0, -enemyState.size * 0.65 - fuseHeight - 14);
+
+      // 2. 双生巨大红色樱桃球体
+      ctx.fillStyle = '#c0392b';
+      ctx.beginPath();
+      ctx.arc(-55, 0, 75, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(55, 0, 75, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 高光
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.beginPath();
+      ctx.arc(-75, -25, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(35, -25, 20, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. 大眼睛
+      enemyState.eyes.forEach((eye, idx) => {
+        if (eye.alive) {
+          const eyeX = eye.x - ex;
+          const eyeY = eye.y - ey;
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(eyeX, eyeY, eye.r, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (eye.dizzy > 0) {
+            eye.dizzy--;
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eye.r * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = '#111';
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eye.r * 0.55, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(eyeX - 4, eyeY - 4, eye.r * 0.22, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      });
+
+      // 4. 外层网格装甲
+      enemyState.grids.forEach(g => {
+        if (g.alive) {
+          ctx.save();
+          ctx.fillStyle = g.color;
+          ctx.strokeStyle = '#ffeaa7';
+          ctx.lineWidth = 2;
+          const rx = g.x - ex;
+          const ry = g.y - ey;
+          ctx.fillRect(rx, ry, g.w, g.h);
+          ctx.strokeRect(rx, ry, g.w, g.h);
+          ctx.fillStyle = 'rgba(255,255,255,0.25)';
+          ctx.fillRect(rx + 4, ry + 4, g.w - 8, 6);
+          ctx.restore();
+        }
+      });
+
+      // 5. 弱点发光光圈指引
+      const pulse = Math.sin(Date.now() * 0.01) * 8;
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      let targetX = 0, targetY = 0;
+      const liveGrid = enemyState.grids.find(g => g.alive);
+      if (liveGrid) {
+        targetX = liveGrid.x - ex + liveGrid.w/2;
+        targetY = liveGrid.y - ey + liveGrid.h/2;
+      } else if (enemyState.eyes.some(e => e.alive)) {
+        const liveEye = enemyState.eyes.find(e => e.alive);
+        targetX = liveEye.x - ex;
+        targetY = liveEye.y - ey;
+      } else {
+        targetX = 0;
+        targetY = -enemyState.size * 0.65;
+      }
+      ctx.arc(targetX, targetY, 32 + pulse, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.font = '36px sans-serif';
+      ctx.fillText('👉', targetX - 45 - pulse, targetY + 12);
+    }
+
+    /* 绘制关卡4终极僵王博士巨型机甲 (Zomboss Mech Boss) */
+    function renderZombossMech(ctx) {
+      const bob = Math.sin(Date.now() * 0.003) * 6;
+      ctx.translate(0, bob);
+
+      // 1. 巨大钢铁机械躯干与下颚
+      ctx.fillStyle = '#4b5563'; // 钢铁灰
+      ctx.strokeStyle = '#9ca3af';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(-90, -70, 180, 150, 24);
+      ctx.fill();
+      ctx.stroke();
+
+      // 装甲钢板纹理与铆钉
+      ctx.fillStyle = '#374151';
+      ctx.fillRect(-75, -50, 150, 40);
+      for (let i = -70; i <= 70; i += 35) {
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.arc(i, -60, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 2. 机械双眼（左眼激光红，右眼冰球蓝）
+      ctx.fillStyle = '#ef4444'; // 红光
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(-40, -25, 20, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#38bdf8'; // 蓝光
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(40, -25, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0; // 重置阴影
+
+      // 3. 巨大机械下巴与排气管
+      ctx.fillStyle = '#1f2937';
+      ctx.fillRect(-60, 30, 120, 40);
+      // 排气喷射火星
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(-70, 50, 10 + Math.random() * 6, 0, Math.PI * 2);
+      ctx.arc(70, 50, 10 + Math.random() * 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4. 顶部透明驾驶舱与大头僵王博士
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, -85, 48, Math.PI, 0);
+      ctx.fill();
+      ctx.stroke();
+
+      // 驾驶舱内的僵王博士 (Zomboss)
+      ctx.fillStyle = '#86efac'; // 僵王大光头
+      ctx.beginPath();
+      ctx.arc(0, -90, 24, 0, Math.PI * 2);
+      ctx.fill();
+      // 僵王大眼睛与白边眼镜
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-8, -92, 8, 0, Math.PI * 2);
+      ctx.arc(8, -92, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.arc(-6, -92, 4, 0, Math.PI * 2);
+      ctx.arc(10, -92, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 5. 机械巨臂与弱点光圈
+      ctx.font = '60px sans-serif';
+      ctx.fillText('🦾', -130, 20);
+      ctx.fillText('🦾', 90, 20);
+
+      const pulse = Math.sin(Date.now() * 0.01) * 10;
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 95 + pulse, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.font = '38px sans-serif';
+      ctx.fillText('👉', -130 - pulse, 10);
+    }
+
+    /* --- 粒子与伤害文字 --- */
+    function renderParticles() {
+      particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    function renderDamageTexts() {
+      damageTexts.forEach(d => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, d.life);
+        ctx.fillStyle = d.color;
+        ctx.font = `900 ${d.size}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 8;
+        ctx.fillText(d.text, d.x, d.y);
+        ctx.restore();
+      });
+    }
+
+    /* --- 战斗 HUD（大血条、连击数） --- */
+    function renderBattleHUD() {
+      const w = canvas.width;
+      const hpBarW = 340;
+      const hpBarH = 26;
+      const hpX = w - hpBarW - 20;
+      const hpY = 22;
+      const pct = Math.max(0, enemyState.hp / enemyState.maxHp);
+
+      // 底槽
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(hpX, hpY, hpBarW, hpBarH, 14);
+      ctx.fill();
+      ctx.stroke();
+
+      // 血量填充（关卡4僵王机甲采用多层炫彩血条）
+      if (LEVELS[currentLevelIndex].enemyType === 'zombie_boss_enemy') {
+        ctx.fillStyle = pct > 0.6 ? '#8b5cf6' : (pct > 0.3 ? '#3b82f6' : '#ef4444');
+      } else {
+        ctx.fillStyle = pct > 0.4 ? '#ff4757' : '#ff3838';
+      }
+      ctx.beginPath();
+      ctx.roundRect(hpX + 2, hpY + 2, (hpBarW - 4) * pct, hpBarH - 4, 12);
+      ctx.fill();
+
+      // 血条名称
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${enemyState.name}: ${Math.max(0, Math.ceil(enemyState.hp))} / ${enemyState.maxHp}`, w - 20, hpY - 7);
+
+      // 连击 Combo 展示
+      if (comboCount > 1) {
+        ctx.fillStyle = '#fde047';
+        ctx.font = '900 26px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`🔥 ${comboCount} 连击 COMBO!`, 20, 42);
+      }
+    }
+  </script>
+</body>
+</html>
