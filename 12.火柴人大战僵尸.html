@@ -1,0 +1,2599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>火柴人大战僵尸 - 5岁小英雄专属超级神作</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      background: #0d0a1a;
+      overflow: hidden;
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game-wrapper {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 1280px;
+      max-height: 780px;
+      background: #110f24;
+      border: 4px solid #facc15;
+      border-radius: 24px;
+      box-shadow: 0 0 45px rgba(250, 204, 21, 0.35), inset 0 0 25px rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 顶部状态与功能栏 */
+    #top-bar {
+      height: 64px;
+      background: linear-gradient(180deg, #24163d 0%, #150c26 100%);
+      border-bottom: 3px solid #facc15;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 50;
+      flex-shrink: 0;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* 阳光/金币容器 */
+    .sun-box {
+      background: linear-gradient(135deg, #fbbf24, #d97706);
+      border: 2px solid #fff;
+      border-radius: 20px;
+      padding: 4px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5);
+      font-size: 20px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .sun-box:hover {
+      transform: scale(1.05);
+    }
+    .sun-icon {
+      font-size: 24px;
+      animation: spinSun 6s linear infinite;
+    }
+    @keyframes spinSun {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* 波次进度条 */
+    .wave-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 4px 12px;
+      border-radius: 18px;
+      border: 1.5px solid #a855f7;
+    }
+    .wave-label {
+      font-size: 13px;
+      font-weight: 800;
+      color: #c084fc;
+    }
+    .wave-bar-bg {
+      width: 160px;
+      height: 14px;
+      background: #2e1065;
+      border-radius: 10px;
+      border: 1.5px solid #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .wave-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #3b82f6, #ec4899);
+      border-radius: 10px;
+      transition: width 0.3s ease;
+    }
+    .boss-icon-flag {
+      position: absolute;
+      right: 2px;
+      top: -2px;
+      font-size: 14px;
+    }
+
+    /* 必杀能量槽 */
+    .energy-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 12px;
+      border-radius: 18px;
+      border: 1.5px solid #ec4899;
+    }
+    .energy-bar-bg {
+      width: 90px;
+      height: 12px;
+      background: #4a044e;
+      border-radius: 8px;
+      border: 1px solid #fff;
+      overflow: hidden;
+    }
+    .energy-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #f43f5e, #fbbf24);
+      box-shadow: 0 0 8px #fbbf24;
+      transition: width 0.2s;
+    }
+
+    /* 顶部右侧控制按钮 */
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .action-btn {
+      background: linear-gradient(135deg, #37285a, #20133b);
+      border: 2px solid #a855f7;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+      transition: all 0.2s;
+    }
+    .action-btn:hover {
+      transform: scale(1.06);
+      border-color: #facc15;
+      box-shadow: 0 3px 12px rgba(250, 204, 21, 0.4);
+    }
+    .action-btn:active { transform: scale(0.95); }
+
+    /* 妈妈在睡觉轻柔模式按钮特别高亮 */
+    .sleep-mode-btn {
+      background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+      border-color: #fff;
+      color: #032b43;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+    }
+    .sleep-mode-btn.active {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: #fff;
+      border-color: #fbbf24;
+      animation: pulseGlow 1.5s infinite alternate;
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 8px #a855f7; }
+      100% { box-shadow: 0 0 20px #fbbf24; }
+    }
+
+    /* 主画布区域 */
+    #canvas-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      background: #141029;
+      cursor: crosshair;
+      overflow: hidden;
+    }
+
+    #gameCanvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* 底部卡片与强化操作栏 */
+    #bottom-bar {
+      height: 110px;
+      background: linear-gradient(180deg, #1b1233 0%, #100a20 100%);
+      border-top: 3px solid #a855f7;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 50;
+      flex-shrink: 0;
+      gap: 12px;
+    }
+
+    /* 火柴人卡片列表容器 */
+    .cards-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      overflow-x: auto;
+      padding: 4px 0;
+    }
+
+    .plant-card {
+      width: 82px;
+      height: 98px;
+      background: linear-gradient(135deg, #2d1d4d, #1a1033);
+      border: 3px solid #7c3aed;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 4px 4px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .plant-card:hover {
+      transform: translateY(-4px) scale(1.05);
+      border-color: #facc15;
+      box-shadow: 0 6px 18px rgba(250, 204, 21, 0.4);
+    }
+    .plant-card.active {
+      border-color: #22c55e;
+      background: linear-gradient(135deg, #166534, #14532d);
+      box-shadow: 0 0 20px #22c55e;
+      transform: scale(1.08);
+    }
+    .plant-card.disabled {
+      filter: grayscale(0.8) opacity(0.55);
+      cursor: not-allowed;
+      border-color: #4b5563;
+    }
+
+    .card-icon {
+      font-size: 32px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+      line-height: 1;
+    }
+    .card-name {
+      font-size: 11px;
+      font-weight: 800;
+      color: #e2e8f0;
+      white-space: nowrap;
+    }
+    .card-cost {
+      background: #f59e0b;
+      color: #000;
+      font-size: 12px;
+      font-weight: 900;
+      border-radius: 10px;
+      padding: 1px 8px;
+      border: 1.5px solid #fff;
+    }
+
+    /* 冷却遮罩 */
+    .cooldown-mask {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 0%;
+      background: rgba(0, 0, 0, 0.7);
+      pointer-events: none;
+      transition: height 0.1s linear;
+    }
+
+    /* 右侧特殊操作区（铲子 + 红蓝荣誉） */
+    .special-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* 铲子拍僵尸按钮 */
+    .shovel-card {
+      width: 78px;
+      height: 98px;
+      background: linear-gradient(135deg, #78350f, #451a03);
+      border: 3px solid #f59e0b;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .shovel-card:hover {
+      transform: scale(1.08);
+      border-color: #fef08a;
+      box-shadow: 0 0 16px #f59e0b;
+    }
+    .shovel-card.active {
+      background: #b45309;
+      border-color: #22c55e;
+      box-shadow: 0 0 22px #22c55e;
+      transform: scale(1.1);
+    }
+    .shovel-badge {
+      font-size: 9px;
+      background: #ef4444;
+      color: #fff;
+      font-weight: 900;
+      padding: 1px 4px;
+      border-radius: 6px;
+    }
+
+    /* 红蓝荣誉强化大按钮 */
+    .honor-btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .honor-btn {
+      width: 130px;
+      height: 44px;
+      border-radius: 14px;
+      border: 2px solid #fff;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .honor-btn:active { transform: scale(0.96); }
+
+    .honor-red {
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      box-shadow: 0 0 12px rgba(220, 38, 38, 0.4);
+    }
+    .honor-red:hover:not(.disabled) {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px #ef4444;
+    }
+
+    .honor-blue {
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      box-shadow: 0 0 12px rgba(37, 99, 235, 0.4);
+    }
+    .honor-blue:hover:not(.disabled) {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px #3b82f6;
+    }
+
+    .honor-btn.disabled {
+      filter: grayscale(0.9) opacity(0.5);
+      cursor: not-allowed;
+    }
+    .honor-btn .cooldown-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 0%;
+      background: rgba(0, 0, 0, 0.6);
+      pointer-events: none;
+    }
+
+    /* 5岁贴心浮动教程与提示气泡 */
+    #guide-bubble {
+      position: absolute;
+      top: 75px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.95);
+      border: 3px solid #fbbf24;
+      border-radius: 20px;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5), 0 0 20px rgba(251, 191, 36, 0.3);
+      z-index: 100;
+      pointer-events: none;
+      animation: floatPrompt 2s ease-in-out infinite;
+      max-width: 90%;
+    }
+    @keyframes floatPrompt {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-6px); }
+    }
+    .guide-icon { font-size: 26px; }
+    .guide-text {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fef08a;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+
+    /* 动态指引手指 */
+    #hand-pointer {
+      position: absolute;
+      font-size: 40px;
+      z-index: 120;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: none;
+      filter: drop-shadow(0 0 10px #facc15);
+      animation: handBounce 1s infinite alternate;
+    }
+    @keyframes handBounce {
+      0% { transform: scale(1) translateY(0); }
+      100% { transform: scale(1.15) translateY(-8px); }
+    }
+
+    /* 胜利 / 升级庆祝全屏弹窗 */
+    #victory-modal, #gameover-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 6, 25, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+
+    .modal-box {
+      background: linear-gradient(135deg, #241442, #160a2b);
+      border: 4px solid #facc15;
+      border-radius: 28px;
+      padding: 30px 40px;
+      text-align: center;
+      box-shadow: 0 0 50px rgba(250, 204, 21, 0.5);
+      max-width: 500px;
+      width: 90%;
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-trophy { font-size: 70px; margin-bottom: 12px; }
+    .modal-title {
+      font-size: 32px;
+      font-weight: 900;
+      color: #fde047;
+      margin-bottom: 10px;
+      text-shadow: 0 3px 10px rgba(0,0,0,0.5);
+    }
+    .modal-desc {
+      font-size: 16px;
+      color: #e2e8f0;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .modal-btn {
+      background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      padding: 12px 32px;
+      border-radius: 30px;
+      border: 2px solid #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.6);
+      transition: transform 0.2s;
+    }
+    .modal-btn:hover { transform: scale(1.08); }
+    .modal-btn.secondary {
+      background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+      margin-left: 10px;
+    }
+
+    /* 救援一键清屏提示 */
+    #rescue-badge {
+      position: absolute;
+      bottom: 120px;
+      right: 20px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: 2px solid #fff;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      z-index: 90;
+      transition: transform 0.2s;
+    }
+    #rescue-badge:hover {
+      transform: scale(1.08);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-wrapper">
+    <!-- 顶部状态栏 -->
+    <div id="top-bar">
+      <div class="top-left">
+        <!-- 阳光金矿收集器 -->
+        <div class="sun-box" id="sun-box" title="点击或吸附金矿石产出阳光">
+          <span class="sun-icon">☀️</span>
+          <span id="sun-count">150</span>
+        </div>
+
+        <!-- 波次进度 -->
+        <div class="wave-container">
+          <span class="wave-label" id="wave-label">🌊 第 1 波</span>
+          <div class="wave-bar-bg">
+            <div class="wave-bar-fill" id="wave-bar-fill"></div>
+            <span class="boss-icon-flag">👑</span>
+          </div>
+        </div>
+
+        <!-- 必杀能量槽 -->
+        <div class="energy-box">
+          <span style="font-size: 14px;">⚡</span>
+          <div class="energy-bar-bg">
+            <div class="energy-bar-fill" id="energy-bar-fill"></div>
+          </div>
+          <span id="energy-text" style="font-size: 11px; font-weight: 800; color: #f472b6;">0%</span>
+        </div>
+      </div>
+
+      <div class="top-right">
+        <!-- 妈妈在睡觉轻柔模式开关 -->
+        <button class="action-btn sleep-mode-btn" id="sleep-mode-btn" onclick="toggleSleepMode()">
+          <span id="sleep-mode-icon">🤫</span>
+          <span id="sleep-mode-text">妈妈在睡觉</span>
+        </button>
+
+        <!-- 声音开关 -->
+        <button class="action-btn" id="mute-btn" onclick="toggleSound()">
+          <span id="sound-icon">🔊</span>
+        </button>
+
+        <!-- 暂停/继续 -->
+        <button class="action-btn" id="pause-btn" onclick="togglePause()">
+          <span>⏸️</span>
+        </button>
+
+        <!-- 重玩 -->
+        <button class="action-btn" onclick="restartGame()">
+          <span>🔄</span>
+        </button>
+
+        <!-- 返回乐园 -->
+        <button class="action-btn" onclick="goHome()">
+          <span>🏠</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 游戏画布 -->
+    <div id="canvas-container">
+      <canvas id="gameCanvas"></canvas>
+
+      <!-- 顶部儿童指引气泡 -->
+      <div id="guide-bubble">
+        <span class="guide-icon" id="guide-icon">💡</span>
+        <span class="guide-text" id="guide-text">点击下方的【⛏️ 黄金矿工】，种在草地上挖黄金产生阳光吧！</span>
+      </div>
+
+      <!-- 动态指引手指 -->
+      <div id="hand-pointer">👉</div>
+
+      <!-- 一键求助火柴人超人援助（针对5岁小朋友零挫败保护） -->
+      <div id="rescue-badge" onclick="callRescueSuperHero()">
+        <span>🦸</span>
+        <span>呼叫火柴人超人支援！</span>
+      </div>
+    </div>
+
+    <!-- 底部卡片与强化操作栏 -->
+    <div id="bottom-bar">
+      <!-- 6大火柴人兵种卡片 -->
+      <div class="cards-wrapper" id="cards-wrapper">
+        <!-- 1. 黄金矿工 -->
+        <div class="plant-card" id="card-miner" onclick="selectPlant('miner')">
+          <span class="card-icon">⛏️</span>
+          <span class="card-name">黄金矿工</span>
+          <span class="card-cost">60</span>
+          <div class="cooldown-mask" id="cd-miner"></div>
+        </div>
+
+        <!-- 2. 弯弓射手 -->
+        <div class="plant-card" id="card-archer" onclick="selectPlant('archer')">
+          <span class="card-icon">🏹</span>
+          <span class="card-name">弯弓射手</span>
+          <span class="card-cost">100</span>
+          <div class="cooldown-mask" id="cd-archer"></div>
+        </div>
+
+        <!-- 3. 西瓜投手 -->
+        <div class="plant-card" id="card-melon" onclick="selectPlant('melon')">
+          <span class="card-icon">🍉</span>
+          <span class="card-name">西瓜投手</span>
+          <span class="card-cost">150</span>
+          <div class="cooldown-mask" id="cd-melon"></div>
+        </div>
+
+        <!-- 4. 能量增幅机器 -->
+        <div class="plant-card" id="card-machine" onclick="selectPlant('machine')">
+          <span class="card-icon">⚡</span>
+          <span class="card-name">增幅机器</span>
+          <span class="card-cost">125</span>
+          <div class="cooldown-mask" id="cd-machine"></div>
+        </div>
+
+        <!-- 5. MC樱桃TNT -->
+        <div class="plant-card" id="card-tnt" onclick="selectPlant('tnt')">
+          <span class="card-icon">💥</span>
+          <span class="card-name">樱桃TNT</span>
+          <span class="card-cost">150</span>
+          <div class="cooldown-mask" id="cd-tnt"></div>
+        </div>
+
+        <!-- 6. 终极大招·终极雷霆射手 -->
+        <div class="plant-card disabled" id="card-ultimate" onclick="useUltimateSkill()" style="border-color: #f43f5e; background: linear-gradient(135deg, #831843, #500724);">
+          <span class="card-icon" style="animation: pulseGlow 1s infinite alternate;">🌟</span>
+          <span class="card-name" style="color: #fbcfe8;">终极大招</span>
+          <span class="card-cost" style="background: #ec4899; color: #fff;">MAX</span>
+          <div class="cooldown-mask" id="cd-ultimate" style="height: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- 右侧特殊操作区 -->
+      <div class="special-actions">
+        <!-- 神力金铲（右键/点击拖拽拍扁僵尸或铲除） -->
+        <div class="shovel-card" id="shovel-btn" onclick="toggleShovel()" title="点击铲子，可铲除火柴人或直接拍扁僵尸！">
+          <span style="font-size: 26px;">🥄</span>
+          <span style="font-size: 11px; font-weight: 800; color: #fde68a;">神力金铲</span>
+          <span class="shovel-badge">打僵尸!</span>
+        </div>
+
+        <!-- 红蓝荣誉强化大按钮 -->
+        <div class="honor-btn-group">
+          <!-- 红色荣誉（狂暴烈焰火箭） -->
+          <button class="honor-btn honor-red" id="honor-red-btn" onclick="triggerHonor('red')">
+            <span>🔥</span>
+            <span>红色狂暴荣誉</span>
+            <div class="cooldown-overlay" id="cd-honor-red"></div>
+          </button>
+
+          <!-- 蓝色荣誉（极速光子护盾） -->
+          <button class="honor-btn honor-blue" id="honor-blue-btn" onclick="triggerHonor('blue')">
+            <span>🛡️</span>
+            <span>蓝色极速荣誉</span>
+            <div class="cooldown-overlay" id="cd-honor-blue"></div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 胜利通关模态窗 -->
+  <div id="victory-modal">
+    <div class="modal-box">
+      <div class="modal-trophy">🏆</div>
+      <div class="modal-title">🎉 大获全胜！小英雄万岁！</div>
+      <div class="modal-desc">
+        你带领火柴人军团成功打败了所有僵尸和机械大Boss！<br>
+        获得了【🌟 火柴人神级大将军】金奖杯！
+      </div>
+      <div>
+        <button class="modal-btn" onclick="continueEndlessMode()">🚀 开启无尽狂欢巡游</button>
+        <button class="modal-btn secondary" onclick="restartGame()">🔄 再玩一局</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 失败关爱弹窗（永远不挫败，一键满血复活） -->
+  <div id="gameover-modal">
+    <div class="modal-box">
+      <div class="modal-trophy">💪</div>
+      <div class="modal-title">🌟 加油！小英雄！</div>
+      <div class="modal-desc">
+        僵尸偷偷溜过来了，不过火柴人超人已经准备好支援你啦！<br>
+        点击下方按钮立即满血复活，横扫全屏！
+      </div>
+      <div>
+        <button class="modal-btn" onclick="reviveAndClear()">⚡ 立即满血复活支援！</button>
+        <button class="modal-btn secondary" onclick="restartGame()">🔄 重新开始</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================
+       1. 全局配置与状态数据
+       ========================================================= */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 棋盘网格参数 (5行 x 9列)
+    const ROWS = 5;
+    const COLS = 9;
+    let gridOffsetX = 120;
+    let gridOffsetY = 80;
+    let cellWidth = 110;
+    let cellHeight = 105;
+
+    // 游戏核心状态
+    let sun = 150;
+    let energy = 0; // 0 ~ 100
+    let currentWave = 1;
+    let maxWaves = 5;
+    let waveProgress = 0;
+    let isGameOver = false;
+    let isVictory = false;
+    let isPaused = false;
+    let isEndless = false;
+    let isSleepMode = false; // 妈妈在睡觉轻柔模式
+    let isMuted = false;
+
+    // 选中操作
+    let selectedPlantType = null;
+    let isShovelActive = false;
+    let mousePos = { x: -100, y: -100, row: -1, col: -1 };
+
+    // 荣誉增益倒计时
+    let redHonorTimer = 0;   // 红色狂暴烈焰剩余时间 (秒)
+    let blueHonorTimer = 0;  // 蓝色极速护盾剩余时间 (秒)
+    let redHonorCooldown = 0;
+    let blueHonorCooldown = 0;
+
+    // 实体集合
+    let plants = [];
+    let zombies = [];
+    let projectiles = [];
+    let particles = [];
+    let sunItems = [];
+    let lawnMowers = []; // 5辆保底火箭推车
+    let floatingTexts = [];
+
+    // 植物配置表
+    const PLANT_CONFIG = {
+      miner:   { name: '黄金矿工', cost: 60,  cd: 4,  hp: 300, icon: '⛏️' },
+      archer:  { name: '弯弓射手', cost: 100, cd: 4,  hp: 300, icon: '🏹' },
+      melon:   { name: '西瓜投手', cost: 150, cd: 6,  hp: 350, icon: '🍉' },
+      machine: { name: '增幅机器', cost: 125, cd: 8,  hp: 400, icon: '⚡' },
+      tnt:     { name: '樱桃TNT',  cost: 150, cd: 12, hp: 1000, icon: '💥' }
+    };
+
+    let plantCooldowns = {
+      miner: 0,
+      archer: 0,
+      melon: 0,
+      machine: 0,
+      tnt: 0
+    };
+
+    /* =========================================================
+       2. Web Audio API 音效合成引擎 (含柔和/正常双模式)
+       ========================================================= */
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+    window.addEventListener('click', initAudio, { once: true });
+    window.addEventListener('touchstart', initAudio, { once: true });
+
+    // 通用音调发生器
+    function playTone(freq, type, duration, volume = 0.2, pitchDecay = 0) {
+      if (isMuted) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+
+        // 如果开启了妈妈在睡觉轻柔模式，音量削减并且过滤刺耳高频
+        let finalVol = isSleepMode ? volume * 0.25 : volume;
+        let finalFreq = isSleepMode ? Math.min(freq, 800) : freq;
+
+        osc.frequency.setValueAtTime(finalFreq, audioCtx.currentTime);
+        if (pitchDecay !== 0) {
+          osc.frequency.exponentialRampToValueAtTime(
+            Math.max(10, finalFreq + pitchDecay),
+            audioCtx.currentTime + duration
+          );
+        }
+
+        gain.gain.setValueAtTime(finalVol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    // 各类特色音效
+    const Sound = {
+      shoot: (isSuper, isFire) => {
+        if (isFire) {
+          playTone(600, 'sawtooth', 0.15, 0.18, -300);
+        } else if (isSuper) {
+          playTone(880, 'sine', 0.12, 0.15, 200);
+        } else {
+          playTone(480, 'triangle', 0.08, 0.12, -150);
+        }
+      },
+      hit: (isMetal) => {
+        if (isMetal) {
+          playTone(900, 'square', 0.06, 0.1, -400);
+        } else {
+          playTone(220, 'sine', 0.08, 0.15, -80);
+        }
+      },
+      coin: () => {
+        playTone(987.77, 'sine', 0.1, 0.25);
+        setTimeout(() => playTone(1318.51, 'sine', 0.18, 0.25), 80);
+      },
+      melonBoom: () => {
+        playTone(180, 'triangle', 0.25, 0.3, -100);
+      },
+      tntExplode: () => {
+        playTone(120, 'sawtooth', 0.6, 0.45, -80);
+        playTone(60, 'sine', 0.8, 0.5, -30);
+      },
+      shovelClang: () => {
+        playTone(520, 'square', 0.18, 0.3, -200);
+      },
+      honorRed: () => {
+        playTone(300, 'sawtooth', 0.4, 0.3, 400);
+        setTimeout(() => playTone(600, 'sawtooth', 0.5, 0.35, 600), 120);
+      },
+      honorBlue: () => {
+        playTone(400, 'sine', 0.4, 0.3, 300);
+        setTimeout(() => playTone(800, 'sine', 0.5, 0.35, 500), 120);
+      },
+      ultimate: () => {
+        for (let i = 0; i < 8; i++) {
+          setTimeout(() => playTone(300 + i * 80, 'sawtooth', 0.12, 0.25, 100), i * 60);
+        }
+      },
+      victory: () => {
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((n, idx) => {
+          setTimeout(() => playTone(n, 'triangle', 0.3, 0.3), idx * 150);
+        });
+      },
+      mower: () => {
+        playTone(150, 'sawtooth', 0.8, 0.35, 200);
+      }
+    };
+
+    /* =========================================================
+       3. 页面大小自适应与网格映射
+       ========================================================= */
+    function resizeCanvas() {
+      const container = document.getElementById('canvas-container');
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+
+      // 动态计算 5x9 网格
+      gridOffsetX = Math.max(90, canvas.width * 0.08);
+      gridOffsetY = 45;
+      cellWidth = (canvas.width - gridOffsetX - 30) / COLS;
+      cellHeight = (canvas.height - gridOffsetY - 20) / ROWS;
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function getGridCell(x, y) {
+      if (x < gridOffsetX || y < gridOffsetY) return { row: -1, col: -1 };
+      const col = Math.floor((x - gridOffsetX) / cellWidth);
+      const row = Math.floor((y - gridOffsetY) / cellHeight);
+      if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
+        return { row, col };
+      }
+      return { row: -1, col: -1 };
+    }
+
+    function getCellCenter(row, col) {
+      return {
+        x: gridOffsetX + col * cellWidth + cellWidth / 2,
+        y: gridOffsetY + row * cellHeight + cellHeight / 2
+      };
+    }
+
+    /* =========================================================
+       4. 实体类定义 (火柴人 / 僵尸 / 投掷物 / 粒子)
+       ========================================================= */
+
+    // 火柴人防守英雄类
+    class StickmanPlant {
+      constructor(type, row, col) {
+        this.type = type;
+        this.row = row;
+        this.col = col;
+        const center = getCellCenter(row, col);
+        this.x = center.x;
+        this.y = center.y;
+        this.hp = PLANT_CONFIG[type].hp;
+        this.maxHp = this.hp;
+        this.timer = 0;
+        this.animFrame = Math.random() * 100;
+        this.tntCountdown = 2.5; // TNT倒计时 2.5秒
+        this.scale = 0.2; // 放置出生动画缩放
+      }
+
+      update(dt) {
+        this.animFrame += dt * 8;
+        if (this.scale < 1) {
+          this.scale = Math.min(1, this.scale + dt * 5);
+        }
+
+        // 矿工火柴人产阳光/金矿
+        if (this.type === 'miner') {
+          this.timer += dt;
+          let interval = blueHonorTimer > 0 ? 3 : 5.5; // 蓝色荣誉加速产金矿
+          if (this.timer >= interval) {
+            this.timer = 0;
+            spawnSun(this.x + (Math.random() * 30 - 15), this.y - 20, 50);
+            createFloatingText("+50 金矿", this.x, this.y - 40, "#fbbf24");
+          }
+        }
+
+        // 弯弓射手火柴人极速连射 (还原38cm极速连射)
+        if (this.type === 'archer') {
+          this.timer += dt;
+          // 判断当前行是否有僵尸
+          const hasZombieInRow = zombies.some(z => z.row === this.row && z.x > this.x && z.hp > 0);
+          let shootInterval = 0.85;
+          if (blueHonorTimer > 0) shootInterval *= 0.5; // 射速翻倍！
+
+          if (hasZombieInRow && this.timer >= shootInterval) {
+            this.timer = 0;
+            const isFire = redHonorTimer > 0;
+            projectiles.push(new Arrow(this.x + 20, this.y - 8, this.row, isFire));
+            Sound.shoot(false, isFire);
+          }
+        }
+
+        // 西瓜投手火柴人 (抛物线大西瓜)
+        if (this.type === 'melon') {
+          this.timer += dt;
+          const targetZombie = zombies.find(z => z.row === this.row && z.x > this.x && z.hp > 0);
+          let melonInterval = 1.8;
+          if (blueHonorTimer > 0) melonInterval *= 0.6;
+
+          if (targetZombie && this.timer >= melonInterval) {
+            this.timer = 0;
+            projectiles.push(new Melon(this.x + 10, this.y - 25, targetZombie));
+            Sound.shoot(true, false);
+          }
+        }
+
+        // MC樱桃TNT火柴人 (自爆清屏)
+        if (this.type === 'tnt') {
+          this.tntCountdown -= dt;
+          if (this.tntCountdown <= 0) {
+            this.explode();
+          }
+        }
+      }
+
+      explode() {
+        this.hp = 0;
+        Sound.tntExplode();
+        triggerScreenShake(15);
+
+        // 3x3 范围大爆炸 (甚至更大范围)
+        for (let i = 0; i < 40; i++) {
+          particles.push(new Particle(this.x, this.y, 'explosion'));
+        }
+
+        zombies.forEach(z => {
+          const dist = Math.hypot(z.x - this.x, z.y - this.y);
+          if (dist < 260) {
+            z.takeDamage(1800);
+          }
+        });
+        createFloatingText("💥 轰！！！", this.x, this.y - 40, "#ef4444", 28);
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(this.scale, this.scale);
+
+        // 蓝色荣誉护盾光环
+        if (blueHonorTimer > 0) {
+          ctx.beginPath();
+          ctx.arc(0, -5, 42, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(59, 130, 246, ${0.4 + Math.sin(this.animFrame) * 0.3})`;
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          ctx.fillStyle = "rgba(59, 130, 246, 0.15)";
+          ctx.fill();
+        }
+
+        // 红色狂暴烈焰光环
+        if (redHonorTimer > 0) {
+          ctx.beginPath();
+          ctx.arc(0, -5, 38, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(239, 68, 68, ${0.5 + Math.cos(this.animFrame * 1.5) * 0.3})`;
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+
+        // 绘制不同兵种火柴人
+        if (this.type === 'miner') {
+          this.drawMinerStickman();
+        } else if (this.type === 'archer') {
+          this.drawArcherStickman();
+        } else if (this.type === 'melon') {
+          this.drawMelonStickman();
+        } else if (this.type === 'machine') {
+          this.drawMachineStickman();
+        } else if (this.type === 'tnt') {
+          this.drawTNTStickman();
+        }
+
+        // 生命值血条 (受损时显示)
+        if (this.hp < this.maxHp) {
+          const bw = 40;
+          const bh = 5;
+          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          ctx.fillRect(-bw/2, -45, bw, bh);
+          ctx.fillStyle = "#22c55e";
+          ctx.fillRect(-bw/2, -45, bw * (this.hp / this.maxHp), bh);
+        }
+
+        ctx.restore();
+      }
+
+      // 1. 黄金矿工火柴人 (戴黄色安全帽，手握镐子挖金矿)
+      drawMinerStickman() {
+        const swing = Math.sin(this.animFrame * 0.8) * 0.5;
+
+        // 地面闪闪发光的金矿石堆
+        ctx.fillStyle = "#d97706";
+        ctx.beginPath();
+        ctx.arc(-15, 20, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#facc15";
+        ctx.beginPath();
+        ctx.arc(-12, 16, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 火柴人身体
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = "round";
+
+        // 躯干
+        ctx.beginPath();
+        ctx.moveTo(0, -10);
+        ctx.lineTo(0, 15);
+        ctx.stroke();
+
+        // 腿
+        ctx.beginPath();
+        ctx.moveTo(0, 15);
+        ctx.lineTo(-8, 30);
+        ctx.moveTo(0, 15);
+        ctx.lineTo(8, 30);
+        ctx.stroke();
+
+        // 头部
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(0, -20, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 黄色安全帽
+        ctx.fillStyle = "#fbbf24";
+        ctx.beginPath();
+        ctx.arc(0, -24, 13, Math.PI, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(-15, -24, 30, 4);
+
+        // 眼睛与可爱表情
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.arc(3, -20, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 手与镐子 (上下挥动)
+        ctx.save();
+        ctx.translate(0, -5);
+        ctx.rotate(swing);
+        ctx.strokeStyle = "#fff";
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-18, 5);
+        ctx.stroke();
+
+        // 镐子
+        ctx.strokeStyle = "#92400e";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(-18, 5);
+        ctx.lineTo(-26, 18);
+        ctx.stroke();
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(-26, 18, 8, 0, Math.PI);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 2. 弯弓射手火柴人 (手握大弓，拉弦张弛，流光箭比豌豆长)
+      drawArcherStickman() {
+        const pull = Math.sin(this.animFrame) * 4;
+
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = "round";
+
+        // 躯干
+        ctx.beginPath();
+        ctx.moveTo(0, -10);
+        ctx.lineTo(0, 15);
+        ctx.stroke();
+
+        // 腿
+        ctx.beginPath();
+        ctx.moveTo(0, 15);
+        ctx.lineTo(-10, 30);
+        ctx.moveTo(0, 15);
+        ctx.lineTo(10, 30);
+        ctx.stroke();
+
+        // 头部
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(0, -20, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 射手帅气羽毛头带
+        ctx.fillStyle = "#38bdf8";
+        ctx.fillRect(-12, -26, 24, 4);
+        ctx.fillStyle = "#ec4899";
+        ctx.beginPath();
+        ctx.moveTo(-10, -26);
+        ctx.lineTo(-16, -38);
+        ctx.lineTo(-8, -26);
+        ctx.fill();
+
+        // 眼睛
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.arc(4, -20, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 手臂与弯弓
+        ctx.strokeStyle = "#d97706";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(18, -6, 22, -Math.PI / 2.5, Math.PI / 2.5);
+        ctx.stroke();
+
+        // 弓弦
+        ctx.strokeStyle = "rgba(255,255,255,0.7)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(22, -26);
+        ctx.lineTo(12 - pull, -6);
+        ctx.lineTo(22, 14);
+        ctx.stroke();
+
+        // 搭在弓上的长箭
+        ctx.strokeStyle = redHonorTimer > 0 ? "#ef4444" : "#38bdf8";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(8 - pull, -6);
+        ctx.lineTo(34 - pull, -6);
+        ctx.stroke();
+      }
+
+      // 3. 西瓜投手火柴人 (双手托举大西瓜，后仰抛掷)
+      drawMelonStickman() {
+        const heave = Math.sin(this.animFrame * 0.6) * 6;
+
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = "round";
+
+        // 躯干
+        ctx.beginPath();
+        ctx.moveTo(0, -10);
+        ctx.lineTo(0, 15);
+        ctx.stroke();
+
+        // 腿
+        ctx.beginPath();
+        ctx.moveTo(0, 15);
+        ctx.lineTo(-8, 30);
+        ctx.moveTo(0, 15);
+        ctx.lineTo(8, 30);
+        ctx.stroke();
+
+        // 头部
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(0, -20, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 搞笑大眼睛
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.arc(4, -20, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 双手高举大西瓜
+        ctx.strokeStyle = "#fff";
+        ctx.beginPath();
+        ctx.moveTo(0, -5);
+        ctx.lineTo(-8, -32 + heave);
+        ctx.moveTo(0, -5);
+        ctx.lineTo(8, -32 + heave);
+        ctx.stroke();
+
+        // 巨型大西瓜
+        ctx.save();
+        ctx.translate(0, -42 + heave);
+        ctx.fillStyle = "#16a34a";
+        ctx.beginPath();
+        ctx.arc(0, 0, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#14532d";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // 西瓜黑色条纹
+        ctx.strokeStyle = "#14532d";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 16, -Math.PI/3, Math.PI/3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, 16, Math.PI*2/3, Math.PI*4/3);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 4. 能量增幅机器火柴人 (特斯拉线圈 + 电浆激光门)
+      drawMachineStickman() {
+        const pulse = Math.sin(this.animFrame * 2) * 4;
+
+        // 火柴人操作工
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-15, -5);
+        ctx.lineTo(-15, 15);
+        ctx.lineTo(-22, 28);
+        ctx.moveTo(-15, 15);
+        ctx.lineTo(-8, 28);
+        ctx.stroke();
+
+        // 头部
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(-15, -15, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 机器基座与能量环门
+        ctx.fillStyle = "#334155";
+        ctx.fillRect(5, 10, 24, 18);
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 4;
+
+        // 电浆光环
+        ctx.beginPath();
+        ctx.ellipse(18, -10, 14 + pulse * 0.5, 30, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(56, 189, 248, ${0.6 + Math.sin(this.animFrame * 3) * 0.3})`;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        ctx.fillStyle = "rgba(56, 189, 248, 0.2)";
+        ctx.fill();
+
+        // 闪电电弧火花
+        if (Math.random() < 0.4) {
+          ctx.strokeStyle = "#fef08a";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(18, -35);
+          ctx.lineTo(24, -10);
+          ctx.lineTo(12, 10);
+          ctx.stroke();
+        }
+      }
+
+      // 5. MC樱桃TNT火柴人 (方块TNT + 双头樱桃帽，引线火花)
+      drawTNTStickman() {
+        const flash = Math.sin(this.animFrame * 6) > 0;
+        const scaleBounce = 1 + (2.5 - this.tntCountdown) * 0.15;
+
+        ctx.save();
+        ctx.scale(scaleBounce, scaleBounce);
+
+        // 身体
+        ctx.strokeStyle = flash ? "#ef4444" : "#fff";
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, 18);
+        ctx.lineTo(-8, 30);
+        ctx.moveTo(0, 18);
+        ctx.lineTo(8, 30);
+        ctx.stroke();
+
+        // 头部
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(0, -10, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 头顶MC方块TNT
+        ctx.fillStyle = flash ? "#ff0000" : "#dc2626";
+        ctx.fillRect(-16, -36, 32, 22);
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(-16, -27, 32, 7);
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 7px sans-serif";
+        ctx.fillText("TNT", -7, -22);
+
+        // 双头樱桃炸弹帽叶
+        ctx.fillStyle = "#15803d";
+        ctx.beginPath();
+        ctx.moveTo(0, -36);
+        ctx.quadraticCurveTo(-10, -48, -12, -45);
+        ctx.quadraticCurveTo(10, -48, 12, -45);
+        ctx.fill();
+
+        // 引线冒火花
+        ctx.strokeStyle = "#d97706";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, -36);
+        ctx.lineTo(5, -46);
+        ctx.stroke();
+
+        // 火星粒子
+        ctx.fillStyle = "#facc15";
+        ctx.beginPath();
+        ctx.arc(5 + Math.random()*4 - 2, -46 + Math.random()*4 - 2, 3, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    // 搞笑幽默僵尸类
+    class StickmanZombie {
+      constructor(type, row) {
+        this.type = type; // 'normal', 'sign', 'cone', 'bucket', 'boss'
+        this.row = row;
+        this.x = canvas.width + 30;
+        this.y = getCellCenter(row, 0).y;
+        this.speed = 18; // 像素/秒
+        this.animFrame = Math.random() * 100;
+        this.eatingTarget = null;
+
+        // 根据类型设置生命值与速度
+        if (type === 'normal') {
+          this.hp = 200;
+          this.maxHp = 200;
+          this.speed = 22;
+        } else if (type === 'sign') { // 端牌子搞笑僵尸
+          this.hp = 260;
+          this.maxHp = 260;
+          this.speed = 28;
+          this.hasSign = true;
+          this.signText = ["我就路过", "西瓜好甜", "别射我!", "给点阳光"][Math.floor(Math.random()*4)];
+        } else if (type === 'cone') { // 路障僵尸
+          this.hp = 420;
+          this.maxHp = 420;
+          this.speed = 20;
+        } else if (type === 'bucket') { // 铁桶僵尸
+          this.hp = 750;
+          this.maxHp = 750;
+          this.speed = 18;
+        } else if (type === 'boss') { // 机械僵尸大王 Boss
+          this.hp = 3500;
+          this.maxHp = 3500;
+          this.speed = 12;
+          this.bossAttackTimer = 0;
+        }
+
+        this.stunTimer = 0; // 铲子敲击眩晕时间
+        this.hitFlashTimer = 0;
+      }
+
+      update(dt) {
+        this.animFrame += dt * 6;
+
+        if (this.hitFlashTimer > 0) this.hitFlashTimer -= dt;
+
+        if (this.stunTimer > 0) {
+          this.stunTimer -= dt;
+          return; // 眩晕中不移动也不啃咬
+        }
+
+        // 检查前方是否有火柴人啃咬
+        const target = plants.find(p => p.row === this.row && Math.abs(p.x - this.x) < 32 && p.hp > 0);
+        if (target) {
+          this.eatingTarget = target;
+          target.hp -= dt * 100; // 啃咬伤害
+          if (target.hp <= 0) {
+            target.hp = 0;
+            this.eatingTarget = null;
+          }
+        } else {
+          this.eatingTarget = null;
+          this.x -= this.speed * dt;
+        }
+
+        // Boss 特殊技能：召唤小僵尸
+        if (this.type === 'boss') {
+          this.bossAttackTimer += dt;
+          if (this.bossAttackTimer >= 8) {
+            this.bossAttackTimer = 0;
+            spawnMiniZombies(this.row);
+            createFloatingText("🤖 机械大王召唤小兵！", this.x - 40, this.y - 60, "#ef4444", 20);
+          }
+        }
+
+        // 检查是否触发保底小推车
+        const mower = lawnMowers.find(m => m.row === this.row && !m.isTriggered && this.x <= m.x + 30);
+        if (mower) {
+          mower.trigger();
+        }
+
+        // 突破底线触发游戏失败关怀（绝不挫败）
+        if (this.x < gridOffsetX - 40 && !isGameOver && !isVictory) {
+          triggerFriendlyGameOver();
+        }
+      }
+
+      takeDamage(amount, isMetalSound = false) {
+        this.hp -= amount;
+        this.hitFlashTimer = 0.1;
+        Sound.hit(isMetalSound || this.type === 'bucket');
+
+        // 端牌子僵尸牌子被打碎掉落
+        if (this.hasSign && this.hp < this.maxHp * 0.5) {
+          this.hasSign = false;
+          createFloatingText("牌子碎啦!", this.x, this.y - 30, "#fbbf24");
+          for (let i = 0; i < 8; i++) {
+            particles.push(new Particle(this.x, this.y, 'wood'));
+          }
+        }
+
+        // 死亡击杀
+        if (this.hp <= 0) {
+          this.hp = 0;
+          addEnergy(this.type === 'boss' ? 50 : 8);
+          // 产生金币掉落
+          if (Math.random() < 0.4 || this.type === 'boss') {
+            spawnSun(this.x, this.y, this.type === 'boss' ? 100 : 25);
+          }
+          // 死亡粒子
+          for (let i = 0; i < 15; i++) {
+            particles.push(new Particle(this.x, this.y, 'zombie_dust'));
+          }
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        const wobble = Math.sin(this.animFrame) * 4;
+        const legSwing = Math.sin(this.animFrame) * 12;
+
+        // 受击闪白
+        if (this.hitFlashTimer > 0) {
+          ctx.strokeStyle = "#fff";
+        } else {
+          ctx.strokeStyle = "#84cc16"; // 涂鸦僵尸绿
+        }
+        ctx.lineWidth = this.type === 'boss' ? 6 : 3.5;
+        ctx.lineCap = "round";
+
+        // Boss 巨大化
+        if (this.type === 'boss') {
+          ctx.scale(1.5, 1.5);
+        }
+
+        // 躯干
+        ctx.beginPath();
+        ctx.moveTo(0, -10 + wobble * 0.3);
+        ctx.lineTo(0, 15 + wobble * 0.3);
+        ctx.stroke();
+
+        // 腿部摇晃行走
+        ctx.beginPath();
+        ctx.moveTo(0, 15 + wobble * 0.3);
+        ctx.lineTo(-8 + legSwing * 0.5, 32);
+        ctx.moveTo(0, 15 + wobble * 0.3);
+        ctx.lineTo(8 - legSwing * 0.5, 32);
+        ctx.stroke();
+
+        // 头部
+        ctx.fillStyle = this.hitFlashTimer > 0 ? "#fff" : "#4ade80";
+        ctx.beginPath();
+        ctx.arc(0, -22 + wobble * 0.3, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 僵尸呆萌眼睛
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.arc(-4, -22 + wobble * 0.3, 2, 0, Math.PI * 2);
+        ctx.arc(3, -22 + wobble * 0.3, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 手臂前伸
+        ctx.beginPath();
+        ctx.moveTo(0, -5 + wobble * 0.3);
+        ctx.lineTo(-18, -8 + wobble);
+        ctx.stroke();
+
+        // 端牌子搞笑僵尸：手持滑稽木牌
+        if (this.type === 'sign' && this.hasSign) {
+          ctx.fillStyle = "#b45309";
+          ctx.fillRect(-38, -35 + wobble, 42, 24);
+          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(-38, -35 + wobble, 42, 24);
+
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 9px sans-serif";
+          ctx.fillText(this.signText, -36, -20 + wobble);
+        }
+
+        // 路障帽子
+        if (this.type === 'cone' && this.hp > 150) {
+          ctx.fillStyle = "#f97316";
+          ctx.beginPath();
+          ctx.moveTo(0, -42 + wobble * 0.3);
+          ctx.lineTo(-12, -24 + wobble * 0.3);
+          ctx.lineTo(12, -24 + wobble * 0.3);
+          ctx.fill();
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(-7, -32 + wobble * 0.3, 14, 4);
+        }
+
+        // 铁桶帽子
+        if (this.type === 'bucket' && this.hp > 200) {
+          ctx.fillStyle = "#94a3b8";
+          ctx.fillRect(-12, -38 + wobble * 0.3, 24, 16);
+          ctx.strokeStyle = "#475569";
+          ctx.strokeRect(-12, -38 + wobble * 0.3, 24, 16);
+        }
+
+        // Boss 机械装备 (红眼 + 齿轮烟囱)
+        if (this.type === 'boss') {
+          ctx.fillStyle = "#ef4444";
+          ctx.beginPath();
+          ctx.arc(-4, -22 + wobble * 0.3, 3, 0, Math.PI * 2);
+          ctx.arc(4, -22 + wobble * 0.3, 3, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 机械肩甲
+          ctx.fillStyle = "#64748b";
+          ctx.fillRect(-16, -14 + wobble * 0.3, 8, 8);
+          ctx.fillRect(8, -14 + wobble * 0.3, 8, 8);
+        }
+
+        // 眩晕星星
+        if (this.stunTimer > 0) {
+          ctx.fillStyle = "#facc15";
+          for (let i = 0; i < 3; i++) {
+            const starAngle = this.animFrame * 2 + (i * Math.PI * 2) / 3;
+            const sx = Math.cos(starAngle) * 16;
+            const sy = Math.sin(starAngle) * 8 - 36;
+            ctx.fillText("⭐", sx - 5, sy);
+          }
+        }
+
+        // 血条
+        if (this.hp < this.maxHp) {
+          const bw = 36;
+          const bh = 4;
+          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          ctx.fillRect(-bw/2, -42, bw, bh);
+          ctx.fillStyle = "#ef4444";
+          ctx.fillRect(-bw/2, -42, bw * (this.hp / this.maxHp), bh);
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // 流光长箭投射物类 (比豌豆更长，呼应小朋友的“箭比豌豆长”)
+    class Arrow {
+      constructor(x, y, row, isFire = false) {
+        this.x = x;
+        this.y = y;
+        this.row = row;
+        this.isFire = isFire;
+        this.isSuper = false; // 是否经过增幅机器变身电浆箭
+        this.speed = 520;
+        this.length = 36; // 超长流光箭身
+        this.damage = isFire ? 55 : 30;
+      }
+
+      update(dt) {
+        this.x += this.speed * dt;
+
+        // 检查穿过增幅机器
+        if (!this.isSuper) {
+          const machine = plants.find(p => p.type === 'machine' && p.row === this.row && Math.abs(p.x - this.x) < 20);
+          if (machine) {
+            this.isSuper = true;
+            this.damage *= 2.2; // 增幅机器伤害翻倍并穿透
+            this.speed = 680;
+            createFloatingText("⚡ 能量暴击!", this.x, this.y - 15, "#38bdf8", 12);
+          }
+        }
+
+        // 碰撞僵尸检测
+        for (let z of zombies) {
+          if (z.row === this.row && z.hp > 0 && Math.abs(z.x - this.x) < 25) {
+            z.takeDamage(this.damage);
+            for (let i = 0; i < 4; i++) {
+              particles.push(new Particle(this.x, this.y, this.isFire ? 'fire_spark' : 'arrow_spark'));
+            }
+            if (!this.isSuper) {
+              return true; // 销毁箭矢
+            }
+          }
+        }
+        return this.x > canvas.width + 50;
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // 箭身流光
+        ctx.lineWidth = this.isSuper ? 5 : 3;
+        ctx.lineCap = "round";
+
+        if (this.isFire) {
+          ctx.strokeStyle = "#ef4444";
+          ctx.shadowColor = "#f97316";
+          ctx.shadowBlur = 10;
+        } else if (this.isSuper) {
+          ctx.strokeStyle = "#38bdf8";
+          ctx.shadowColor = "#0ea5e9";
+          ctx.shadowBlur = 12;
+        } else {
+          ctx.strokeStyle = "#fef08a";
+          ctx.shadowColor = "#facc15";
+          ctx.shadowBlur = 6;
+        }
+
+        // 绘制长箭
+        ctx.beginPath();
+        ctx.moveTo(-this.length, 0);
+        ctx.lineTo(0, 0);
+        ctx.stroke();
+
+        // 箭头
+        ctx.beginPath();
+        ctx.moveTo(-6, -4);
+        ctx.lineTo(0, 0);
+        ctx.lineTo(-6, 4);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
+    // 抛物线大西瓜类 (砸中爆汁溅射)
+    class Melon {
+      constructor(startX, startY, targetZombie) {
+        this.x = startX;
+        this.y = startY;
+        this.startX = startX;
+        this.startY = startY;
+        this.targetX = targetZombie ? targetZombie.x : startX + 300;
+        this.targetY = targetZombie ? targetZombie.y : startY;
+        this.row = targetZombie ? targetZombie.row : 0;
+        this.progress = 0;
+        this.rotation = 0;
+        this.damage = 110;
+      }
+
+      update(dt) {
+        this.progress += dt * 1.6;
+        this.rotation += dt * 8;
+        const t = this.progress;
+
+        this.x = this.startX + (this.targetX - this.startX) * t;
+        // 抛物线高度
+        const arcHeight = 110;
+        this.y = this.startY + (this.targetY - this.startY) * t - 4 * arcHeight * t * (1 - t);
+
+        if (this.progress >= 1) {
+          this.explode();
+          return true;
+        }
+        return false;
+      }
+
+      explode() {
+        Sound.melonBoom();
+        // 范围伤害溅射
+        zombies.forEach(z => {
+          if (Math.hypot(z.x - this.targetX, z.y - this.targetY) < 120) {
+            z.takeDamage(this.damage);
+          }
+        });
+        // 喷射西瓜汁和果肉粒子
+        for (let i = 0; i < 20; i++) {
+          particles.push(new Particle(this.targetX, this.targetY, 'melon_juice'));
+        }
+        createFloatingText("🍉 啪叽！", this.targetX, this.targetY - 30, "#22c55e", 20);
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+
+        ctx.fillStyle = "#16a34a";
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#14532d";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
+    // 掉落阳光/金矿石
+    class SunItem {
+      constructor(x, y, value = 25) {
+        this.x = x;
+        this.y = y;
+        this.targetY = y + Math.random() * 40 + 20;
+        this.value = value;
+        this.lifetime = 10;
+        this.scale = 0.2;
+        this.rotation = 0;
+        this.isCollected = false;
+      }
+
+      update(dt) {
+        this.rotation += dt * 2;
+        if (this.scale < 1) this.scale += dt * 4;
+
+        if (!this.isCollected) {
+          if (this.y < this.targetY) this.y += dt * 30;
+          this.lifetime -= dt;
+
+          // 鼠标悬停自动吸附磁力 (5岁小朋友贴心辅正)
+          const distToMouse = Math.hypot(this.x - mousePos.x, this.y - mousePos.y);
+          if (distToMouse < 60) {
+            this.collect();
+          }
+        } else {
+          // 飞向顶部金矿收集框
+          const targetBox = { x: 100, y: 32 };
+          this.x += (targetBox.x - this.x) * dt * 10;
+          this.y += (targetBox.y - this.y) * dt * 10;
+
+          if (Math.hypot(this.x - targetBox.x, this.y - targetBox.y) < 25) {
+            sun += this.value;
+            updateUI();
+            Sound.coin();
+            createFloatingText(`+${this.value}`, 120, 45, "#fbbf24", 18);
+            return true; // 移除
+          }
+        }
+
+        return this.lifetime <= 0;
+      }
+
+      collect() {
+        if (!this.isCollected) {
+          this.isCollected = true;
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(this.scale, this.scale);
+
+        // 阳光金币光环
+        ctx.rotate(this.rotation);
+        ctx.fillStyle = "rgba(251, 191, 36, 0.4)";
+        ctx.beginPath();
+        ctx.arc(0, 0, 24, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#facc15";
+        ctx.beginPath();
+        ctx.arc(0, 0, 16, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.fillStyle = "#d97706";
+        ctx.font = "bold 14px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("☀️", 0, 0);
+
+        ctx.restore();
+      }
+    }
+
+    // 保底火箭滑板小推车 (横扫一行僵尸，零挫败)
+    class LawnMower {
+      constructor(row) {
+        this.row = row;
+        this.x = gridOffsetX - 45;
+        this.y = getCellCenter(row, 0).y;
+        this.isTriggered = false;
+        this.speed = 550;
+      }
+
+      trigger() {
+        if (!this.isTriggered) {
+          this.isTriggered = true;
+          Sound.mower();
+          createFloatingText("🚀 火箭车全行横扫！", this.x + 80, this.y - 20, "#38bdf8");
+        }
+      }
+
+      update(dt) {
+        if (this.isTriggered) {
+          this.x += this.speed * dt;
+          // 碾压该行所有僵尸
+          zombies.forEach(z => {
+            if (z.row === this.row && Math.abs(z.x - this.x) < 40 && z.hp > 0) {
+              z.takeDamage(9999);
+            }
+          });
+          // 喷射火焰粒子
+          particles.push(new Particle(this.x - 20, this.y, 'fire_spark'));
+        }
+        return this.x > canvas.width + 100;
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // 火箭滑板车
+        ctx.fillStyle = "#ef4444";
+        ctx.fillRect(-20, 10, 40, 12);
+        ctx.fillStyle = "#38bdf8";
+        ctx.beginPath();
+        ctx.arc(15, 16, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 轮子
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.arc(-12, 22, 6, 0, Math.PI * 2);
+        ctx.arc(12, 22, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 火柴人标志
+        ctx.fillStyle = "#fff";
+        ctx.font = "14px sans-serif";
+        ctx.fillText("🚀", -8, 8);
+
+        ctx.restore();
+      }
+    }
+
+    // 粒子系统
+    class Particle {
+      constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.vx = (Math.random() - 0.5) * 160;
+        this.vy = (Math.random() - 0.5) * 160;
+        this.lifetime = 0.6 + Math.random() * 0.4;
+        this.maxLife = this.lifetime;
+        this.size = Math.random() * 6 + 3;
+
+        if (type === 'explosion') {
+          this.vx *= 2.5;
+          this.vy *= 2.5;
+          this.size = Math.random() * 14 + 6;
+        }
+      }
+
+      update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.lifetime -= dt;
+        return this.lifetime <= 0;
+      }
+
+      draw() {
+        ctx.save();
+        const alpha = Math.max(0, this.lifetime / this.maxLife);
+
+        if (this.type === 'melon_juice') {
+          ctx.fillStyle = `rgba(239, 68, 68, ${alpha})`;
+        } else if (this.type === 'fire_spark') {
+          ctx.fillStyle = `rgba(249, 115, 22, ${alpha})`;
+        } else if (this.type === 'arrow_spark') {
+          ctx.fillStyle = `rgba(56, 189, 248, ${alpha})`;
+        } else if (this.type === 'explosion') {
+          ctx.fillStyle = `rgba(250, 204, 21, ${alpha})`;
+        } else {
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        }
+
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // 漂浮文字提示
+    function createFloatingText(text, x, y, color = "#fff", size = 16) {
+      floatingTexts.push({
+        text, x, y, color, size,
+        lifetime: 1.2,
+        maxLife: 1.2
+      });
+    }
+
+    /* =========================================================
+       5. 游戏主循环与波次控制
+       ========================================================= */
+    let lastTime = performance.now();
+    let zombieSpawnTimer = 0;
+    let waveTimer = 0;
+    let screenShakeAmount = 0;
+
+    function initGame() {
+      resizeCanvas();
+      sun = 150;
+      energy = 0;
+      currentWave = 1;
+      waveProgress = 0;
+      isGameOver = false;
+      isVictory = false;
+      isEndless = false;
+
+      plants = [];
+      zombies = [];
+      projectiles = [];
+      particles = [];
+      sunItems = [];
+      lawnMowers = [];
+      floatingTexts = [];
+
+      for (let r = 0; r < ROWS; r++) {
+        lawnMowers.push(new LawnMower(r));
+      }
+
+      updateUI();
+      showGuide("点击下方的【⛏️ 黄金矿工】，种在草地上挖黄金产生阳光吧！", "⛏️");
+      positionGuideHand('card-miner');
+    }
+
+    function triggerScreenShake(amount) {
+      screenShakeAmount = amount;
+    }
+
+    function gameLoop(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
+      if (!isPaused && !isGameOver) {
+        updateGame(dt);
+      }
+
+      renderGame();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function updateGame(dt) {
+      // 屏幕震动衰减
+      if (screenShakeAmount > 0) {
+        screenShakeAmount = Math.max(0, screenShakeAmount - dt * 25);
+      }
+
+      // 荣誉强化计时
+      if (redHonorTimer > 0) redHonorTimer -= dt;
+      if (blueHonorTimer > 0) blueHonorTimer -= dt;
+      if (redHonorCooldown > 0) redHonorCooldown -= dt;
+      if (blueHonorCooldown > 0) blueHonorCooldown -= dt;
+
+      // 技能冷却
+      for (let key in plantCooldowns) {
+        if (plantCooldowns[key] > 0) {
+          plantCooldowns[key] -= dt;
+        }
+      }
+
+      // 僵尸生成逻辑
+      zombieSpawnTimer += dt;
+      let spawnRate = Math.max(2.5, 7.5 - currentWave * 1.1);
+      if (isEndless) spawnRate = 2.0;
+
+      if (zombieSpawnTimer >= spawnRate) {
+        zombieSpawnTimer = 0;
+        spawnRandomZombie();
+      }
+
+      // 波次推进
+      waveTimer += dt;
+      waveProgress = Math.min(100, (waveTimer / 45) * 100);
+      if (waveProgress >= 100 && !isVictory && !isEndless) {
+        if (currentWave < maxWaves) {
+          currentWave++;
+          waveTimer = 0;
+          waveProgress = 0;
+          createFloatingText(`🌊 第 ${currentWave} 波僵尸袭来！`, canvas.width / 2, canvas.height / 2, "#ef4444", 28);
+          Sound.victory();
+
+          if (currentWave === 2) {
+            showGuide("新火柴人加入！试试【🍉 西瓜投手】和【⚡ 增幅机器】吧！", "🍉");
+          } else if (currentWave === 3) {
+            showGuide("解锁【💥 樱桃TNT】，引爆大范围僵尸！", "💥");
+          } else if (currentWave === 4) {
+            showGuide("僵尸变多啦！快按下方的【红色/蓝色荣誉按钮】强化全军！", "🔥");
+          } else if (currentWave === 5) {
+            // Boss 波！
+            spawnBossZombie();
+            showGuide("⚠️ 机械僵尸大王 Boss 登场！释放【🌟 终极大招】消灭它！", "🤖");
+          }
+        } else {
+          // 通关胜利！
+          triggerVictory();
+        }
+      }
+
+      // 更新实体
+      plants.forEach(p => p.update(dt));
+      plants = plants.filter(p => p.hp > 0);
+
+      zombies.forEach(z => z.update(dt));
+      zombies = zombies.filter(z => z.hp > 0);
+
+      projectiles = projectiles.filter(p => !p.update(dt));
+      particles = particles.filter(p => !p.update(dt));
+      sunItems = sunItems.filter(s => !s.update(dt));
+      lawnMowers = lawnMowers.filter(m => !m.update(dt));
+
+      floatingTexts = floatingTexts.filter(t => {
+        t.y -= dt * 30;
+        t.lifetime -= dt;
+        return t.lifetime > 0;
+      });
+
+      updateCooldownUI();
+    }
+
+    function spawnRandomZombie() {
+      const row = Math.floor(Math.random() * ROWS);
+      let types = ['normal'];
+      if (currentWave >= 2) types.push('sign');
+      if (currentWave >= 3) types.push('cone');
+      if (currentWave >= 4) types.push('bucket');
+
+      const chosen = types[Math.floor(Math.random() * types.length)];
+      zombies.push(new StickmanZombie(chosen, row));
+    }
+
+    function spawnMiniZombies(bossRow) {
+      for (let r = 0; r < ROWS; r++) {
+        if (Math.random() < 0.6) {
+          zombies.push(new StickmanZombie('normal', r));
+        }
+      }
+    }
+
+    function spawnBossZombie() {
+      zombies.push(new StickmanZombie('boss', 2)); // 放在中间行
+    }
+
+    function spawnSun(x, y, val = 25) {
+      sunItems.push(new SunItem(x, y, val));
+    }
+
+    function addEnergy(amount) {
+      energy = Math.min(100, energy + amount);
+      const fill = document.getElementById('energy-bar-fill');
+      const text = document.getElementById('energy-text');
+      if (fill && text) {
+        fill.style.width = `${energy}%`;
+        text.innerText = `${Math.floor(energy)}%`;
+      }
+      const ultCard = document.getElementById('card-ultimate');
+      if (energy >= 100) {
+        ultCard.classList.remove('disabled');
+        document.getElementById('cd-ultimate').style.height = "0%";
+      }
+    }
+
+    /* =========================================================
+       6. 渲染引擎与特效
+       ========================================================= */
+    function renderGame() {
+      ctx.save();
+
+      // 屏幕震动
+      if (screenShakeAmount > 0) {
+        const shakeX = (Math.random() - 0.5) * screenShakeAmount;
+        const shakeY = (Math.random() - 0.5) * screenShakeAmount;
+        ctx.translate(shakeX, shakeY);
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. 绘制草地网格背景 (双色草坪 + 发光格子)
+      drawLawnGrid();
+
+      // 2. 绘制放置预览光标
+      drawPlacementPreview();
+
+      // 3. 绘制实体
+      lawnMowers.forEach(m => m.draw());
+      plants.forEach(p => p.draw());
+      zombies.forEach(z => z.draw());
+      projectiles.forEach(p => p.draw());
+      particles.forEach(p => p.draw());
+      sunItems.forEach(s => s.draw());
+
+      // 4. 绘制漂浮文字
+      floatingTexts.forEach(t => {
+        ctx.save();
+        ctx.font = `bold ${t.size}px sans-serif`;
+        ctx.fillStyle = t.color;
+        ctx.shadowColor = "rgba(0,0,0,0.8)";
+        ctx.shadowBlur = 6;
+        ctx.fillText(t.text, t.x, t.y);
+        ctx.restore();
+      });
+
+      // 5. 铲子跟随鼠标
+      if (isShovelActive) {
+        ctx.font = "32px sans-serif";
+        ctx.fillText("🥄", mousePos.x - 16, mousePos.y + 16);
+      }
+
+      ctx.restore();
+    }
+
+    function drawLawnGrid() {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const x = gridOffsetX + c * cellWidth;
+          const y = gridOffsetY + r * cellHeight;
+
+          // 交替草坪绿
+          ctx.fillStyle = (r + c) % 2 === 0 ? "#1e293b" : "#172033";
+          ctx.fillRect(x + 2, y + 2, cellWidth - 4, cellHeight - 4);
+
+          // 草地网格虚线边框
+          ctx.strokeStyle = "rgba(168, 85, 247, 0.15)";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x + 2, y + 2, cellWidth - 4, cellHeight - 4);
+        }
+      }
+
+      // 左侧防御边界线
+      ctx.strokeStyle = "#facc15";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(gridOffsetX, gridOffsetY);
+      ctx.lineTo(gridOffsetX, gridOffsetY + ROWS * cellHeight);
+      ctx.stroke();
+    }
+
+    function drawPlacementPreview() {
+      if (selectedPlantType && mousePos.row >= 0 && mousePos.col >= 0) {
+        const center = getCellCenter(mousePos.row, mousePos.col);
+        const hasPlant = plants.some(p => p.row === mousePos.row && p.col === mousePos.col);
+
+        ctx.save();
+        ctx.fillStyle = hasPlant ? "rgba(239, 68, 68, 0.25)" : "rgba(34, 197, 94, 0.25)";
+        ctx.strokeStyle = hasPlant ? "#ef4444" : "#22c55e";
+        ctx.lineWidth = 2;
+        const x = gridOffsetX + mousePos.col * cellWidth;
+        const y = gridOffsetY + mousePos.row * cellHeight;
+        ctx.fillRect(x + 4, y + 4, cellWidth - 8, cellHeight - 8);
+        ctx.strokeRect(x + 4, y + 4, cellWidth - 8, cellHeight - 8);
+
+        // 半透明火柴人预览
+        ctx.globalAlpha = 0.6;
+        ctx.font = "32px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(PLANT_CONFIG[selectedPlantType].icon, center.x, center.y);
+        ctx.restore();
+      }
+    }
+
+    /* =========================================================
+       7. 玩家交互与事件响应 (鼠标/触控/键盘)
+       ========================================================= */
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mousePos.x = e.clientX - rect.left;
+      mousePos.y = e.clientY - rect.top;
+      const cell = getGridCell(mousePos.x, mousePos.y);
+      mousePos.row = cell.row;
+      mousePos.col = cell.col;
+    });
+
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      // 1. 优先检测点击收集掉落金币
+      for (let s of sunItems) {
+        if (Math.hypot(s.x - clickX, s.y - clickY) < 35) {
+          s.collect();
+          return;
+        }
+      }
+
+      // 2. 铲子拍僵尸机制 (拖到僵尸上“哐当！”敲击敲晕)
+      if (isShovelActive) {
+        // 查找点击位置的僵尸
+        const clickedZombie = zombies.find(z => Math.hypot(z.x - clickX, z.y - clickY) < 45 && z.hp > 0);
+        if (clickedZombie) {
+          clickedZombie.stunTimer = 3.0; // 眩晕3秒
+          clickedZombie.takeDamage(120, true);
+          Sound.shovelClang();
+          createFloatingText("🥄 哐当！拍扁！", clickX, clickY - 20, "#f59e0b", 22);
+          for (let i = 0; i < 10; i++) {
+            particles.push(new Particle(clickX, clickY, 'arrow_spark'));
+          }
+          isShovelActive = false;
+          updateShovelUI();
+          return;
+        }
+
+        // 铲除火柴人
+        const cell = getGridCell(clickX, clickY);
+        if (cell.row >= 0 && cell.col >= 0) {
+          const plantIndex = plants.findIndex(p => p.row === cell.row && p.col === cell.col);
+          if (plantIndex !== -1) {
+            plants.splice(plantIndex, 1);
+            Sound.shovelClang();
+            createFloatingText("已铲除", clickX, clickY, "#94a3b8");
+          }
+        }
+        isShovelActive = false;
+        updateShovelUI();
+        return;
+      }
+
+      // 3. 放置火柴人
+      if (selectedPlantType) {
+        const cell = getGridCell(clickX, clickY);
+        if (cell.row >= 0 && cell.col >= 0) {
+          const hasPlant = plants.some(p => p.row === cell.row && p.col === cell.col);
+          const cfg = PLANT_CONFIG[selectedPlantType];
+
+          if (!hasPlant && sun >= cfg.cost && plantCooldowns[selectedPlantType] <= 0) {
+            sun -= cfg.cost;
+            plantCooldowns[selectedPlantType] = cfg.cd;
+            plants.push(new StickmanPlant(selectedPlantType, cell.row, cell.col));
+            Sound.shoot(true, false);
+            updateUI();
+
+            createFloatingText(`+${cfg.name}`, clickX, clickY - 20, "#22c55e");
+            selectedPlantType = null;
+            updateCardUI();
+            hideGuideHand();
+          }
+        }
+      }
+    });
+
+    // 右键快速激活铲子打僵尸
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      toggleShovel();
+    });
+
+    // 选择火柴人卡片
+    function selectPlant(type) {
+      if (plantCooldowns[type] > 0 || sun < PLANT_CONFIG[type].cost) {
+        return;
+      }
+      if (selectedPlantType === type) {
+        selectedPlantType = null;
+      } else {
+        selectedPlantType = type;
+        isShovelActive = false;
+        updateShovelUI();
+      }
+      updateCardUI();
+    }
+
+    // 铲子开关
+    function toggleShovel() {
+      isShovelActive = !isShovelActive;
+      selectedPlantType = null;
+      updateCardUI();
+      updateShovelUI();
+      if (isShovelActive) {
+        showGuide("点击僵尸头上可【哐当！】敲晕打扁，或点击火柴人铲除！", "🥄");
+      }
+    }
+
+    function updateShovelUI() {
+      const btn = document.getElementById('shovel-btn');
+      if (isShovelActive) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+
+    // 红色/蓝色荣誉大招强化
+    function triggerHonor(color) {
+      if (color === 'red') {
+        if (redHonorCooldown > 0) return;
+        redHonorTimer = 5.0; // 5秒狂暴烈焰
+        redHonorCooldown = 25.0;
+        Sound.honorRed();
+        triggerScreenShake(8);
+        createFloatingText("🔥 红色荣誉！狂暴烈焰弓箭大齐射！", canvas.width / 2, canvas.height / 2 - 40, "#ef4444", 26);
+      } else if (color === 'blue') {
+        if (blueHonorCooldown > 0) return;
+        blueHonorTimer = 6.0; // 6秒极速护盾
+        blueHonorCooldown = 25.0;
+        Sound.honorBlue();
+        createFloatingText("🛡️ 蓝色荣誉！全军光子护盾+射速狂飙！", canvas.width / 2, canvas.height / 2 - 40, "#3b82f6", 26);
+      }
+    }
+
+    // 终极大招·终极雷霆加特林射手
+    function useUltimateSkill() {
+      if (energy < 100) return;
+      energy = 0;
+      addEnergy(0);
+      Sound.ultimate();
+      triggerScreenShake(20);
+
+      createFloatingText("🌟 终极大招！雷霆战神全屏横扫！", canvas.width / 2, canvas.height / 2, "#fbbf24", 32);
+
+      // 全屏飞弹狂轰所有僵尸
+      for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+          const rx = Math.random() * canvas.width;
+          const ry = Math.random() * canvas.height;
+          particles.push(new Particle(rx, ry, 'explosion'));
+        }, i * 30);
+      }
+
+      zombies.forEach(z => z.takeDamage(1200));
+    }
+
+    // 妈妈在睡觉轻柔模式切换
+    function toggleSleepMode() {
+      isSleepMode = !isSleepMode;
+      const btn = document.getElementById('sleep-mode-btn');
+      const icon = document.getElementById('sleep-mode-icon');
+      const text = document.getElementById('sleep-mode-text');
+
+      if (isSleepMode) {
+        btn.classList.add('active');
+        icon.innerText = "😴";
+        text.innerText = "妈妈在睡觉(轻柔)";
+        createFloatingText("🤫 已开启轻柔微声模式，不吵妈妈睡觉~", canvas.width / 2, 80, "#38bdf8", 18);
+      } else {
+        btn.classList.remove('active');
+        icon.innerText = "🤫";
+        text.innerText = "妈妈在睡觉";
+        createFloatingText("🔊 已切换为动感音效模式！", canvas.width / 2, 80, "#facc15", 18);
+      }
+    }
+
+    function toggleSound() {
+      isMuted = !isMuted;
+      document.getElementById('sound-icon').innerText = isMuted ? "🔇" : "🔊";
+    }
+
+    function togglePause() {
+      isPaused = !isPaused;
+      document.getElementById('pause-btn').innerHTML = isPaused ? "<span>▶️</span>" : "<span>⏸️</span>";
+    }
+
+    // 针对5岁小朋友零挫败的一键求助火柴人超人援助
+    function callRescueSuperHero() {
+      Sound.ultimate();
+      triggerScreenShake(15);
+      createFloatingText("🦸 火柴人超人神兵天降，全屏清场！", canvas.width / 2, canvas.height / 2, "#10b981", 28);
+      zombies.forEach(z => z.takeDamage(9999));
+      sun += 200;
+      updateUI();
+    }
+
+    function triggerFriendlyGameOver() {
+      isGameOver = true;
+      document.getElementById('gameover-modal').style.display = "flex";
+    }
+
+    function reviveAndClear() {
+      document.getElementById('gameover-modal').style.display = "none";
+      isGameOver = false;
+      callRescueSuperHero();
+    }
+
+    function triggerVictory() {
+      isVictory = true;
+      Sound.victory();
+      document.getElementById('victory-modal').style.display = "flex";
+    }
+
+    function continueEndlessMode() {
+      document.getElementById('victory-modal').style.display = "none";
+      isVictory = false;
+      isEndless = true;
+      currentWave = 999;
+      document.getElementById('wave-label').innerText = "🚀 无尽狂欢模式";
+      createFloatingText("🌟 进入无尽模式！尽情享受吧！", canvas.width / 2, canvas.height / 2, "#fbbf24", 28);
+    }
+
+    function restartGame() {
+      document.getElementById('victory-modal').style.display = "none";
+      document.getElementById('gameover-modal').style.display = "none";
+      initGame();
+    }
+
+    function goHome() {
+      if (window.parent && window.parent !== window) {
+        window.parent.location.href = "index.html";
+      } else {
+        window.location.href = "index.html";
+      }
+    }
+
+    /* =========================================================
+       8. UI 界面刷新与儿童引导辅助
+       ========================================================= */
+    function updateUI() {
+      document.getElementById('sun-count').innerText = sun;
+      document.getElementById('wave-bar-fill').style.width = `${waveProgress}%`;
+      document.getElementById('wave-label').innerText = `🌊 第 ${currentWave} 波`;
+
+      // 刷新卡片可买状态
+      for (let key in PLANT_CONFIG) {
+        const card = document.getElementById(`card-${key}`);
+        if (card) {
+          if (sun < PLANT_CONFIG[key].cost || plantCooldowns[key] > 0) {
+            card.classList.add('disabled');
+          } else {
+            card.classList.remove('disabled');
+          }
+        }
+      }
+    }
+
+    function updateCardUI() {
+      for (let key in PLANT_CONFIG) {
+        const card = document.getElementById(`card-${key}`);
+        if (card) {
+          if (selectedPlantType === key) {
+            card.classList.add('active');
+          } else {
+            card.classList.remove('active');
+          }
+        }
+      }
+    }
+
+    function updateCooldownUI() {
+      for (let key in PLANT_CONFIG) {
+        const mask = document.getElementById(`cd-${key}`);
+        if (mask) {
+          const pct = Math.max(0, (plantCooldowns[key] / PLANT_CONFIG[key].cd) * 100);
+          mask.style.height = `${pct}%`;
+        }
+      }
+
+      // 红蓝按钮冷却
+      const redMask = document.getElementById('cd-honor-red');
+      const blueMask = document.getElementById('cd-honor-blue');
+      if (redMask) redMask.style.height = `${(redHonorCooldown / 25) * 100}%`;
+      if (blueMask) blueMask.style.height = `${(blueHonorCooldown / 25) * 100}%`;
+    }
+
+    function showGuide(text, icon = "💡") {
+      document.getElementById('guide-text').innerText = text;
+      document.getElementById('guide-icon').innerText = icon;
+    }
+
+    function positionGuideHand(elementId) {
+      const el = document.getElementById(elementId);
+      const hand = document.getElementById('hand-pointer');
+      if (el && hand) {
+        const rect = el.getBoundingClientRect();
+        hand.style.left = `${rect.left + rect.width / 2 - 20}px`;
+        hand.style.top = `${rect.top - 50}px`;
+        hand.style.display = "block";
+      }
+    }
+
+    function hideGuideHand() {
+      document.getElementById('hand-pointer').style.display = "none";
+    }
+
+    // 启动游戏
+    window.onload = () => {
+      initGame();
+      requestAnimationFrame(gameLoop);
+    };
+  </script>
+</body>
+</html>
