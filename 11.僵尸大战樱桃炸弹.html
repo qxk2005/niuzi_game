@@ -92,25 +92,24 @@
     /* 植物卡片槽容器 */
     #cards-tray {
       display: flex;
-      gap: 8px;
+      gap: 5px;
       align-items: center;
-      flex: 1;
-      overflow-x: auto;
-      padding: 2px 4px;
+      flex-shrink: 0;
+      padding: 2px;
     }
     #cards-tray::-webkit-scrollbar { display: none; }
 
     .plant-card {
-      width: 74px;
-      height: 80px;
+      width: 64px;
+      height: 76px;
       background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
-      border: 3px solid #64748b;
-      border-radius: 14px;
+      border: 2px solid #64748b;
+      border-radius: 12px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
-      padding: 4px;
+      padding: 3px 2px;
       cursor: pointer;
       position: relative;
       overflow: hidden;
@@ -219,6 +218,31 @@
       align-items: center;
       gap: 6px;
       white-space: nowrap;
+    }
+
+    .skill-btn {
+      padding: 6px 14px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #fff;
+      border: 2px solid #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      transition: all 0.2s;
+    }
+    .skill-btn:hover { transform: scale(1.06); }
+    .skill-btn:active { transform: scale(0.95); }
+    .fire-skill {
+      background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
+    }
+    .ice-skill {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      box-shadow: 0 0 16px rgba(2, 132, 199, 0.6);
     }
 
     /* 游戏主画布 */
@@ -371,6 +395,16 @@
         </div>
       </div>
 
+      <!-- 第5关屋顶暴风雨专用：火球与冰球操控按钮 -->
+      <div id="boss-skills" style="display: none; gap: 8px; align-items: center;">
+        <button id="btn-fireball" onclick="castBossSkill('fireball')" class="skill-btn fire-skill" title="召唤炽热火球轰炸僵王！">
+          <span>🔥</span> 炽热火球 (350伤)
+        </button>
+        <button id="btn-iceball" onclick="castBossSkill('iceball')" class="skill-btn ice-skill" title="召唤暴雪冰球冻结僵王！">
+          <span>❄️</span> 暴雪冰球 (冰冻)
+        </button>
+      </div>
+
       <!-- 关卡与进度徽章 -->
       <div class="top-badge" id="level-badge">
         <span>🌅</span> 第 1 关: 早晨阳光草地
@@ -459,74 +493,77 @@
     /* ============================================================
        1. 6大火柴人植物定义与5大关卡数据
        ============================================================ */
-    const PLANTS_DEF = [
-      {
-        id: 'sunflower',
-        name: '向日葵火柴人',
-        shortName: '向日葵',
-        icon: '🌻',
-        cost: 50,
-        hp: 300,
-        cooldown: 5.0,
-        desc: '定时跳舞产生50阳光',
-        isWater: false
-      },
-      {
-        id: 'peashooter',
-        name: '豌豆射手火柴人',
-        shortName: '豌豆射手',
-        icon: '🌱',
-        cost: 100,
-        hp: 300,
-        cooldown: 5.0,
-        desc: '射出强力绿色大豌豆',
-        isWater: false
-      },
-      {
-        id: 'lilypad',
-        name: '睡莲平头火柴人',
-        shortName: '睡莲平头',
-        icon: '🪷',
-        cost: 25,
-        hp: 300,
-        cooldown: 4.0,
-        desc: '水池载台！上面可站其他火柴人',
-        isWater: true
-      },
-      {
-        id: 'wallnut',
-        name: '坚果石脑火柴人',
-        shortName: '坚果石脑',
-        icon: '🥔',
-        cost: 50,
-        hp: 4000,
-        cooldown: 12.0,
-        desc: '超硬石头平头，高血量抵挡僵尸',
-        isWater: false
-      },
-      {
-        id: 'cherrybomb',
-        name: '樱桃双生火柴人',
-        shortName: '樱桃炸弹',
-        icon: '🍒',
-        cost: 150,
-        hp: 300,
-        cooldown: 18.0,
-        desc: '3x3范围超巨大爆炸秒杀！',
-        isWater: false
-      },
-      {
-        id: 'snowpea',
-        name: '寒冰特警火柴人',
-        shortName: '寒冰特警',
-        icon: '❄️',
-        cost: 175,
-        hp: 300,
-        cooldown: 6.0,
-        desc: '发射寒冰豌豆，减速僵尸50%',
-        isWater: false
-      }
-    ];
+    function getPlantDefs() {
+      const isRoof = (currentLevelIndex === 4);
+      return [
+        {
+          id: 'sunflower',
+          name: '向日葵火柴人',
+          shortName: '向日葵',
+          icon: '🌻',
+          cost: 50,
+          hp: 300,
+          cooldown: 5.0,
+          desc: '定时跳舞产生50阳光',
+          isCarrier: false
+        },
+        {
+          id: 'peashooter',
+          name: '豌豆射手火柴人',
+          shortName: '豌豆射手',
+          icon: '🌱',
+          cost: 100,
+          hp: 300,
+          cooldown: 5.0,
+          desc: '射出强力绿色大豌豆',
+          isCarrier: false
+        },
+        {
+          id: isRoof ? 'flowerpot' : 'lilypad',
+          name: isRoof ? '花盆平头火柴人' : '睡莲平头火柴人',
+          shortName: isRoof ? '花盆平头' : '睡莲平头',
+          icon: isRoof ? '🪴' : '🪷',
+          cost: 25,
+          hp: 300,
+          cooldown: 3.0,
+          desc: isRoof ? '屋顶载台！瓦片上必须先放花盆才能种植' : '水池载台！上面可站其他火柴人',
+          isCarrier: true
+        },
+        {
+          id: 'wallnut',
+          name: '坚果石脑火柴人',
+          shortName: '坚果石脑',
+          icon: '🥔',
+          cost: 50,
+          hp: 4000,
+          cooldown: 12.0,
+          desc: '超硬石头平头，高血量抵挡僵尸',
+          isCarrier: false
+        },
+        {
+          id: 'cherrybomb',
+          name: '樱桃双生火柴人',
+          shortName: '樱桃炸弹',
+          icon: '🍒',
+          cost: 150,
+          hp: 300,
+          cooldown: 18.0,
+          desc: '3x3范围超巨大爆炸秒杀！',
+          isCarrier: false
+        },
+        {
+          id: 'snowpea',
+          name: '寒冰特警火柴人',
+          shortName: '寒冰特警',
+          icon: '❄️',
+          cost: 175,
+          hp: 300,
+          cooldown: 6.0,
+          desc: '发射寒冰豌豆，减速僵尸50%',
+          isCarrier: false
+        }
+      ];
+    }
 
     const LEVELS_DEF = [
       {
@@ -565,14 +602,14 @@
         id: 5,
         title: "关卡 5: 屋顶暴风雨机甲决战",
         bgType: "storm_roof",
-        wavesCount: 4,
-        zombiesPool: ['basic', 'conehead', 'buckethead', 'boss_mech'],
-        tip: "终极大决战！狂风暴雨中迎战巨型火柴人机甲僵王！所有火柴人火力全开轰杀Boss！"
+        wavesCount: 3,
+        zombiesPool: ['basic', 'conehead', 'buckethead'],
+        tip: "终极大决战！先放【🪴 花盆平头】再种植物，操控右上角火球与冰球轰炸超大不动僵王！"
       }
     ];
 
     /* ============================================================
-       2. Web Audio API 原创音效引擎
+       2. Web Audio API 超柔和降噪原创音效引擎 (护耳温和)
        ============================================================ */
     class SoundEngine {
       constructor() {
@@ -589,7 +626,7 @@
         }
       }
 
-      playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.15, slideTo = null) {
+      playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.04, slideTo = null) {
         if (!this.enabled || !this.ctx) return;
         try {
           const osc = this.ctx.createOscillator();
@@ -599,8 +636,8 @@
           if (slideTo) {
             osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), this.ctx.currentTime + duration);
           }
-          gain.gain.setValueAtTime(0.001, this.ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(gainVal, this.ctx.currentTime + 0.02);
+          gain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(Math.min(0.06, gainVal), this.ctx.currentTime + 0.015);
           gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
           
           osc.connect(gain);
@@ -611,44 +648,51 @@
       }
 
       playSunCollect() {
-        this.playTone(523.25, 'sine', 0.1, 0.18);
-        setTimeout(() => this.playTone(659.25, 'sine', 0.12, 0.18), 70);
-        setTimeout(() => this.playTone(783.99, 'sine', 0.2, 0.2), 140);
+        this.playTone(523.25, 'sine', 0.08, 0.05);
+        setTimeout(() => this.playTone(659.25, 'sine', 0.09, 0.05), 60);
       }
 
       playPlant() {
-        this.playTone(220, 'triangle', 0.1, 0.2, 110);
+        this.playTone(240, 'triangle', 0.08, 0.04, 140);
       }
 
       playShoot() {
-        this.playTone(480, 'sine', 0.06, 0.12, 240);
+        this.playTone(420, 'sine', 0.05, 0.03, 280);
       }
 
       playHit() {
-        this.playTone(180, 'triangle', 0.08, 0.14, 80);
+        this.playTone(160, 'triangle', 0.05, 0.03, 90);
       }
 
       playChew() {
-        this.playTone(140, 'sawtooth', 0.08, 0.12, 60);
+        this.playTone(130, 'sine', 0.05, 0.02, 80);
       }
 
       playExplosion() {
-        this.playTone(90, 'triangle', 0.5, 0.35, 25);
-        this.playTone(150, 'sawtooth', 0.4, 0.25, 30);
+        this.playTone(85, 'triangle', 0.25, 0.06, 30);
       }
 
       playSplash() {
-        this.playTone(450, 'sine', 0.12, 0.16, 180);
+        this.playTone(380, 'sine', 0.08, 0.04, 180);
       }
 
+      // 超柔和短促引擎启动轻鸣 (彻底告别刺耳长音)
       playLawnmower() {
-        this.playTone(130, 'sawtooth', 1.2, 0.3, 260);
+        this.playTone(180, 'triangle', 0.2, 0.04, 220);
+      }
+
+      playSkillFire() {
+        this.playTone(220, 'triangle', 0.2, 0.06, 90);
+      }
+
+      playSkillIce() {
+        this.playTone(600, 'sine', 0.2, 0.06, 300);
       }
 
       playVictory() {
-        const notes = [261.63, 329.63, 392.00, 523.25, 659.25];
+        const notes = [261.63, 329.63, 392.00, 523.25];
         notes.forEach((f, i) => {
-          setTimeout(() => this.playTone(f, 'sine', 0.35, 0.25), i * 110);
+          setTimeout(() => this.playTone(f, 'sine', 0.25, 0.05), i * 100);
         });
       }
     }
@@ -683,6 +727,11 @@
     let lawnmowers = [];
     let particles = [];
     let rainDrops = [];
+
+    // 第5关巨型不动僵王与双铁牛助战
+    let bossMech = null;
+    let ironBulls = [];
+    let skillCooldowns = { fireball: 0, iceball: 0 };
 
     // 探照灯坐标
     let spotlightPos = { x: 500, y: 300, targetX: 500, targetY: 300 };
@@ -737,8 +786,9 @@
     function renderPlantCards() {
       const tray = document.getElementById('cards-tray');
       tray.innerHTML = '';
+      const defs = getPlantDefs();
 
-      PLANTS_DEF.forEach(def => {
+      defs.forEach(def => {
         const card = document.createElement('div');
         card.className = 'plant-card';
         card.id = `card-${def.id}`;
@@ -756,7 +806,8 @@
 
     function selectPlantCard(plantId) {
       sound.init();
-      const def = PLANTS_DEF.find(p => p.id === plantId);
+      const defs = getPlantDefs();
+      const def = defs.find(p => p.id === plantId);
       if (!def || sunCount < def.cost) return;
 
       isShovelSelected = false;
@@ -780,13 +831,16 @@
     function updateCardSelectionUI() {
       document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
       const preview = document.getElementById('cursor-preview');
+      const defs = getPlantDefs();
 
       if (selectedPlantType) {
         const activeCard = document.getElementById(`card-${selectedPlantType}`);
         if (activeCard) activeCard.classList.add('selected');
-        const def = PLANTS_DEF.find(p => p.id === selectedPlantType);
-        preview.innerText = def.icon;
-        preview.style.display = 'block';
+        const def = defs.find(p => p.id === selectedPlantType);
+        if (def) {
+          preview.innerText = def.icon;
+          preview.style.display = 'block';
+        }
       } else if (isShovelSelected) {
         document.getElementById('btn-shovel').classList.add('selected');
         preview.innerText = '🪓';
@@ -829,6 +883,35 @@
       const level = LEVELS_DEF[currentLevelIndex];
       
       document.getElementById('level-badge').innerHTML = `<span>${level.bgType.includes('morning') ? '🌅' : (level.bgType.includes('pool') ? '🪷' : (level.bgType.includes('roof') ? '⛈️' : '🌙'))}</span> ${level.title}`;
+      
+      // 第5关屋顶专属技能显示
+      const bossSkillsEl = document.getElementById('boss-skills');
+      if (currentLevelIndex === 4) {
+        bossSkillsEl.style.display = 'flex';
+        // 生成右侧巨型不动机械僵王
+        bossMech = {
+          x: 890,
+          y: 285,
+          hp: 5000,
+          maxHp: 5000,
+          alive: true,
+          freezeTimer: 0,
+          hitTimer: 0,
+          anim: 0
+        };
+        // 生成前线两头猛攻僵王的机械铁牛
+        ironBulls = [
+          { row: 1, x: 730, y: GRID_TOP + 1 * CELL_H + CELL_H / 2, anim: 0, attackTimer: 0 },
+          { row: 3, x: 730, y: GRID_TOP + 3 * CELL_H + CELL_H / 2, anim: 0, attackTimer: 15 }
+        ];
+      } else {
+        bossSkillsEl.style.display = 'none';
+        bossMech = null;
+        ironBulls = [];
+      }
+
+      // 重置卡片栏 (屋顶显示花盆，水池显示睡莲)
+      renderPlantCards();
 
       // 重置资源
       sunCount = isBuffed ? 500 : 150;
@@ -856,7 +939,7 @@
 
       // 波次计时器
       currentWave = 0;
-      waveTimer = 300; // 5秒后出怪
+      waveTimer = 180; // 3秒后出怪
       totalZombiesInWave = 0;
       skySunTimer = 0;
 
@@ -887,6 +970,33 @@
       isBuffed = true;
       document.getElementById('screen-fail').classList.add('hidden');
       loadLevel(currentLevelIndex);
+    }
+
+    /* 玩家操控火球与冰球轰炸技能 */
+    function castBossSkill(type) {
+      sound.init();
+      if (!bossMech || !bossMech.alive) return;
+
+      if (type === 'fireball') {
+        sound.playSkillFire();
+        bossMech.hp -= 350;
+        bossMech.hitTimer = 12;
+        createFloatingText("💥 炽热火球轰炸 -350！", bossMech.x - 30, bossMech.y - 60, '#ef4444', 28);
+        createSparks(bossMech.x - 20, bossMech.y, '#f97316', 30);
+      } else if (type === 'iceball') {
+        sound.playSkillIce();
+        bossMech.hp -= 350;
+        bossMech.freezeTimer = 180; // 冻结3秒
+        bossMech.hitTimer = 12;
+        createFloatingText("❄️ 暴雪冰封轰炸 -350！", bossMech.x - 30, bossMech.y - 60, '#38bdf8', 28);
+        createSparks(bossMech.x - 20, bossMech.y, '#38bdf8', 30);
+      }
+
+      if (bossMech.hp <= 0 && bossMech.alive) {
+        bossMech.alive = false;
+        createSparks(bossMech.x, bossMech.y, '#f59e0b', 50);
+        setTimeout(onLevelCleared, 1000);
+      }
     }
 
     /* ============================================================
@@ -940,18 +1050,46 @@
     }
 
     function plantAtCell(plantId, r, c) {
-      const def = PLANTS_DEF.find(p => p.id === plantId);
+      const defs = getPlantDefs();
+      const def = defs.find(p => p.id === plantId);
       if (!def || sunCount < def.cost) return;
 
       const level = LEVELS_DEF[currentLevelIndex];
       const isPoolRow = (level.bgType === 'day_pool' || level.bgType === 'fog_pool') && (r === 2 || r === 3);
+      const isRoof = (level.bgType === 'storm_roof');
 
       const cell = grid[r][c];
 
-      if (isPoolRow) {
-        // --- 水池行规则 ---
+      if (isRoof) {
+        // --- 屋顶瓦片规则 (必须先放花盆平头) ---
+        if (plantId === 'flowerpot') {
+          if (cell.base) return; // 已有花盆
+          const p = createPlantInstance('flowerpot', r, c);
+          cell.base = p;
+          plants.push(p);
+          sound.playPlant();
+          sunCount -= def.cost;
+          updateSunDisplay();
+          createTilePuff(r, c, '#d97706');
+        } else {
+          // 在屋顶种其他植物，必须先有花盆！
+          if (!cell.base) {
+            createFloatingText("需要先放 🪴 花盆平头！", GRID_LEFT + c * CELL_W + CELL_W/2, GRID_TOP + r * CELL_H + CELL_H/2, '#f87171');
+            return;
+          }
+          if (cell.plant) return; // 花盆上已有植物
+
+          const p = createPlantInstance(plantId, r, c);
+          cell.plant = p;
+          plants.push(p);
+          sound.playPlant();
+          sunCount -= def.cost;
+          updateSunDisplay();
+          createTilePuff(r, c, '#22c55e');
+        }
+      } else if (isPoolRow) {
+        // --- 水池行规则 (必须先放睡莲平头) ---
         if (plantId === 'lilypad') {
-          // 放置睡莲平头
           if (cell.base) return; // 已有睡莲
           const p = createPlantInstance('lilypad', r, c);
           cell.base = p;
@@ -961,13 +1099,11 @@
           updateSunDisplay();
           createTilePuff(r, c, '#10b981');
         } else {
-          // 在水池种其他植物，必须先有睡莲！
           if (!cell.base) {
-            // 没有睡莲，提示
             createFloatingText("需要先放 🪷 睡莲平头！", GRID_LEFT + c * CELL_W + CELL_W/2, GRID_TOP + r * CELL_H + CELL_H/2, '#f87171');
             return;
           }
-          if (cell.plant) return; // 睡莲上已有植物
+          if (cell.plant) return;
 
           const p = createPlantInstance(plantId, r, c);
           cell.plant = p;
@@ -978,9 +1114,9 @@
           createTilePuff(r, c, '#38bdf8');
         }
       } else {
-        // --- 陆地/屋顶行规则 ---
-        if (plantId === 'lilypad') return; // 陆地不能放睡莲
-        if (cell.plant) return; // 格子已有植物
+        // --- 陆地普通草坪规则 ---
+        if (plantId === 'lilypad' || plantId === 'flowerpot') return;
+        if (cell.plant) return;
 
         const p = createPlantInstance(plantId, r, c);
         cell.plant = p;
@@ -996,7 +1132,8 @@
     }
 
     function createPlantInstance(type, r, c) {
-      const def = PLANTS_DEF.find(p => p.id === type);
+      const defs = getPlantDefs();
+      const def = defs.find(p => p.id === type) || { name: '载台', icon: '🪴', hp: 300 };
       const px = GRID_LEFT + c * CELL_W + CELL_W / 2;
       const py = GRID_TOP + r * CELL_H + CELL_H / 2;
 
@@ -1011,8 +1148,8 @@
         hp: def.hp,
         maxHp: def.hp,
         shootTimer: 0,
-        sunTimer: type === 'sunflower' ? 120 : 0, // 向日葵开局快产
-        fuseTimer: type === 'cherrybomb' ? 70 : 0, // 樱桃炸弹1.2秒倒计时
+        sunTimer: type === 'sunflower' ? 120 : 0,
+        fuseTimer: type === 'cherrybomb' ? 70 : 0,
         animStep: 0
       };
     }
@@ -1041,7 +1178,7 @@
     function updateSunDisplay() {
       document.getElementById('sun-count').innerText = sunCount;
       // 更新卡片可否购买状态
-      PLANTS_DEF.forEach(def => {
+      getPlantDefs().forEach(def => {
         const card = document.getElementById(`card-${def.id}`);
         if (card) {
           if (sunCount < def.cost) card.classList.add('disabled');
@@ -1186,7 +1323,7 @@
         const proj = projectiles[i];
         proj.x += proj.vx;
 
-        // 碰撞检测：击中同行的僵尸
+        // 碰撞检测 1：击中同行小僵尸
         let hit = false;
         for (let z of zombies) {
           if (z.row === proj.row && !z.isDead && Math.abs(proj.x - z.x) < 26) {
@@ -1209,15 +1346,51 @@
           }
         }
 
+        // 碰撞检测 2：击中第5关右侧巨型不动机械僵王
+        if (!hit && bossMech && bossMech.alive && proj.x >= bossMech.x - 70) {
+          hit = true;
+          bossMech.hp -= proj.dmg;
+          bossMech.hitTimer = 6;
+          sound.playHit();
+          if (proj.type === 'ice') {
+            bossMech.freezeTimer = 90;
+          }
+          createSparks(bossMech.x - 40, proj.y, proj.type === 'ice' ? '#38bdf8' : '#22c55e', 8);
+
+          if (bossMech.hp <= 0) {
+            bossMech.alive = false;
+            createSparks(bossMech.x, bossMech.y, '#f59e0b', 60);
+          }
+        }
+
         if (hit || proj.x > 1020) {
           projectiles.splice(i, 1);
         }
       }
 
+      // 更新第5关前线双机械铁牛猛攻僵王
+      if (bossMech && bossMech.alive) {
+        ironBulls.forEach(bull => {
+          bull.attackTimer++;
+          bull.anim += 0.08;
+          if (bull.attackTimer > 28) {
+            bull.attackTimer = 0;
+            bossMech.hp -= 15; // 持续冲撞撕咬伤害
+            bossMech.hitTimer = 6;
+            createSparks(bossMech.x - 45, bull.y, '#f59e0b', 6);
+            if (Math.random() < 0.25) sound.playHit();
+
+            if (bossMech.hp <= 0) {
+              bossMech.alive = false;
+              createSparks(bossMech.x, bossMech.y, '#f59e0b', 60);
+            }
+          }
+        });
+      }
+
       // 更新僵尸成波生成 (固定4秒出怪，清屏后1.5秒快速进入下一波)
       if (currentWave < level.wavesCount) {
         waveTimer--;
-        // 如果当前场上僵尸全被消灭(例如小推车撞死)，加速出怪，不再干等
         if (zombies.length === 0 && waveTimer > 80) {
           waveTimer = 80;
         }
@@ -1308,8 +1481,10 @@
         if (p.life <= 0) particles.splice(i, 1);
       }
 
-      // 关卡胜利判定 (所有波次已出且僵尸全灭，立即胜利结算)
-      if (currentWave >= level.wavesCount && zombies.length === 0) {
+      // 关卡胜利判定 (全部波次已出且僵尸全灭，第5关需击败巨型僵王)
+      const isBossLevel = (currentLevelIndex === 4);
+      const isBossDefeated = !isBossLevel || (!bossMech || !bossMech.alive);
+      if (currentWave >= level.wavesCount && zombies.length === 0 && isBossDefeated) {
         onLevelCleared();
       }
     }
@@ -1508,18 +1683,22 @@
       // 2. 底线割草警车
       renderLawnmowers();
 
-      // 3. 睡莲与植物
+      // 3. 载台(睡莲/花盆)与火柴人植物
       renderPlants();
 
-      // 4. 僵尸军团
+      // 4. 第5关前线双机械铁牛与巨型不动机械僵王
+      renderIronBulls();
+      renderGiantZombossMech();
+
+      // 5. 僵尸军团
       renderZombies();
 
-      // 5. 子弹与特效
+      // 6. 子弹与特效
       renderProjectiles();
       renderSuns();
       renderParticles();
 
-      // 6. 迷雾与暴风雨前景遮罩
+      // 7. 迷雾与暴风雨前景遮罩
       renderWeatherForeground();
     }
 
@@ -1619,38 +1798,37 @@
       });
     }
 
-    /* 绘制所有火柴人植物 */
+    /* 绘制所有火柴人植物与载台 */
     function renderPlants() {
-      // 优先绘制睡莲底座，再绘制上层站立植物
+      // 优先绘制载台底座(睡莲/花盆)，再绘制上层站立植物
       const sortedPlants = [...plants].sort((a, b) => {
-        if (a.type === 'lilypad' && b.type !== 'lilypad') return -1;
-        if (a.type !== 'lilypad' && b.type === 'lilypad') return 1;
+        const aIsBase = (a.type === 'lilypad' || a.type === 'flowerpot');
+        const bIsBase = (b.type === 'lilypad' || b.type === 'flowerpot');
+        if (aIsBase && !bIsBase) return -1;
+        if (!aIsBase && bIsBase) return 1;
         return 0;
       });
 
       sortedPlants.forEach(p => {
         ctx.save();
-        const isStandingOnLily = (p.type !== 'lilypad' && grid[p.row] && grid[p.row][p.col] && grid[p.row][p.col].base);
-        const drawY = isStandingOnLily ? p.y - 12 : p.y;
+        const isBase = (p.type === 'lilypad' || p.type === 'flowerpot');
+        const isStandingOnBase = (!isBase && grid[p.row] && grid[p.row][p.col] && grid[p.row][p.col].base);
+        const drawY = isStandingOnBase ? p.y - 14 : p.y;
         ctx.translate(p.x, drawY);
 
         if (p.type === 'lilypad') {
-          // === 睡莲平头火柴人 ===
           drawLilypadStickman(ctx, p);
+        } else if (p.type === 'flowerpot') {
+          drawFlowerpotStickman(ctx, p);
         } else if (p.type === 'sunflower') {
-          // === 向日葵火柴人 ===
           drawSunflowerStickman(ctx, p);
         } else if (p.type === 'peashooter') {
-          // === 豌豆射手火柴人 ===
           drawPeashooterStickman(ctx, p);
         } else if (p.type === 'wallnut') {
-          // === 坚果石脑火柴人 ===
           drawWallnutStickman(ctx, p);
         } else if (p.type === 'cherrybomb') {
-          // === 樱桃双生火柴人 ===
           drawCherrybombStickman(ctx, p);
         } else if (p.type === 'snowpea') {
-          // === 寒冰特警火柴人 ===
           drawSnowpeaStickman(ctx, p);
         }
 
@@ -1674,7 +1852,6 @@
       ctx.fillStyle = '#f8fafc';
       ctx.strokeStyle = '#1e293b';
       ctx.lineWidth = 3;
-      // 平头脑袋
       ctx.beginPath();
       ctx.roundRect(-16, -14, 32, 16, 4);
       ctx.fill();
@@ -1688,12 +1865,50 @@
       ctx.fill();
     }
 
+    /* 1.5 花盆平头火柴人 (屋顶专属载台) */
+    function drawFlowerpotStickman(ctx, p) {
+      // 陶瓷花盆底座
+      ctx.fillStyle = '#c2410c';
+      ctx.strokeStyle = '#9a3412';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-22, 22);
+      ctx.lineTo(-16, 2);
+      ctx.lineTo(16, 2);
+      ctx.lineTo(22, 22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 花盆盆沿
+      ctx.fillStyle = '#ea580c';
+      ctx.beginPath();
+      ctx.roundRect(-24, -2, 48, 8, 3);
+      ctx.fill();
+      ctx.stroke();
+
+      // 平头火柴人上半身探出花盆
+      ctx.fillStyle = '#f8fafc';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-14, -18, 28, 16, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // 萌眼
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(-5, -10, 2.5, 0, Math.PI * 2);
+      ctx.arc(5, -10, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     /* 2. 向日葵火柴人 */
     function drawSunflowerStickman(ctx, p) {
       const bob = Math.sin(p.animStep * 3) * 4;
       ctx.translate(0, bob);
 
-      // 火柴人身体
       ctx.strokeStyle = '#1e293b';
       ctx.lineWidth = 4;
       ctx.beginPath();
@@ -1701,7 +1916,6 @@
       ctx.lineTo(0, 26);
       ctx.stroke();
 
-      // 旋转太阳花瓣
       ctx.save();
       ctx.translate(0, -14);
       ctx.rotate(p.animStep);
@@ -1714,7 +1928,6 @@
       }
       ctx.restore();
 
-      // 火柴人圆脸
       ctx.fillStyle = '#d97706';
       ctx.beginPath();
       ctx.arc(0, -14, 12, 0, Math.PI * 2);
@@ -1728,7 +1941,6 @@
 
     /* 3. 豌豆射手火柴人 */
     function drawPeashooterStickman(ctx, p) {
-      // 身体
       ctx.strokeStyle = '#1e293b';
       ctx.lineWidth = 4;
       ctx.beginPath();
@@ -1736,7 +1948,6 @@
       ctx.lineTo(0, 24);
       ctx.stroke();
 
-      // 豌豆头冠与炮口
       ctx.fillStyle = '#22c55e';
       ctx.strokeStyle = '#16a34a';
       ctx.lineWidth = 3;
@@ -1745,13 +1956,11 @@
       ctx.fill();
       ctx.stroke();
 
-      // 发射炮嘴
       ctx.fillStyle = '#15803d';
       ctx.beginPath();
       ctx.arc(14, -16, 7, 0, Math.PI * 2);
       ctx.fill();
 
-      // 大黑眼
       ctx.fillStyle = '#0f172a';
       ctx.beginPath();
       ctx.arc(2, -20, 3, 0, Math.PI * 2);
@@ -1760,7 +1969,6 @@
 
     /* 4. 坚果石脑火柴人 */
     function drawWallnutStickman(ctx, p) {
-      // 巨大坚硬平头石头
       ctx.fillStyle = '#78350f';
       ctx.strokeStyle = '#d97706';
       ctx.lineWidth = 4;
@@ -1769,11 +1977,9 @@
       ctx.fill();
       ctx.stroke();
 
-      // 坚果平头帽顶
       ctx.fillStyle = '#92400e';
       ctx.fillRect(-18, -26, 36, 10);
 
-      // 坚毅双眼
       ctx.fillStyle = '#fff';
       ctx.beginPath();
       ctx.arc(-8, -12, 6, 0, Math.PI * 2);
@@ -1785,7 +1991,6 @@
       ctx.arc(10, -12, 3, 0, Math.PI * 2);
       ctx.fill();
 
-      // 伤痕裂纹 (血量低于一半时)
       if (p.hp < 2000) {
         ctx.strokeStyle = '#451a03';
         ctx.lineWidth = 2;
@@ -1802,7 +2007,6 @@
       const scale = 1.0 + (70 - p.fuseTimer) / 70 * 0.4;
       ctx.scale(scale, scale);
 
-      // 绿色双生引线
       ctx.strokeStyle = '#16a34a';
       ctx.lineWidth = 4;
       ctx.beginPath();
@@ -1810,14 +2014,12 @@
       ctx.quadraticCurveTo(0, -30, 12, -10);
       ctx.stroke();
 
-      // 两只红脸火柴人手拉手
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
       ctx.arc(-14, 0, 14, 0, Math.PI * 2);
       ctx.arc(14, 0, 14, 0, Math.PI * 2);
       ctx.fill();
 
-      // 怒吼眼神
       ctx.fillStyle = '#fff';
       ctx.beginPath();
       ctx.arc(-14, -3, 3, 0, Math.PI * 2);
@@ -1834,7 +2036,6 @@
       ctx.lineTo(0, 24);
       ctx.stroke();
 
-      // 冰晶头冠
       ctx.fillStyle = '#38bdf8';
       ctx.strokeStyle = '#0284c7';
       ctx.lineWidth = 3;
@@ -1843,7 +2044,6 @@
       ctx.fill();
       ctx.stroke();
 
-      // 冰晶尖刺
       ctx.fillStyle = '#93c5fd';
       ctx.beginPath();
       ctx.moveTo(-10, -26);
@@ -1851,11 +2051,168 @@
       ctx.lineTo(2, -26);
       ctx.fill();
 
-      // 炮口
       ctx.fillStyle = '#0369a1';
       ctx.beginPath();
       ctx.arc(14, -16, 7, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    /* 7. 第5关双机械铁牛前线冲撞 */
+    function renderIronBulls() {
+      if (currentLevelIndex !== 4) return;
+      ironBulls.forEach(bull => {
+        ctx.save();
+        const headbutt = Math.sin(bull.anim * 4) * 10;
+        ctx.translate(bull.x + headbutt, bull.y);
+
+        // 机械牛身躯
+        ctx.fillStyle = '#475569';
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(-26, -18, 52, 36, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        // 机械牛头
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.roundRect(10, -20, 24, 28, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        // 金色锋利牛角 (向前顶撞)
+        ctx.fillStyle = '#f59e0b';
+        ctx.strokeStyle = '#d97706';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(28, -18);
+        ctx.lineTo(46, -28);
+        ctx.lineTo(34, -10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // 电子眼
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(22, -10, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      });
+    }
+
+    /* 8. 第5关右侧巨型不动机械僵王 BOSS */
+    function renderGiantZombossMech() {
+      if (!bossMech || currentLevelIndex !== 4) return;
+      ctx.save();
+      ctx.translate(bossMech.x, bossMech.y);
+
+      if (bossMech.hitTimer > 0) ctx.translate(-3 + Math.random() * 6, -3 + Math.random() * 6);
+
+      const isFrozen = bossMech.freezeTimer > 0;
+
+      // 巨型底座履带
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.roundRect(-80, 160, 160, 50, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      // 巨型机甲装甲胸膛
+      ctx.fillStyle = isFrozen ? '#0284c7' : '#1e293b';
+      ctx.strokeStyle = isFrozen ? '#93c5fd' : '#ef4444';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.roundRect(-75, -130, 150, 280, 20);
+      ctx.fill();
+      ctx.stroke();
+
+      // 能量核心反应堆
+      const corePulse = Math.sin(Date.now() * 0.008) * 6;
+      ctx.fillStyle = isFrozen ? '#38bdf8' : '#f59e0b';
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(0, 15, 32 + corePulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // 机械臂
+      ctx.fillStyle = '#334155';
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(-95, -60, 28, 150, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      // 巨型激光眼与头盔
+      ctx.fillStyle = isFrozen ? '#0369a1' : '#0f172a';
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(-55, -200, 110, 80, 16);
+      ctx.fill();
+      ctx.stroke();
+
+      // 双眼红光/冰光瞄准
+      ctx.fillStyle = isFrozen ? '#93c5fd' : '#ef4444';
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(-22, -160, 14, 0, Math.PI * 2);
+      ctx.arc(22, -160, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // 僵王博士透明观察穹顶与小绿脑袋
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.beginPath();
+      ctx.arc(0, -210, 30, Math.PI, 0);
+      ctx.fill();
+
+      ctx.fillStyle = '#86efac';
+      ctx.beginPath();
+      ctx.arc(0, -220, 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+
+      // 顶部全宽巨型僵王血条
+      ctx.save();
+      const barX = 460;
+      const barY = 32;
+      const barW = 440;
+      const barH = 22;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, barW, barH, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      const hpPercent = Math.max(0, bossMech.hp / bossMech.maxHp);
+      const hpGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+      hpGrad.addColorStop(0, '#dc2626');
+      hpGrad.addColorStop(0.5, '#f59e0b');
+      hpGrad.addColorStop(1, '#22c55e');
+
+      ctx.fillStyle = hpGrad;
+      ctx.beginPath();
+      ctx.roundRect(barX + 3, barY + 3, (barW - 6) * hpPercent, barH - 6, 8);
+      ctx.fill();
+
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`🤖👑 巨型机械僵王 BOSS: ${Math.max(0, Math.floor(bossMech.hp))} / 5000`, barX + barW / 2, barY + 16);
+      ctx.restore();
     }
 
     /* 绘制所有火柴人僵尸 */
