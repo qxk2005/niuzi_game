@@ -375,6 +375,9 @@
       <div class="top-badge" id="level-badge">
         <span>🌅</span> 第 1 关: 早晨阳光草地
       </div>
+      <div class="top-badge" id="wave-badge" style="background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%); border-color: #fca5a5;">
+        <span>⚔️</span> 进度: 准备中...
+      </div>
     </div>
 
     <!-- 游戏主画布容器 -->
@@ -1146,12 +1149,12 @@
           }
         }
 
-        // 豌豆射手 / 寒冰特警射击
+        // 豌豆射手 / 寒冰特警射击 (攻击力加强为70，3发子弹消灭基础僵尸)
         if (p.type === 'peashooter' || p.type === 'snowpea') {
           p.shootTimer++;
           // 检查同行右侧是否有僵尸
           const hasZombieAhead = zombies.some(z => z.row === p.row && z.x > p.x && !z.isDead);
-          if (hasZombieAhead && p.shootTimer > 85) { // 约1.4秒射击一发
+          if (hasZombieAhead && p.shootTimer > 75) { // 约1.25秒射击一发
             p.shootTimer = 0;
             sound.playShoot();
             projectiles.push({
@@ -1159,8 +1162,8 @@
               row: p.row,
               x: p.x + 22,
               y: p.y - 12,
-              vx: 5.5,
-              dmg: 25
+              vx: 5.8,
+              dmg: 70 // 强化攻击力：3发子弹打爆200血基础火柴人僵尸
             });
           }
         }
@@ -1211,10 +1214,16 @@
         }
       }
 
-      // 更新僵尸成波生成
-      waveTimer--;
-      if (waveTimer <= 0) {
-        spawnZombieWave();
+      // 更新僵尸成波生成 (固定4秒出怪，清屏后1.5秒快速进入下一波)
+      if (currentWave < level.wavesCount) {
+        waveTimer--;
+        // 如果当前场上僵尸全被消灭(例如小推车撞死)，加速出怪，不再干等
+        if (zombies.length === 0 && waveTimer > 80) {
+          waveTimer = 80;
+        }
+        if (waveTimer <= 0) {
+          spawnZombieWave();
+        }
       }
 
       // 更新僵尸移动与啃咬
@@ -1299,8 +1308,8 @@
         if (p.life <= 0) particles.splice(i, 1);
       }
 
-      // 关卡胜利判定
-      if (currentWave >= level.wavesCount && zombies.length === 0 && waveTimer <= 0) {
+      // 关卡胜利判定 (所有波次已出且僵尸全灭，立即胜利结算)
+      if (currentWave >= level.wavesCount && zombies.length === 0) {
         onLevelCleared();
       }
     }
@@ -1314,8 +1323,16 @@
       const isHugeWave = currentWave === level.wavesCount;
       const count = isHugeWave ? 6 : (2 + currentWave);
 
-      if (isHugeWave) {
-        createFloatingText("⚠️ 大波火柴人僵尸来袭！", 510, 280, '#ef4444', 36);
+      // 更新顶部波次徽章与屏幕横幅
+      const waveBadge = document.getElementById('wave-badge');
+      if (waveBadge) {
+        if (isHugeWave) {
+          waveBadge.innerHTML = `<span>🚨</span> 进度: 最后一波(大决战!)`;
+          createFloatingText("🚨 最终大波火柴人僵尸来袭！", 510, 260, '#ef4444', 36);
+        } else {
+          waveBadge.innerHTML = `<span>⚔️</span> 进度: 第 ${currentWave} / ${level.wavesCount} 波`;
+          createFloatingText(`⚔️ 第 ${currentWave} / ${level.wavesCount} 波 僵尸进攻！`, 510, 260, '#f59e0b', 32);
+        }
       }
 
       for (let i = 0; i < count; i++) {
@@ -1338,12 +1355,12 @@
             }
           }
 
-          let hp = 200;
+          let hp = 200; // 3发子弹 (70*3=210) 击败
           let speed = 0.42;
-          if (type === 'conehead') { hp = 560; }
-          else if (type === 'buckethead') { hp = 1300; }
-          else if (type === 'duck_tube') { hp = 380; speed = 0.55; }
-          else if (type === 'boss_mech') { hp = 4500; speed = 0.25; }
+          if (type === 'conehead') { hp = 350; } // 5发子弹击败
+          else if (type === 'buckethead') { hp = 650; } // 10发子弹击败
+          else if (type === 'duck_tube') { hp = 280; speed = 0.55; } // 4发子弹击败
+          else if (type === 'boss_mech') { hp = 3500; speed = 0.22; }
 
           zombies.push({
             type: type,
@@ -1360,10 +1377,10 @@
             hitAnim: 0,
             stepAnim: Math.random() * 10
           });
-        }, i * 500);
+        }, i * 400);
       }
 
-      waveTimer = isHugeWave ? 99999 : 650; // 下一波间隔约10秒
+      waveTimer = 240; // 固定4秒下一波出怪
     }
 
     /* 樱桃炸弹 3x3 范围大爆炸 */
