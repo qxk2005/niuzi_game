@@ -352,6 +352,85 @@
       display: flex;
       gap: 14px;
       align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* 自由选关面板与卡片 */
+    .level-select-container {
+      margin: 10px 0 14px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 2px solid rgba(56, 189, 248, 0.4);
+      border-radius: 16px;
+      padding: 10px 16px;
+      max-width: 780px;
+      width: 92%;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    .level-select-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-bottom: 8px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .level-cards-grid {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .level-pick-card {
+      background: rgba(30, 41, 59, 0.9);
+      border: 2px solid #475569;
+      border-radius: 12px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      min-width: 110px;
+    }
+    .level-pick-card:hover {
+      transform: translateY(-4px) scale(1.06);
+      border-color: #38bdf8;
+      background: rgba(14, 165, 233, 0.25);
+      box-shadow: 0 6px 16px rgba(56, 189, 248, 0.35);
+    }
+    .level-pick-card.boss-card {
+      border-color: #f59e0b;
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.25) 0%, rgba(239, 68, 68, 0.25) 100%);
+    }
+    .level-pick-card.boss-card:hover {
+      border-color: #ef4444;
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.45) 0%, rgba(239, 68, 68, 0.5) 100%);
+      box-shadow: 0 8px 22px rgba(239, 68, 68, 0.5);
+    }
+    .lvl-icon { font-size: 24px; margin-bottom: 2px; }
+    .lvl-num { font-size: 13px; font-weight: 900; color: #facc15; }
+    .lvl-name { font-size: 11px; font-weight: 700; color: #cbd5e1; white-space: nowrap; }
+
+    .secondary-btn {
+      background: rgba(30, 41, 59, 0.9);
+      border: 2px solid #64748b;
+      color: #e2e8f0;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 800;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .secondary-btn:hover {
+      background: rgba(51, 65, 85, 0.95);
+      border-color: #38bdf8;
+      color: #fff;
+      transform: translateY(-2px);
     }
 
     /* 悬浮种植预览跟随光标 */
@@ -398,7 +477,7 @@
       <!-- 第5关屋顶暴风雨专用：火球与冰球操控按钮 -->
       <div id="boss-skills" style="display: none; gap: 8px; align-items: center;">
         <button id="btn-fireball" onclick="castBossSkill('fireball')" class="skill-btn fire-skill" title="召唤炽热火球轰炸僵王！">
-          <span>🔥</span> 炽热火球 (350伤)
+          <span>🔥</span> 炽热火球 (400伤)
         </button>
         <button id="btn-iceball" onclick="castBossSkill('iceball')" class="skill-btn ice-skill" title="召唤暴雪冰球冻结僵王！">
           <span>❄️</span> 暴雪冰球 (冰冻)
@@ -422,20 +501,50 @@
 
     <!-- 模态界面 1: 开始封面 -->
     <div class="overlay-screen" id="screen-start">
-      <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 16px;">
-        <div style="font-size: 56px;">🌻🌱🪷</div>
-        <div style="font-size: 24px; font-weight: 900; background: #ef4444; padding: 6px 14px; border-radius: 20px; border: 2px solid #fff;">VS</div>
-        <div style="font-size: 56px;">🧟‍♂️🦺🦆</div>
+      <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 12px;">
+        <div style="font-size: 52px;">🌻🌱🪷</div>
+        <div style="font-size: 22px; font-weight: 900; background: #ef4444; padding: 5px 14px; border-radius: 20px; border: 2px solid #fff;">VS</div>
+        <div style="font-size: 52px;">🧟‍♂️🦺🤖</div>
       </div>
       <div class="hero-title">火柴人植物大战火柴人僵尸</div>
-      <div style="font-size: 20px; font-weight: 800; color: #38bdf8; margin-bottom: 8px;">
-        🌟 经典5路后院后庭塔防 · 从早到晚5大天气大冒险
+      <div style="font-size: 19px; font-weight: 800; color: #38bdf8; margin-bottom: 6px;">
+        🌟 经典5路后院塔防 · 从早到晚5大天气大冒险
       </div>
-      <div class="hero-subtitle">
-        🌅 早晨阳光草地 ➔ 🌙 黑夜降临草地 ➔ 🪷 泳池水上(放睡莲平头火柴人) ➔ 🌫️ 黑夜浓雾探照灯 ➔ ⛈️ 屋顶暴风雨机甲决战！
+
+      <!-- 1~5关自由选关卡片网格 -->
+      <div class="level-select-container">
+        <div class="level-select-title">🗺️ 自由选择挑战关卡（点击直接开战，可直达第5关打僵王）：</div>
+        <div class="level-cards-grid">
+          <div class="level-pick-card" onclick="startGameAdventure(0)" id="btn-select-lvl-1">
+            <span class="lvl-icon">🌅</span>
+            <span class="lvl-num">第 1 关</span>
+            <span class="lvl-name">早晨阳光草地</span>
+          </div>
+          <div class="level-pick-card" onclick="startGameAdventure(1)" id="btn-select-lvl-2">
+            <span class="lvl-icon">🌙</span>
+            <span class="lvl-num">第 2 关</span>
+            <span class="lvl-name">黑夜降临草地</span>
+          </div>
+          <div class="level-pick-card" onclick="startGameAdventure(2)" id="btn-select-lvl-3">
+            <span class="lvl-icon">🪷</span>
+            <span class="lvl-num">第 3 关</span>
+            <span class="lvl-name">泳池水上关卡</span>
+          </div>
+          <div class="level-pick-card" onclick="startGameAdventure(3)" id="btn-select-lvl-4">
+            <span class="lvl-icon">🌫️</span>
+            <span class="lvl-num">第 4 关</span>
+            <span class="lvl-name">黑夜浓雾泳池</span>
+          </div>
+          <div class="level-pick-card boss-card" onclick="startGameAdventure(4)" id="btn-select-lvl-5">
+            <span class="lvl-icon">⛈️👑</span>
+            <span class="lvl-num">第 5 关 (BOSS)</span>
+            <span class="lvl-name">屋顶机甲僵王</span>
+          </div>
+        </div>
       </div>
-      <button class="main-play-btn" onclick="startGameAdventure()">
-        🎮 立即布置防线，保卫后院！
+
+      <button class="main-play-btn" onclick="startGameAdventure(0)">
+        🎮 从第1关开始冒险，保卫后院！
       </button>
     </div>
 
@@ -450,8 +559,14 @@
       </div>
 
       <div class="result-btns">
-        <button class="main-play-btn" style="padding: 14px 44px; font-size: 20px;" id="btn-next-level" onclick="nextLevel()">
-          🚀 立即前往下一关！
+        <button class="main-play-btn" style="padding: 13px 36px; font-size: 19px;" id="btn-next-level" onclick="nextLevel()">
+          🚀 前往下一关！
+        </button>
+        <button class="secondary-btn" onclick="replayCurrentLevel()">
+          🔄 重玩本关
+        </button>
+        <button class="secondary-btn" onclick="showStartLevelSelect()">
+          🗺️ 自由选关
         </button>
       </div>
     </div>
@@ -469,8 +584,14 @@
         <span>🌈</span><span>🎇</span><span>🎖️</span><span>🎆</span><span>✨</span>
       </div>
       <div class="result-btns">
-        <button class="main-play-btn" style="padding: 15px 40px; font-size: 20px; background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);" onclick="restartFromBeginning()">
-          🔄 重新开启无尽大冒险！
+        <button class="main-play-btn" style="padding: 14px 34px; font-size: 19px; background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);" onclick="loadLevel(4)">
+          👑 再次挑战机甲僵王！
+        </button>
+        <button class="secondary-btn" onclick="showStartLevelSelect()">
+          🗺️ 自由选择关卡
+        </button>
+        <button class="secondary-btn" onclick="restartFromBeginning()">
+          🔄 从头开启大冒险
         </button>
       </div>
     </div>
@@ -481,8 +602,11 @@
       <div class="result-title" style="color: #ff5722;">差一点点就守住啦！</div>
       <div class="result-desc">别灰心！后院总部送来了【🌟 500点超级阳光空投 + 警车全满】，再来一次必定获胜！</div>
       <div class="result-btns">
-        <button class="main-play-btn" style="padding: 14px 44px; font-size: 20px; background: linear-gradient(180deg, #ff9800 0%, #e65100 100%);" onclick="retryLevelWithBuff()">
+        <button class="main-play-btn" style="padding: 14px 36px; font-size: 19px; background: linear-gradient(180deg, #ff9800 0%, #e65100 100%);" onclick="retryLevelWithBuff()">
           ⚡ 满血满阳光再战！
+        </button>
+        <button class="secondary-btn" onclick="showStartLevelSelect()">
+          🗺️ 选择其他关卡
         </button>
       </div>
     </div>
@@ -604,7 +728,7 @@
         bgType: "storm_roof",
         wavesCount: 3,
         zombiesPool: ['basic', 'conehead', 'buckethead'],
-        tip: "终极大决战！先放【🪴 花盆平头】再种植物，操控右上角火球与冰球轰炸超大不动僵王！"
+        tip: "终极大决战！先放【🪴 花盆平头】再种植物，操控火球与冰球轰炸僵王！靠右种植【🍒 樱桃炸弹】可直接重创僵王-1200血！"
       }
     ];
 
@@ -728,8 +852,9 @@
     let particles = [];
     let rainDrops = [];
 
-    // 第5关巨型不动僵王与双铁牛助战
+    // 第5关巨型不动僵王、滚球与双铁牛助战
     let bossMech = null;
+    let bossRollingBalls = [];
     let ironBulls = [];
     let skillCooldowns = { fireball: 0, iceball: 0 };
 
@@ -867,10 +992,35 @@
     /* ============================================================
        5. 关卡加载与初始化 (5大天气场景)
        ============================================================ */
-    function startGameAdventure() {
+    function startGameAdventure(levelIdx = 0) {
       sound.init();
       document.getElementById('screen-start').classList.add('hidden');
-      loadLevel(0);
+      document.getElementById('screen-victory').classList.add('hidden');
+      document.getElementById('screen-finale').classList.add('hidden');
+      document.getElementById('screen-fail').classList.add('hidden');
+      loadLevel(levelIdx);
+    }
+
+    function showStartLevelSelect() {
+      if (autoNextTimer) {
+        clearInterval(autoNextTimer);
+        autoNextTimer = null;
+      }
+      document.getElementById('screen-victory').classList.add('hidden');
+      document.getElementById('screen-finale').classList.add('hidden');
+      document.getElementById('screen-fail').classList.add('hidden');
+      document.getElementById('screen-start').classList.remove('hidden');
+    }
+
+    function replayCurrentLevel() {
+      if (autoNextTimer) {
+        clearInterval(autoNextTimer);
+        autoNextTimer = null;
+      }
+      document.getElementById('screen-victory').classList.add('hidden');
+      document.getElementById('screen-finale').classList.add('hidden');
+      document.getElementById('screen-fail').classList.add('hidden');
+      loadLevel(currentLevelIndex);
     }
 
     function loadLevel(levelIdx) {
@@ -884,11 +1034,11 @@
       
       document.getElementById('level-badge').innerHTML = `<span>${level.bgType.includes('morning') ? '🌅' : (level.bgType.includes('pool') ? '🪷' : (level.bgType.includes('roof') ? '⛈️' : '🌙'))}</span> ${level.title}`;
       
-      // 第5关屋顶专属技能显示
+      // 第5关屋顶专属技能显示与巨型机械僵王初始化
       const bossSkillsEl = document.getElementById('boss-skills');
       if (currentLevelIndex === 4) {
         bossSkillsEl.style.display = 'flex';
-        // 生成右侧巨型不动机械僵王
+        // 生成右侧巨型不动机械僵王 (带超慢动作状态机与长冷却)
         bossMech = {
           x: 890,
           y: 285,
@@ -897,7 +1047,17 @@
           alive: true,
           freezeTimer: 0,
           hitTimer: 0,
-          anim: 0
+          anim: 0,
+          state: 'idle', // 'idle' | 'lowering_zombie' | 'charging_ball'
+          stateTimer: 0,
+          spawnTimer: 180, // 3秒后首次放怪
+          spawnCooldown: 900, // 每次放怪后长达15秒CD (超慢节奏)
+          spitTimer: 600, // 10秒后首次吐球
+          spitCooldown: 1200, // 每次吐球后长达20秒CD (超慢节奏)
+          armRow: 2,
+          carriedZombieType: 'basic',
+          spitTargetRow: 2,
+          ballType: 'fire'
         };
         // 生成前线两头猛攻僵王的机械铁牛
         ironBulls = [
@@ -913,8 +1073,8 @@
       // 重置卡片栏 (屋顶显示花盆，水池显示睡莲)
       renderPlantCards();
 
-      // 重置资源
-      sunCount = isBuffed ? 500 : 150;
+      // 重置资源 (第5关僵王战初始阳光给予300点，方便快速布置阵地)
+      sunCount = isBuffed ? 500 : (currentLevelIndex === 4 ? 300 : 150);
       updateSunDisplay();
 
       // 清空网格与实体
@@ -922,6 +1082,7 @@
       plants = [];
       zombies = [];
       projectiles = [];
+      bossRollingBalls = [];
       suns = [];
       particles = [];
 
@@ -962,6 +1123,10 @@
     }
 
     function restartFromBeginning() {
+      if (autoNextTimer) {
+        clearInterval(autoNextTimer);
+        autoNextTimer = null;
+      }
       document.getElementById('screen-finale').classList.add('hidden');
       loadLevel(0);
     }
@@ -979,22 +1144,23 @@
 
       if (type === 'fireball') {
         sound.playSkillFire();
-        bossMech.hp -= 350;
-        bossMech.hitTimer = 12;
-        createFloatingText("💥 炽热火球轰炸 -350！", bossMech.x - 30, bossMech.y - 60, '#ef4444', 28);
+        bossMech.hp -= 400;
+        bossMech.hitTimer = 14;
+        createFloatingText("💥 炽热火球轰炸 -400！", bossMech.x - 30, bossMech.y - 60, '#ef4444', 28);
         createSparks(bossMech.x - 20, bossMech.y, '#f97316', 30);
       } else if (type === 'iceball') {
         sound.playSkillIce();
-        bossMech.hp -= 350;
-        bossMech.freezeTimer = 180; // 冻结3秒
-        bossMech.hitTimer = 12;
-        createFloatingText("❄️ 暴雪冰封轰炸 -350！", bossMech.x - 30, bossMech.y - 60, '#38bdf8', 28);
+        bossMech.hp -= 400;
+        bossMech.freezeTimer = 240; // 冻结4秒
+        bossMech.hitTimer = 14;
+        createFloatingText("❄️ 暴雪冰封轰炸 -400！", bossMech.x - 30, bossMech.y - 60, '#38bdf8', 28);
         createSparks(bossMech.x - 20, bossMech.y, '#38bdf8', 30);
       }
 
       if (bossMech.hp <= 0 && bossMech.alive) {
+        bossMech.hp = 0;
         bossMech.alive = false;
-        createSparks(bossMech.x, bossMech.y, '#f59e0b', 50);
+        createSparks(bossMech.x, bossMech.y, '#f59e0b', 60);
         setTimeout(onLevelCleared, 1000);
       }
     }
@@ -1289,9 +1455,10 @@
         // 豌豆射手 / 寒冰特警射击 (攻击力加强为70，3发子弹消灭基础僵尸)
         if (p.type === 'peashooter' || p.type === 'snowpea') {
           p.shootTimer++;
-          // 检查同行右侧是否有僵尸
+          // 检查同行右侧是否有僵尸，或者第5关巨型僵王存在
           const hasZombieAhead = zombies.some(z => z.row === p.row && z.x > p.x && !z.isDead);
-          if (hasZombieAhead && p.shootTimer > 75) { // 约1.25秒射击一发
+          const hasBossAhead = (bossMech && bossMech.alive && currentLevelIndex === 4);
+          if ((hasZombieAhead || hasBossAhead) && p.shootTimer > 75) { // 约1.25秒射击一发
             p.shootTimer = 0;
             sound.playShoot();
             projectiles.push({
@@ -1346,8 +1513,26 @@
           }
         }
 
-        // 碰撞检测 2：击中第5关右侧巨型不动机械僵王
-        if (!hit && bossMech && bossMech.alive && proj.x >= bossMech.x - 70) {
+        // 碰撞检测 2：击中僵王滚球 (冰火互消)
+        if (!hit) {
+          for (let b of bossRollingBalls) {
+            if (b.alive && b.row === proj.row && Math.hypot(proj.x - b.x, proj.y - b.y) < b.r + 12) {
+              hit = true;
+              b.hp -= proj.dmg;
+              sound.playHit();
+              createSparks(proj.x, proj.y, b.type === 'fire' ? '#38bdf8' : '#ef4444', 8);
+              if (b.hp <= 0) {
+                b.alive = false;
+                createFloatingText(b.type === 'fire' ? '❄️ 冰火抵消火球！' : '💥 击碎暴雪冰球！', b.x, b.y - 20, '#facc15', 18);
+                createSparks(b.x, b.y, b.type === 'fire' ? '#f97316' : '#38bdf8', 22);
+              }
+              break;
+            }
+          }
+        }
+
+        // 碰撞检测 3：击中第5关右侧巨型不动机械僵王 (精准掉血、火花与飘字)
+        if (!hit && bossMech && bossMech.alive && proj.x >= bossMech.x - 85) {
           hit = true;
           bossMech.hp -= proj.dmg;
           bossMech.hitTimer = 6;
@@ -1356,10 +1541,13 @@
             bossMech.freezeTimer = 90;
           }
           createSparks(bossMech.x - 40, proj.y, proj.type === 'ice' ? '#38bdf8' : '#22c55e', 8);
+          createFloatingText(`-${proj.dmg}`, bossMech.x - 45 + Math.random() * 20, proj.y - 10, proj.type === 'ice' ? '#38bdf8' : '#86efac', 16);
 
           if (bossMech.hp <= 0) {
+            bossMech.hp = 0;
             bossMech.alive = false;
             createSparks(bossMech.x, bossMech.y, '#f59e0b', 60);
+            setTimeout(onLevelCleared, 1000);
           }
         }
 
@@ -1381,11 +1569,150 @@
             if (Math.random() < 0.25) sound.playHit();
 
             if (bossMech.hp <= 0) {
+              bossMech.hp = 0;
               bossMech.alive = false;
               createSparks(bossMech.x, bossMech.y, '#f59e0b', 60);
+              setTimeout(onLevelCleared, 1000);
             }
           }
         });
+      }
+
+      // 更新第5关巨型机械僵王 (超慢动作状态机与长冷却机制)
+      if (bossMech && bossMech.alive && currentLevelIndex === 4) {
+        if (bossMech.hitTimer > 0) bossMech.hitTimer--;
+        if (bossMech.freezeTimer > 0) {
+          bossMech.freezeTimer--;
+        } else {
+          bossMech.anim += 0.04;
+          bossMech.stateTimer++;
+
+          if (bossMech.state === 'idle') {
+            bossMech.spawnTimer--;
+            bossMech.spitTimer--;
+
+            // 1. 机械手下放放置小僵尸 (慢节奏：15秒CD)
+            if (bossMech.spawnTimer <= 0) {
+              bossMech.state = 'lowering_zombie';
+              bossMech.stateTimer = 0;
+              bossMech.armRow = Math.floor(Math.random() * ROWS);
+              bossMech.carriedZombieType = Math.random() < 0.4 ? 'conehead' : (Math.random() < 0.75 ? 'basic' : 'buckethead');
+              createFloatingText(`🤖 僵王机械手臂下探！准备放置小僵尸！`, 510, 180, '#38bdf8', 22);
+            }
+            // 2. 慢速蓄力吐出冰火巨球 (慢节奏：20秒CD)
+            else if (bossMech.spitTimer <= 0) {
+              bossMech.state = 'charging_ball';
+              bossMech.stateTimer = 0;
+              bossMech.spitTargetRow = Math.floor(Math.random() * ROWS);
+              bossMech.ballType = bossMech.ballType === 'fire' ? 'ice' : 'fire';
+              sound.playSkillFire();
+              createFloatingText(bossMech.ballType === 'fire' ? `🔥 警报！僵王正在蓄力吐出【炽热火球】！` : `❄️ 警报！僵王正在蓄力吐出【暴雪冰球】！`, 510, 180, bossMech.ballType === 'fire' ? '#ef4444' : '#38bdf8', 24);
+            }
+          } else if (bossMech.state === 'lowering_zombie') {
+            // 机械手下放动画持续 180 帧 (3秒)：
+            // 0~110帧：手臂下探
+            // 110帧：小僵尸接触地面网格，赋予 standTimer = 120 (站稳2秒后起步)
+            // 110~180帧：手臂收回
+            if (bossMech.stateTimer === 110) {
+              let hp = 200;
+              let speed = 0.42;
+              if (bossMech.carriedZombieType === 'conehead') { hp = 350; }
+              else if (bossMech.carriedZombieType === 'buckethead') { hp = 650; }
+
+              const spawnX = GRID_LEFT + 7 * CELL_W + 30;
+              zombies.push({
+                type: bossMech.carriedZombieType,
+                row: bossMech.armRow,
+                x: spawnX,
+                y: GRID_TOP + bossMech.armRow * CELL_H + CELL_H / 2,
+                hp: hp,
+                maxHp: hp,
+                baseSpeed: speed,
+                isEating: false,
+                isDead: false,
+                deathTimer: 25,
+                slowTimer: 0,
+                hitAnim: 0,
+                stepAnim: Math.random() * 10,
+                standTimer: 120 // 落地站稳2秒后起步！
+              });
+              sound.playHit();
+              createFloatingText("🚶 小僵尸落地站稳！准备进攻！", spawnX, GRID_TOP + bossMech.armRow * CELL_H + 10, '#86efac', 18);
+              createSparks(spawnX, GRID_TOP + bossMech.armRow * CELL_H + CELL_H / 2, '#94a3b8', 12);
+            } else if (bossMech.stateTimer >= 180) {
+              bossMech.state = 'idle';
+              bossMech.stateTimer = 0;
+              bossMech.spawnTimer = bossMech.spawnCooldown; // 15秒冷却
+            }
+          } else if (bossMech.state === 'charging_ball') {
+            // 蓄力 120 帧 (2秒)
+            if (bossMech.stateTimer % 8 === 0) {
+              createSparks(bossMech.x - 60, bossMech.y - 120, bossMech.ballType === 'fire' ? '#ef4444' : '#38bdf8', 4);
+            }
+            if (bossMech.stateTimer >= 120) {
+              const ballY = GRID_TOP + bossMech.spitTargetRow * CELL_H + CELL_H / 2;
+              bossRollingBalls.push({
+                x: bossMech.x - 70,
+                y: ballY,
+                row: bossMech.spitTargetRow,
+                type: bossMech.ballType,
+                vx: -1.5,
+                r: 22,
+                hp: 140,
+                alive: true
+              });
+              sound.playExplosion();
+              createFloatingText(bossMech.ballType === 'fire' ? '🔥 巨型火球滚来啦！快用植物阻击！' : '❄️ 巨型冰球滚来啦！快用植物阻击！', 510, 180, bossMech.ballType === 'fire' ? '#f97316' : '#38bdf8', 22);
+
+              bossMech.state = 'idle';
+              bossMech.stateTimer = 0;
+              bossMech.spitTimer = bossMech.spitCooldown; // 20秒冷却
+            }
+          }
+        }
+      }
+
+      // 更新僵王滚球
+      for (let i = bossRollingBalls.length - 1; i >= 0; i--) {
+        const b = bossRollingBalls[i];
+        if (!b.alive) {
+          bossRollingBalls.splice(i, 1);
+          continue;
+        }
+        b.x += b.vx;
+        b.anim = (b.anim || 0) + 0.1;
+
+        // 1. 碰到植物碾压
+        const currentCol = Math.floor((b.x - GRID_LEFT) / CELL_W);
+        if (currentCol >= 0 && currentCol < COLS) {
+          const cell = grid[b.row][currentCol];
+          if (cell.plant || cell.base) {
+            const targetPlant = cell.plant || cell.base;
+            targetPlant.hp -= 2.2;
+            if (Math.random() < 0.12) {
+              createSparks(b.x, b.y, b.type === 'fire' ? '#ef4444' : '#38bdf8', 4);
+            }
+            if (targetPlant.hp <= 0) {
+              if (cell.plant === targetPlant) cell.plant = null;
+              if (cell.base === targetPlant) cell.base = null;
+              const pIdx = plants.indexOf(targetPlant);
+              if (pIdx !== -1) plants.splice(pIdx, 1);
+              createTilePuff(targetPlant.row, targetPlant.col, '#ef4444');
+            }
+          }
+        }
+
+        // 2. 滚出屏幕左侧或被割草警车碾压
+        if (b.x < GRID_LEFT - 10) {
+          const mower = lawnmowers.find(m => m.row === b.row);
+          if (mower && mower.alive) {
+            mower.active = true;
+            b.alive = false;
+            createSparks(b.x, b.y, '#ef4444', 20);
+          } else if (b.x < GRID_LEFT - 60) {
+            b.alive = false;
+          }
+        }
       }
 
       // 更新僵尸成波生成 (固定4秒出怪，清屏后1.5秒快速进入下一波)
@@ -1410,6 +1737,12 @@
 
         if (z.hitAnim > 0) z.hitAnim--;
         if (z.slowTimer > 0) z.slowTimer--;
+
+        // 刚落地的僵尸站稳2秒前原地停顿调整平衡
+        if (z.standTimer && z.standTimer > 0) {
+          z.standTimer--;
+          continue;
+        }
 
         // 检查前方是否有植物可啃咬
         const currentCol = Math.floor((z.x - GRID_LEFT) / CELL_W);
@@ -1515,15 +1848,13 @@
           let row = Math.floor(Math.random() * ROWS);
           const isPool = (level.bgType === 'day_pool' || level.bgType === 'fog_pool');
           
-          // 选择怪种
+          // 选择怪种 (移除非必要的重复boss_mech移动怪)
           let type = 'basic';
           if (isPool && (row === 2 || row === 3)) {
             type = Math.random() < 0.6 ? 'duck_tube' : 'basic';
           } else {
             const rand = Math.random();
-            if (level.bgType === 'storm_roof' && isHugeWave && i === 0) {
-              type = 'boss_mech';
-            } else if (rand < 0.35 && level.zombiesPool.includes('buckethead')) {
+            if (rand < 0.35 && level.zombiesPool.includes('buckethead')) {
               type = 'buckethead';
             } else if (rand < 0.65 && level.zombiesPool.includes('conehead')) {
               type = 'conehead';
@@ -1535,7 +1866,6 @@
           if (type === 'conehead') { hp = 350; } // 5发子弹击败
           else if (type === 'buckethead') { hp = 650; } // 10发子弹击败
           else if (type === 'duck_tube') { hp = 280; speed = 0.55; } // 4发子弹击败
-          else if (type === 'boss_mech') { hp = 3500; speed = 0.22; }
 
           zombies.push({
             type: type,
@@ -1558,7 +1888,7 @@
       waveTimer = 240; // 固定4秒下一波出怪
     }
 
-    /* 樱桃炸弹 3x3 范围大爆炸 */
+    /* 樱桃炸弹 3x3 范围大爆炸 (包含重创僵王与炸毁滚球) */
     function triggerCherryExplosion(p) {
       sound.playExplosion();
       const cx = p.x;
@@ -1573,6 +1903,34 @@
           createSparks(z.x, z.y, '#f59e0b', 30);
         }
       });
+
+      // 消除范围内的僵王滚球
+      bossRollingBalls.forEach(b => {
+        if (b.alive && Math.hypot(b.x - cx, b.y - cy) < blastRadius * 1.3) {
+          b.alive = false;
+          createFloatingText("💥 樱桃核爆炸碎滚球！", b.x, b.y - 20, '#facc15', 20);
+          createSparks(b.x, b.y, b.type === 'fire' ? '#ef4444' : '#38bdf8', 25);
+        }
+      });
+
+      // 核心修复：对第5关巨型僵王造成 1200 点巨额核爆伤害！
+      if (bossMech && bossMech.alive) {
+        const distToBoss = Math.hypot(bossMech.x - cx, bossMech.y - cy);
+        if (p.col >= 4 || distToBoss < 320) {
+          bossMech.hp -= 1200;
+          bossMech.hitTimer = 18;
+          createFloatingText("💥 樱桃核爆重创僵王 -1200！", bossMech.x - 60, bossMech.y - 70, '#f43f5e', 32);
+          createSparks(bossMech.x - 30, bossMech.y, '#ef4444', 45);
+          createSparks(bossMech.x - 30, bossMech.y, '#f59e0b', 35);
+          
+          if (bossMech.hp <= 0) {
+            bossMech.hp = 0;
+            bossMech.alive = false;
+            createSparks(bossMech.x, bossMech.y, '#f59e0b', 80);
+            setTimeout(onLevelCleared, 1000);
+          }
+        }
+      }
 
       // 巨大蘑菇云爆炸粒子
       for (let i = 0; i < 45; i++) {
@@ -1686,9 +2044,10 @@
       // 3. 载台(睡莲/花盆)与火柴人植物
       renderPlants();
 
-      // 4. 第5关前线双机械铁牛与巨型不动机械僵王
+      // 4. 第5关前线双机械铁牛与巨型不动机械僵王及滚球
       renderIronBulls();
       renderGiantZombossMech();
+      renderBossRollingBalls();
 
       // 5. 僵尸军团
       renderZombies();
@@ -2112,6 +2471,7 @@
       if (bossMech.hitTimer > 0) ctx.translate(-3 + Math.random() * 6, -3 + Math.random() * 6);
 
       const isFrozen = bossMech.freezeTimer > 0;
+      const isCharging = (bossMech.state === 'charging_ball');
 
       // 巨型底座履带
       ctx.fillStyle = '#0f172a';
@@ -2124,18 +2484,18 @@
 
       // 巨型机甲装甲胸膛
       ctx.fillStyle = isFrozen ? '#0284c7' : '#1e293b';
-      ctx.strokeStyle = isFrozen ? '#93c5fd' : '#ef4444';
+      ctx.strokeStyle = isFrozen ? '#93c5fd' : (isCharging ? (bossMech.ballType === 'fire' ? '#ef4444' : '#38bdf8') : '#ef4444');
       ctx.lineWidth = 6;
       ctx.beginPath();
       ctx.roundRect(-75, -130, 150, 280, 20);
       ctx.fill();
       ctx.stroke();
 
-      // 能量核心反应堆
-      const corePulse = Math.sin(Date.now() * 0.008) * 6;
-      ctx.fillStyle = isFrozen ? '#38bdf8' : '#f59e0b';
+      // 能量核心反应堆 (蓄力时剧烈膨胀发光)
+      const corePulse = isCharging ? Math.sin(Date.now() * 0.02) * 12 : Math.sin(Date.now() * 0.008) * 6;
+      ctx.fillStyle = isFrozen ? '#38bdf8' : (isCharging ? (bossMech.ballType === 'fire' ? '#ef4444' : '#38bdf8') : '#f59e0b');
       ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = 16;
+      ctx.shadowBlur = isCharging ? 28 : 16;
       ctx.beginPath();
       ctx.arc(0, 15, 32 + corePulse, 0, Math.PI * 2);
       ctx.fill();
@@ -2159,13 +2519,13 @@
       ctx.fill();
       ctx.stroke();
 
-      // 双眼红光/冰光瞄准
-      ctx.fillStyle = isFrozen ? '#93c5fd' : '#ef4444';
+      // 双眼瞄准 (蓄力时强光闪烁)
+      ctx.fillStyle = isFrozen ? '#93c5fd' : (isCharging ? (bossMech.ballType === 'fire' ? '#ef4444' : '#38bdf8') : '#ef4444');
       ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = isCharging ? 20 : 10;
       ctx.beginPath();
-      ctx.arc(-22, -160, 14, 0, Math.PI * 2);
-      ctx.arc(22, -160, 14, 0, Math.PI * 2);
+      ctx.arc(-22, -160, isCharging ? 17 : 14, 0, Math.PI * 2);
+      ctx.arc(22, -160, isCharging ? 17 : 14, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
 
@@ -2181,6 +2541,71 @@
       ctx.fill();
 
       ctx.restore();
+
+      // 如果处于 lowering_zombie 状态，绘制伸展的巨大机械抓手
+      if (bossMech.state === 'lowering_zombie') {
+        ctx.save();
+        const armOriginX = bossMech.x - 70;
+        const armOriginY = bossMech.y - 40;
+        const targetX = GRID_LEFT + 7 * CELL_W + 30;
+        const targetY = GRID_TOP + bossMech.armRow * CELL_H + CELL_H / 2;
+
+        let extProgress = 0;
+        if (bossMech.stateTimer <= 110) {
+          extProgress = Math.min(1, bossMech.stateTimer / 100);
+        } else {
+          extProgress = Math.max(0, 1 - (bossMech.stateTimer - 110) / 70);
+        }
+
+        const clawX = armOriginX + (targetX - armOriginX) * extProgress;
+        const clawY = armOriginY + (targetY - armOriginY) * extProgress;
+
+        // 机械手臂节段
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(armOriginX, armOriginY);
+        const midX = (armOriginX + clawX) / 2 + 30;
+        const midY = (armOriginY + clawY) / 2 - 40;
+        ctx.quadraticCurveTo(midX, midY, clawX, clawY);
+        ctx.stroke();
+
+        // 机械爪底座
+        ctx.fillStyle = '#f59e0b';
+        ctx.strokeStyle = '#b45309';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(clawX, clawY, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 爪指
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(clawX - 10, clawY);
+        ctx.lineTo(clawX - 22, clawY + 12);
+        ctx.moveTo(clawX + 10, clawY);
+        ctx.lineTo(clawX + 22, clawY + 12);
+        ctx.stroke();
+
+        // 还在抓取中的小僵尸 (0~110帧下放中)
+        if (bossMech.stateTimer < 110) {
+          ctx.save();
+          ctx.translate(clawX, clawY + 18);
+          drawStandardStickmanZombie(ctx, {
+            type: bossMech.carriedZombieType,
+            slowTimer: 0,
+            hitAnim: 0,
+            stepAnim: 0,
+            standTimer: 0
+          });
+          ctx.restore();
+        }
+
+        ctx.restore();
+      }
 
       // 顶部全宽巨型僵王血条
       ctx.save();
@@ -2215,6 +2640,69 @@
       ctx.restore();
     }
 
+    /* 8.5 绘制僵王发射的滚球 (火球/冰球) */
+    function renderBossRollingBalls() {
+      bossRollingBalls.forEach(b => {
+        if (!b.alive) return;
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        const rot = (b.anim || 0) * 2;
+        ctx.rotate(rot);
+
+        if (b.type === 'fire') {
+          // 炽热火球
+          const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, b.r);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.3, '#fef08a');
+          grad.addColorStop(0.7, '#f97316');
+          grad.addColorStop(1, '#dc2626');
+
+          ctx.fillStyle = grad;
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 18;
+          ctx.beginPath();
+          ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // 火焰尖刺外环
+          ctx.fillStyle = '#fde047';
+          for (let k = 0; k < 6; k++) {
+            const ang = (k * Math.PI) / 3;
+            ctx.beginPath();
+            ctx.arc(Math.cos(ang) * (b.r + 4), Math.sin(ang) * (b.r + 4), 5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else {
+          // 暴雪冰球
+          const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, b.r);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.4, '#bae6fd');
+          grad.addColorStop(0.8, '#38bdf8');
+          grad.addColorStop(1, '#0284c7');
+
+          ctx.fillStyle = grad;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 18;
+          ctx.beginPath();
+          ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // 冰晶尖刺外环
+          ctx.fillStyle = '#e0f2fe';
+          for (let k = 0; k < 6; k++) {
+            const ang = (k * Math.PI) / 3;
+            ctx.beginPath();
+            ctx.arc(Math.cos(ang) * (b.r + 4), Math.sin(ang) * (b.r + 4), 4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        ctx.restore();
+      });
+    }
+
     /* 绘制所有火柴人僵尸 */
     function renderZombies() {
       zombies.forEach(z => {
@@ -2234,8 +2722,10 @@
     }
 
     function drawStandardStickmanZombie(ctx, z) {
-      // 1. 摇摇晃晃的火柴人身躯
-      const walk = Math.sin(Date.now() * 0.008 + z.stepAnim) * 5;
+      const isStanding = (z.standTimer && z.standTimer > 0);
+      const walk = isStanding ? 0 : Math.sin(Date.now() * 0.008 + (z.stepAnim || 0)) * 5;
+      const balanceAnim = isStanding ? Math.sin(Date.now() * 0.015) * 4 : 0;
+
       ctx.strokeStyle = z.slowTimer > 0 ? '#38bdf8' : '#334155';
       ctx.lineWidth = 5;
       ctx.lineCap = 'round';
@@ -2252,18 +2742,35 @@
       ctx.fillStyle = '#ef4444';
       ctx.fillRect(-2 + walk/2, -4, 4, 12);
 
-      // 双腿向前走动
-      ctx.beginPath();
-      ctx.moveTo(walk, 20);
-      ctx.lineTo(-8 - walk, 42);
-      ctx.moveTo(walk, 20);
-      ctx.lineTo(8 + walk, 42);
-      ctx.stroke();
+      // 双腿
+      if (isStanding) {
+        // 站稳双脚踩地
+        ctx.beginPath();
+        ctx.moveTo(0, 20);
+        ctx.lineTo(-10, 42);
+        ctx.moveTo(0, 20);
+        ctx.lineTo(10, 42);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(walk, 20);
+        ctx.lineTo(-8 - walk, 42);
+        ctx.moveTo(walk, 20);
+        ctx.lineTo(8 + walk, 42);
+        ctx.stroke();
+      }
 
-      // 双手前伸啃咬
+      // 双手 (站立时伸展手臂调整平衡，行走时向前伸)
       ctx.beginPath();
-      ctx.moveTo(0, -4);
-      ctx.lineTo(-24, -2);
+      if (isStanding) {
+        ctx.moveTo(0, -4);
+        ctx.lineTo(-16, -14 + balanceAnim);
+        ctx.moveTo(0, -4);
+        ctx.lineTo(16, -14 - balanceAnim);
+      } else {
+        ctx.moveTo(0, -4);
+        ctx.lineTo(-24, -2);
+      }
       ctx.stroke();
 
       // 2. 僵尸绿脸头部
@@ -2286,6 +2793,13 @@
       ctx.arc(-3, -26, 2, 0, Math.PI * 2);
       ctx.arc(4, -26, 2.5, 0, Math.PI * 2);
       ctx.fill();
+
+      if (isStanding) {
+        // 落地站立汗珠或眩晕符号
+        ctx.font = '12px sans-serif';
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('💫', 10, -32 + balanceAnim);
+      }
 
       // 3. 特殊装备帽子
       if (z.type === 'conehead') {
