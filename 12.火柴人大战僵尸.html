@@ -571,6 +571,15 @@
           </div>
         </div>
 
+        <!-- 巨型黄色机甲僵王专属血条 -->
+        <div id="boss-hp-container" style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.85); border: 2px solid #ef4444; border-radius: 18px; padding: 2px 10px; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);">
+          <span style="font-size: 16px;">🤖👑</span>
+          <div style="width: 120px; height: 12px; background: rgba(0,0,0,0.6); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);">
+            <div id="boss-hp-fill" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b, #22c55e); transition: width 0.2s;"></div>
+          </div>
+          <span id="boss-hp-text" style="font-size: 11px; font-weight: 900; color: #fde047;">5000</span>
+        </div>
+
         <!-- 必杀能量槽 -->
         <div class="energy-box">
           <span style="font-size: 14px;">⚡</span>
@@ -791,6 +800,8 @@
     let sunItems = [];
     let lawnMowers = []; // 5辆保底火箭推车
     let floatingTexts = [];
+    let giantBoss = null; // 全局黄色长腿巨型机甲僵王
+    let bossRollingBalls = []; // 僵王吐出的冰火滚球
 
     // 植物配置表
     const PLANT_CONFIG = {
@@ -962,7 +973,7 @@
         this.y = center.y;
         this.hp = PLANT_CONFIG[type].hp;
         this.maxHp = this.hp;
-        this.timer = 0;
+        this.timer = 0.8; // 快速开火出击
         this.animFrame = Math.random() * 100;
         this.tntCountdown = 2.5; // TNT倒计时 2.5秒
         this.scale = 0.2; // 放置出生动画缩放
@@ -985,11 +996,10 @@
           }
         }
 
-        // 弯弓射手火柴人极速连射 (还原38cm极速连射)
+        // 弯弓射手火柴人极速连射 (还原38cm极速连射，同时锁定巨型机甲僵王)
         if (this.type === 'archer') {
           this.timer += dt;
-          // 判断当前行是否有僵尸
-          const hasZombieInRow = zombies.some(z => z.row === this.row && z.x > this.x && z.hp > 0);
+          const hasZombieInRow = zombies.some(z => z.row === this.row && z.x > this.x && z.hp > 0) || (giantBoss && giantBoss.alive);
           let shootInterval = 0.85;
           if (blueHonorTimer > 0) shootInterval *= 0.5; // 射速翻倍！
 
@@ -1001,21 +1011,22 @@
           }
         }
 
-        // 西瓜投手火柴人 (抛物线大西瓜)
+        // 西瓜投手火柴人 (抛物线大西瓜，优先小怪，无怪时砸僵王)
         if (this.type === 'melon') {
           this.timer += dt;
           const targetZombie = zombies.find(z => z.row === this.row && z.x > this.x && z.hp > 0);
+          const canShootBoss = (!targetZombie && giantBoss && giantBoss.alive);
           let melonInterval = 1.8;
           if (blueHonorTimer > 0) melonInterval *= 0.6;
 
-          if (targetZombie && this.timer >= melonInterval) {
+          if ((targetZombie || canShootBoss) && this.timer >= melonInterval) {
             this.timer = 0;
-            projectiles.push(new Melon(this.x + 10, this.y - 25, targetZombie));
+            projectiles.push(new Melon(this.x + 10, this.y - 25, targetZombie, canShootBoss));
             Sound.shoot(true, false);
           }
         }
 
-        // MC樱桃TNT火柴人 (自爆清屏)
+        // MC樱桃TNT火柴人 (自爆清屏 + 重创机甲僵王)
         if (this.type === 'tnt') {
           this.tntCountdown -= dt;
           if (this.tntCountdown <= 0) {
@@ -1027,9 +1038,9 @@
       explode() {
         this.hp = 0;
         Sound.tntExplode();
-        triggerScreenShake(15);
+        triggerScreenShake(18);
 
-        // 3x3 范围大爆炸 (甚至更大范围)
+        // 3x3 范围大爆炸
         for (let i = 0; i < 40; i++) {
           particles.push(new Particle(this.x, this.y, 'explosion'));
         }
@@ -1040,6 +1051,25 @@
             z.takeDamage(1800);
           }
         });
+
+        // 核心亮点：MC樱桃TNT对巨型机甲僵王造成 1200+ 点超大核爆伤害！
+        if (giantBoss && giantBoss.alive) {
+          const distToBoss = Math.hypot(giantBoss.x - this.x, giantBoss.y - this.y);
+          if (this.col >= 3 || distToBoss < 380) {
+            giantBoss.takeDamage(1200);
+            createFloatingText("💥 樱桃TNT核爆重创机甲僵王 -1200！", giantBoss.x - 80, giantBoss.y - 120, "#ef4444", 26);
+            triggerScreenShake(25);
+          }
+        }
+
+        // 炸毁范围内的滚球
+        bossRollingBalls.forEach(b => {
+          if (b.alive && Math.hypot(b.x - this.x, b.y - this.y) < 280) {
+            b.alive = false;
+            createFloatingText("💥 樱桃TNT炸毁滚球！", b.x, b.y - 20, "#facc15", 20);
+          }
+        });
+
         createFloatingText("💥 轰！！！", this.x, this.y - 40, "#ef4444", 28);
       }
 
@@ -1429,6 +1459,7 @@
         this.speed = 18; // 像素/秒
         this.animFrame = Math.random() * 100;
         this.eatingTarget = null;
+        this.standTimer = 0; // 刚落地站稳2秒前原地停顿调整平衡
 
         // 根据类型设置生命值与速度
         if (type === 'normal') {
@@ -1468,6 +1499,12 @@
         if (this.stunTimer > 0) {
           this.stunTimer -= dt;
           return; // 眩晕中不移动也不啃咬
+        }
+
+        // 刚落地的僵尸站稳2秒前原地停顿调整平衡
+        if (this.standTimer > 0) {
+          this.standTimer -= dt;
+          return;
         }
 
         // 检查前方是否有火柴人啃咬
@@ -1539,8 +1576,10 @@
         ctx.save();
         ctx.translate(this.x, this.y);
 
-        const wobble = Math.sin(this.animFrame) * 4;
-        const legSwing = Math.sin(this.animFrame) * 12;
+        const isStanding = (this.standTimer > 0);
+        const wobble = isStanding ? 0 : Math.sin(this.animFrame) * 4;
+        const legSwing = isStanding ? 0 : Math.sin(this.animFrame) * 12;
+        const balanceSwing = isStanding ? Math.sin(this.animFrame * 2) * 5 : 0;
 
         // 受击闪白
         if (this.hitFlashTimer > 0) {
@@ -1562,13 +1601,24 @@
         ctx.lineTo(0, 15 + wobble * 0.3);
         ctx.stroke();
 
-        // 腿部摇晃行走
-        ctx.beginPath();
-        ctx.moveTo(0, 15 + wobble * 0.3);
-        ctx.lineTo(-8 + legSwing * 0.5, 32);
-        ctx.moveTo(0, 15 + wobble * 0.3);
-        ctx.lineTo(8 - legSwing * 0.5, 32);
-        ctx.stroke();
+        // 腿部
+        if (isStanding) {
+          // 落地双腿稳稳踩地
+          ctx.beginPath();
+          ctx.moveTo(0, 15);
+          ctx.lineTo(-8, 32);
+          ctx.moveTo(0, 15);
+          ctx.lineTo(8, 32);
+          ctx.stroke();
+        } else {
+          // 腿部摇晃行走
+          ctx.beginPath();
+          ctx.moveTo(0, 15 + wobble * 0.3);
+          ctx.lineTo(-8 + legSwing * 0.5, 32);
+          ctx.moveTo(0, 15 + wobble * 0.3);
+          ctx.lineTo(8 - legSwing * 0.5, 32);
+          ctx.stroke();
+        }
 
         // 头部
         ctx.fillStyle = this.hitFlashTimer > 0 ? "#fff" : "#4ade80";
@@ -1584,11 +1634,26 @@
         ctx.arc(3, -22 + wobble * 0.3, 2, 0, Math.PI * 2);
         ctx.fill();
 
-        // 手臂前伸
+        // 手臂
         ctx.beginPath();
-        ctx.moveTo(0, -5 + wobble * 0.3);
-        ctx.lineTo(-18, -8 + wobble);
+        if (isStanding) {
+          // 站立调整平衡
+          ctx.moveTo(0, -5);
+          ctx.lineTo(-18, -16 + balanceSwing);
+          ctx.moveTo(0, -5);
+          ctx.lineTo(18, -16 - balanceSwing);
+        } else {
+          // 手臂前伸
+          ctx.moveTo(0, -5 + wobble * 0.3);
+          ctx.lineTo(-18, -8 + wobble);
+        }
         ctx.stroke();
+
+        if (isStanding) {
+          ctx.font = "14px sans-serif";
+          ctx.fillStyle = "#38bdf8";
+          ctx.fillText("💫", 8, -34);
+        }
 
         // 端牌子搞笑僵尸：手持滑稽木牌
         if (this.type === 'sign' && this.hasSign) {
@@ -1662,7 +1727,7 @@
       }
     }
 
-    // 流光长箭投射物类 (比豌豆更长，呼应小朋友的“箭比豌豆长”)
+    // 流光长箭投射物类 (比豌豆更长，支持攻击小僵尸、滚球与巨型机甲僵王)
     class Arrow {
       constructor(x, y, row, isFire = false) {
         this.x = x;
@@ -1672,7 +1737,7 @@
         this.isSuper = false; // 是否经过增幅机器变身电浆箭
         this.speed = 520;
         this.length = 36; // 超长流光箭身
-        this.damage = isFire ? 55 : 30;
+        this.damage = isFire ? 60 : 35;
       }
 
       update(dt) {
@@ -1689,7 +1754,23 @@
           }
         }
 
-        // 碰撞僵尸检测
+        // 碰撞巨型滚球检测
+        for (let b of bossRollingBalls) {
+          if (b.alive && b.row === this.row && Math.abs(b.x - this.x) < b.r + 15) {
+            b.hp -= this.damage;
+            createFloatingText(`-${this.damage}`, b.x, b.y - 15, "#fbbf24", 14);
+            if (b.hp <= 0) {
+              b.alive = false;
+              createFloatingText("💥 滚球被射爆！", b.x, b.y - 20, "#facc15", 18);
+              for (let i = 0; i < 15; i++) {
+                particles.push(new Particle(b.x, b.y, 'explosion'));
+              }
+            }
+            if (!this.isSuper) return true;
+          }
+        }
+
+        // 碰撞普通僵尸检测
         for (let z of zombies) {
           if (z.row === this.row && z.hp > 0 && Math.abs(z.x - this.x) < 25) {
             z.takeDamage(this.damage);
@@ -1701,6 +1782,18 @@
             }
           }
         }
+
+        // 碰撞巨型机甲僵王检测 (同行射击或近身命中)
+        if (giantBoss && giantBoss.alive) {
+          if (this.x >= giantBoss.x - 70) {
+            giantBoss.takeDamage(this.damage);
+            for (let i = 0; i < 4; i++) {
+              particles.push(new Particle(this.x, this.y, this.isFire ? 'fire_spark' : 'arrow_spark'));
+            }
+            return true; // 销毁箭矢
+          }
+        }
+
         return this.x > canvas.width + 50;
       }
 
@@ -1743,19 +1836,33 @@
       }
     }
 
-    // 抛物线大西瓜类 (砸中爆汁溅射)
+    // 抛物线大西瓜类 (砸中爆汁溅射，支持砸巨型机甲僵王)
     class Melon {
-      constructor(startX, startY, targetZombie) {
+      constructor(startX, startY, targetZombie, targetBoss = false) {
         this.x = startX;
         this.y = startY;
         this.startX = startX;
         this.startY = startY;
-        this.targetX = targetZombie ? targetZombie.x : startX + 300;
-        this.targetY = targetZombie ? targetZombie.y : startY;
-        this.row = targetZombie ? targetZombie.row : 0;
+        this.targetZombie = targetZombie;
+        this.targetBoss = targetBoss;
+        
+        if (targetZombie) {
+          this.targetX = targetZombie.x;
+          this.targetY = targetZombie.y;
+          this.row = targetZombie.row;
+        } else if (giantBoss && giantBoss.alive) {
+          this.targetX = giantBoss.x - 40;
+          this.targetY = startY;
+          this.row = 0;
+        } else {
+          this.targetX = startX + 350;
+          this.targetY = startY;
+          this.row = 0;
+        }
+
         this.progress = 0;
         this.rotation = 0;
-        this.damage = 110;
+        this.damage = 120;
       }
 
       update(dt) {
@@ -1777,12 +1884,31 @@
 
       explode() {
         Sound.melonBoom();
-        // 范围伤害溅射
+        // 范围伤害溅射普通僵尸
         zombies.forEach(z => {
           if (Math.hypot(z.x - this.targetX, z.y - this.targetY) < 120) {
             z.takeDamage(this.damage);
           }
         });
+
+        // 砸中巨型机甲僵王
+        if (giantBoss && giantBoss.alive) {
+          if (Math.hypot(giantBoss.x - this.targetX, giantBoss.y - this.targetY) < 190) {
+            giantBoss.takeDamage(this.damage);
+          }
+        }
+
+        // 砸中滚球
+        bossRollingBalls.forEach(b => {
+          if (b.alive && Math.hypot(b.x - this.targetX, b.y - this.targetY) < 120) {
+            b.hp -= this.damage * 1.5;
+            if (b.hp <= 0) {
+              b.alive = false;
+              createFloatingText("💥 西瓜砸碎滚球！", b.x, b.y - 20, "#22c55e", 18);
+            }
+          }
+        });
+
         // 喷射西瓜汁和果肉粒子
         for (let i = 0; i < 20; i++) {
           particles.push(new Particle(this.targetX, this.targetY, 'melon_juice'));
@@ -1805,6 +1931,452 @@
         ctx.stroke();
 
         ctx.restore();
+      }
+    }
+
+    // 巨型黄色长腿机甲僵王类 (按小朋友描绘深度定制)
+    class GiantYellowZomboss {
+      constructor() {
+        this.x = canvas.width - 95;
+        this.y = canvas.height / 2 + 10;
+        this.maxHp = 5000;
+        this.hp = 5000;
+        this.alive = true;
+        this.state = 'idle'; // 'idle', 'lowering_zombie', 'charging_ball'
+        this.stateTimer = 0;
+        this.spawnTimer = 180; // 3秒后首次放怪
+        this.spawnCooldown = 900; // 15秒CD
+        this.spitTimer = 600; // 10秒后首次吐球
+        this.spitCooldown = 1200; // 20秒CD
+        this.hitTimer = 0;
+        this.armRow = 2;
+        this.carriedZombieType = 'normal';
+        this.ballType = 'fire';
+        this.animFrame = 0;
+      }
+
+      update(dt) {
+        this.animFrame += dt * 6;
+        if (this.hitTimer > 0) this.hitTimer -= dt;
+
+        // 保持坐标居右自适应
+        this.x = canvas.width - 95;
+        this.y = canvas.height / 2 + 10;
+
+        if (this.hp <= 0 && this.alive) {
+          this.hp = 0;
+          this.alive = false;
+          triggerScreenShake(30);
+          Sound.ultimate();
+          createFloatingText("👑💥 巨型机甲僵王彻底被击毁！", canvas.width / 2, canvas.height / 2, "#facc15", 34);
+          for (let i = 0; i < 60; i++) {
+            particles.push(new Particle(this.x + (Math.random() - 0.5) * 80, this.y + (Math.random() - 0.5) * 120, 'explosion'));
+          }
+          setTimeout(triggerVictory, 1500);
+          return;
+        }
+
+        if (!this.alive) return;
+
+        // 状态机更新
+        if (this.state === 'idle') {
+          this.spawnTimer -= dt * 60;
+          this.spitTimer -= dt * 60;
+
+          // 1. 触发放小僵尸 (每15秒放1只小僵尸)
+          if (this.spawnTimer <= 0) {
+            this.state = 'lowering_zombie';
+            this.stateTimer = 0;
+            this.armRow = Math.floor(Math.random() * ROWS);
+            const pool = ['normal'];
+            if (currentWave >= 2) pool.push('sign');
+            if (currentWave >= 3) pool.push('cone');
+            if (currentWave >= 4) pool.push('bucket');
+            this.carriedZombieType = pool[Math.floor(Math.random() * pool.length)];
+            createFloatingText("🤖👑 僵王机械臂探出，正在下放僵尸！", this.x - 130, this.y - 120, "#fbbf24", 18);
+          }
+          // 2. 触发吐冰火球 (每20秒蓄力吐1个球)
+          else if (this.spitTimer <= 0 && currentWave >= 2) {
+            this.state = 'charging_ball';
+            this.stateTimer = 0;
+            this.ballType = Math.random() < 0.5 ? 'fire' : 'ice';
+            const ballName = this.ballType === 'fire' ? '🔥 炽热火球' : '❄️ 暴雪冰球';
+            createFloatingText(`⚠️ 僵王核心发光蓄力！准备吐出【${ballName}】！`, canvas.width / 2, 70, this.ballType === 'fire' ? '#ef4444' : '#38bdf8', 22);
+            triggerScreenShake(8);
+          }
+        } else if (this.state === 'lowering_zombie') {
+          this.stateTimer += dt * 60;
+          // 第110帧 (约1.8秒)：小僵尸触地降落，赋予 standTimer = 2秒 站立平衡
+          if (this.stateTimer >= 110 && this.carriedZombieType) {
+            const dropX = gridOffsetX + 7 * cellWidth + cellWidth / 2;
+            const newZombie = new StickmanZombie(this.carriedZombieType, this.armRow);
+            newZombie.x = dropX;
+            newZombie.standTimer = 2.0; // 站稳2秒
+            zombies.push(newZombie);
+            createFloatingText("👣 小僵尸落地！站稳2秒后起步...", dropX, getCellCenter(this.armRow, 0).y - 45, "#86efac", 16);
+            this.carriedZombieType = null; // 放下小兵
+          }
+          // 第180帧 (约3秒)：机械手收回完毕，进入15秒冷却
+          if (this.stateTimer >= 180) {
+            this.state = 'idle';
+            this.spawnTimer = this.spawnCooldown;
+          }
+        } else if (this.state === 'charging_ball') {
+          this.stateTimer += dt * 60;
+          // 蓄力期间产生聚能粒子
+          if (Math.random() < 0.5) {
+            particles.push(new Particle(this.x - 40, this.y - 120, this.ballType === 'fire' ? 'fire_spark' : 'arrow_spark'));
+          }
+          // 第120帧 (约2秒)：吐出滚球
+          if (this.stateTimer >= 120) {
+            const targetRow = Math.floor(Math.random() * ROWS);
+            const ballY = getCellCenter(targetRow, 0).y;
+            bossRollingBalls.push(new BossRollingBall(this.x - 70, ballY, targetRow, this.ballType));
+            Sound.ultimate();
+            triggerScreenShake(12);
+            createFloatingText(`💥 僵王吐出了滚球！`, this.x - 90, ballY - 30, this.ballType === 'fire' ? '#ef4444' : '#38bdf8', 20);
+            this.state = 'idle';
+            this.spitTimer = this.spitCooldown;
+          }
+        }
+      }
+
+      takeDamage(amount) {
+        if (!this.alive) return;
+        this.hp -= amount;
+        this.hitTimer = 0.15;
+        Sound.hit(true);
+        addEnergy(4);
+        createFloatingText(`-${Math.floor(amount)}`, this.x - 40 + (Math.random()*30-15), this.y - 100 + (Math.random()*40-20), "#f43f5e", 24);
+        for (let i = 0; i < 5; i++) {
+          particles.push(new Particle(this.x - 30, this.y - 50, 'fire_spark'));
+        }
+        updateBossHpUI();
+      }
+
+      draw(ctx) {
+        if (!this.alive) return;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        if (this.hitTimer > 0) {
+          ctx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8);
+        }
+
+        const isCharging = (this.state === 'charging_ball');
+        const bob = Math.sin(this.animFrame * 0.5) * 3;
+
+        // 1. 底部：两个黄色大脚丫子底座 (按小朋友特别强调定制)
+        ctx.fillStyle = "#eab308"; // 鲜明黄色
+        ctx.strokeStyle = "#ca8a04";
+        ctx.lineWidth = 4;
+
+        // 左大脚丫 (带履带齿纹)
+        ctx.beginPath();
+        ctx.roundRect(-75, 140, 60, 36, 12);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#a16207";
+        for (let k = 0; k < 4; k++) {
+          ctx.fillRect(-70 + k * 14, 164, 8, 8);
+        }
+
+        // 右大脚丫
+        ctx.fillStyle = "#eab308";
+        ctx.beginPath();
+        ctx.roundRect(15, 140, 60, 36, 12);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#a16207";
+        for (let k = 0; k < 4; k++) {
+          ctx.fillRect(20 + k * 14, 164, 8, 8);
+        }
+
+        // 2. 伸出两个电线杆子，黄色的 (两根粗壮的高耸黄色机械腿，带螺栓和警示纹)
+        ctx.fillStyle = "#facc15";
+        ctx.strokeStyle = "#854d0e";
+        ctx.lineWidth = 4;
+
+        // 左电线杆长腿
+        ctx.fillRect(-52, -30 + bob, 16, 175);
+        ctx.strokeRect(-52, -30 + bob, 16, 175);
+        // 右电线杆长腿
+        ctx.fillRect(36, -30 + bob, 16, 175);
+        ctx.strokeRect(36, -30 + bob, 16, 175);
+
+        // 电线杆横梁支撑与黑色绝缘子
+        ctx.fillStyle = "#1e293b";
+        ctx.fillRect(-56, 40 + bob, 24, 8);
+        ctx.fillRect(32, 40 + bob, 24, 8);
+        ctx.fillRect(-56, 95 + bob, 24, 8);
+        ctx.fillRect(32, 95 + bob, 24, 8);
+
+        // 3. 上面有一个大集线装甲 (金属装甲机身 + 能量核心反应堆 + 线缆束)
+        ctx.fillStyle = this.hitTimer > 0 ? "#ffffff" : "#1e293b";
+        ctx.strokeStyle = isCharging ? (this.ballType === 'fire' ? '#ef4444' : '#38bdf8') : "#eab308";
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.roundRect(-68, -120 + bob, 136, 105, 16);
+        ctx.fill();
+        ctx.stroke();
+
+        // 外部黄色强化集线装甲边框
+        ctx.strokeStyle = "#facc15";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-62, -114 + bob, 124, 93);
+
+        // 集线管道与彩色电线束
+        ctx.strokeStyle = "#ef4444";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-60, -80 + bob);
+        ctx.bezierCurveTo(-40, -50 + bob, -20, -50 + bob, 0, -70 + bob);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#38bdf8";
+        ctx.beginPath();
+        ctx.moveTo(60, -80 + bob);
+        ctx.bezierCurveTo(40, -50 + bob, 20, -50 + bob, 0, -70 + bob);
+        ctx.stroke();
+
+        // 能量核心反应堆 (蓄力时剧烈膨胀闪耀)
+        const corePulse = isCharging ? Math.sin(this.animFrame * 3) * 14 : Math.sin(this.animFrame) * 5;
+        ctx.fillStyle = isCharging ? (this.ballType === 'fire' ? '#ef4444' : '#38bdf8') : "#f59e0b";
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = isCharging ? 28 : 14;
+        ctx.beginPath();
+        ctx.arc(0, -68 + bob, 20 + corePulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // 4. 上面有个头部分：僵王博士在上面操控 (透明半球驾驶舱 + 绿脑袋僵王博士 + 操纵杆)
+        // 头部座舱基座
+        ctx.fillStyle = "#0f172a";
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(-42, -165 + bob, 84, 48, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        // 僵王博士透明防弹观察穹顶
+        ctx.fillStyle = "rgba(56, 189, 248, 0.35)";
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, -165 + bob, 32, Math.PI, 0);
+        ctx.fill();
+        ctx.stroke();
+
+        // 僵王博士萌态绿脑袋 (手握双操纵杆摇晃)
+        ctx.fillStyle = "#86efac";
+        ctx.strokeStyle = "#1e293b";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, -172 + bob, 15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 僵王博士斗鸡眼与白大褂
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(-5, -174 + bob, 4, 0, Math.PI * 2);
+        ctx.arc(5, -174 + bob, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.arc(-3, -174 + bob, 2, 0, Math.PI * 2);
+        ctx.arc(4, -174 + bob, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 僵王白大褂与操纵杆
+        ctx.fillStyle = "#f8fafc";
+        ctx.fillRect(-10, -157 + bob, 20, 10);
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-12, -150 + bob);
+        ctx.lineTo(-16, -158 + bob + Math.sin(this.animFrame) * 3);
+        ctx.moveTo(12, -150 + bob);
+        ctx.lineTo(16, -158 + bob - Math.sin(this.animFrame) * 3);
+        ctx.stroke();
+
+        ctx.restore();
+
+        // 5. 机械手臂慢动作下放小僵尸 (平滑下探插值)
+        if (this.state === 'lowering_zombie') {
+          ctx.save();
+          const armOriginX = this.x - 50;
+          const armOriginY = this.y - 80;
+          const targetX = gridOffsetX + 7 * cellWidth + cellWidth / 2;
+          const targetY = getCellCenter(this.armRow, 0).y;
+
+          let extProgress = 0;
+          if (this.stateTimer <= 110) {
+            extProgress = Math.min(1, this.stateTimer / 100);
+          } else {
+            extProgress = Math.max(0, 1 - (this.stateTimer - 110) / 70);
+          }
+
+          const clawX = armOriginX + (targetX - armOriginX) * extProgress;
+          const clawY = armOriginY + (targetY - armOriginY) * extProgress;
+
+          // 机械手臂节段 (黄色机械臂 + 黑色铰链)
+          ctx.strokeStyle = "#eab308";
+          ctx.lineWidth = 8;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(armOriginX, armOriginY);
+          const midX = (armOriginX + clawX) / 2 + 25;
+          const midY = (armOriginY + clawY) / 2 - 35;
+          ctx.quadraticCurveTo(midX, midY, clawX, clawY);
+          ctx.stroke();
+
+          // 机械抓手底座
+          ctx.fillStyle = "#f59e0b";
+          ctx.strokeStyle = "#78350f";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(clawX, clawY, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          // 爪指
+          ctx.strokeStyle = "#cbd5e1";
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(clawX - 10, clawY);
+          ctx.lineTo(clawX - 22, clawY + 14);
+          ctx.moveTo(clawX + 10, clawY);
+          ctx.lineTo(clawX + 22, clawY + 14);
+          ctx.stroke();
+
+          // 机械手抓取中的小僵尸 (0~110帧下放中)
+          if (this.stateTimer < 110 && this.carriedZombieType) {
+            ctx.save();
+            ctx.translate(clawX, clawY + 20);
+            const dummyZombie = new StickmanZombie(this.carriedZombieType, 0);
+            dummyZombie.x = 0;
+            dummyZombie.y = 0;
+            dummyZombie.draw();
+            ctx.restore();
+          }
+
+          ctx.restore();
+        }
+      }
+    }
+
+    // 僵王吐出的慢速冰火滚球类
+    class BossRollingBall {
+      constructor(x, y, row, type = 'fire') {
+        this.x = x;
+        this.y = y;
+        this.row = row;
+        this.type = type; // 'fire' or 'ice'
+        this.r = 20;
+        this.speed = 80; // 慢速滚动
+        this.hp = 180;
+        this.maxHp = 180;
+        this.alive = true;
+        this.rotation = 0;
+      }
+
+      update(dt) {
+        if (!this.alive) return true;
+        this.x -= this.speed * dt;
+        this.rotation += dt * 5;
+
+        // 碰撞植物摧毁/伤害植物
+        const plant = plants.find(p => p.row === this.row && Math.abs(p.x - this.x) < 25);
+        if (plant) {
+          plant.hp -= 150 * dt;
+          if (plant.hp <= 0) {
+            createFloatingText("💥 滚球碾压植物！", plant.x, plant.y - 20, "#ef4444", 16);
+          }
+        }
+
+        // 滚到左侧边界被保底车消除
+        if (this.x < gridOffsetX - 20) {
+          this.alive = false;
+          return true;
+        }
+
+        return !this.alive;
+      }
+
+      draw(ctx) {
+        if (!this.alive) return;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+
+        if (this.type === 'fire') {
+          // 炽热火球
+          const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, this.r);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.3, '#fef08a');
+          grad.addColorStop(0.7, '#f97316');
+          grad.addColorStop(1, '#dc2626');
+
+          ctx.fillStyle = grad;
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 16;
+          ctx.beginPath();
+          ctx.arc(0, 0, this.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // 火焰外刺
+          ctx.fillStyle = '#fde047';
+          for (let k = 0; k < 6; k++) {
+            const ang = (k * Math.PI) / 3;
+            ctx.beginPath();
+            ctx.arc(Math.cos(ang) * (this.r + 4), Math.sin(ang) * (this.r + 4), 4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else {
+          // 暴雪冰球
+          const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, this.r);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.4, '#bae6fd');
+          grad.addColorStop(0.8, '#38bdf8');
+          grad.addColorStop(1, '#0284c7');
+
+          ctx.fillStyle = grad;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 16;
+          ctx.beginPath();
+          ctx.arc(0, 0, this.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // 冰晶外刺
+          ctx.fillStyle = '#e0f2fe';
+          for (let k = 0; k < 6; k++) {
+            const ang = (k * Math.PI) / 3;
+            ctx.beginPath();
+            ctx.arc(Math.cos(ang) * (this.r + 4), Math.sin(ang) * (this.r + 4), 4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        ctx.restore();
+      }
+    }
+
+    function updateBossHpUI() {
+      const container = document.getElementById('boss-hp-container');
+      const fill = document.getElementById('boss-hp-fill');
+      const text = document.getElementById('boss-hp-text');
+      if (giantBoss && giantBoss.alive) {
+        if (container) container.style.display = 'flex';
+        const pct = Math.max(0, (giantBoss.hp / giantBoss.maxHp) * 100);
+        if (fill) fill.style.width = `${pct}%`;
+        if (text) text.innerText = `${Math.max(0, Math.floor(giantBoss.hp))}`;
+      } else {
+        if (fill) fill.style.width = `0%`;
+        if (text) text.innerText = `0`;
       }
     }
 
@@ -2018,7 +2590,7 @@
 
     function initGame() {
       resizeCanvas();
-      sun = 150;
+      sun = 200;
       energy = 0;
       currentWave = 1;
       waveProgress = 0;
@@ -2033,13 +2605,16 @@
       sunItems = [];
       lawnMowers = [];
       floatingTexts = [];
+      bossRollingBalls = [];
+      giantBoss = new GiantYellowZomboss();
 
       for (let r = 0; r < ROWS; r++) {
         lawnMowers.push(new LawnMower(r));
       }
 
       updateUI();
-      showGuide("点击下方的【⛏️ 黄金矿工】，种在草地上挖黄金产生阳光吧！", "⛏️");
+      updateBossHpUI();
+      showGuide("🤖👑 巨型黄色机甲僵王已在战场右侧指挥！种【⛏️ 矿工】产阳光，用【🏹 射手】与【💥 樱桃TNT】轰碎它！", "🤖");
       positionGuideHand('card-miner');
     }
 
@@ -2080,7 +2655,7 @@
 
       // 僵尸生成逻辑
       zombieSpawnTimer += dt;
-      let spawnRate = Math.max(2.5, 7.5 - currentWave * 1.1);
+      let spawnRate = Math.max(2.8, 8.0 - currentWave * 1.1);
       if (isEndless) spawnRate = 2.0;
 
       if (zombieSpawnTimer >= spawnRate) {
@@ -2096,25 +2671,29 @@
           currentWave++;
           waveTimer = 0;
           waveProgress = 0;
-          createFloatingText(`🌊 第 ${currentWave} 波僵尸袭来！`, canvas.width / 2, canvas.height / 2, "#ef4444", 28);
+          createFloatingText(`🌊 第 ${currentWave} 波！机甲僵王进入新战备阶段！`, canvas.width / 2, canvas.height / 2, "#ef4444", 26);
           Sound.victory();
 
           if (currentWave === 2) {
             showGuide("新火柴人加入！试试【🍉 西瓜投手】和【⚡ 增幅机器】吧！", "🍉");
           } else if (currentWave === 3) {
-            showGuide("解锁【💥 樱桃TNT】，引爆大范围僵尸！", "💥");
+            showGuide("解锁【💥 樱桃TNT】，快在前线引爆重创巨型机甲！", "💥");
           } else if (currentWave === 4) {
-            showGuide("僵尸变多啦！快按下方的【红色/蓝色荣誉按钮】强化全军！", "🔥");
+            showGuide("机甲僵王开始频繁吐出冰火球！快按下方的【红色/蓝色荣誉按钮】强化全军！", "🔥");
           } else if (currentWave === 5) {
-            // Boss 波！
-            spawnBossZombie();
-            showGuide("⚠️ 机械僵尸大王 Boss 登场！释放【🌟 终极大招】消灭它！", "🤖");
+            showGuide("⚠️ 终极大决战！集火右侧巨型黄色机甲僵王，释放【🌟 终极大招】！", "🤖");
           }
         } else {
           // 通关胜利！
           triggerVictory();
         }
       }
+
+      // 更新巨型机甲僵王与滚球
+      if (giantBoss) {
+        giantBoss.update(dt);
+      }
+      bossRollingBalls = bossRollingBalls.filter(b => !b.update(dt));
 
       // 更新实体
       plants.forEach(p => p.update(dt));
@@ -2135,6 +2714,7 @@
       });
 
       updateCooldownUI();
+      updateBossHpUI();
     }
 
     function spawnRandomZombie() {
@@ -2157,7 +2737,7 @@
     }
 
     function spawnBossZombie() {
-      zombies.push(new StickmanZombie('boss', 2)); // 放在中间行
+      // 保持对决
     }
 
     function spawnSun(x, y, val = 25) {
@@ -2204,6 +2784,8 @@
       lawnMowers.forEach(m => m.draw());
       plants.forEach(p => p.draw());
       zombies.forEach(z => z.draw());
+      if (giantBoss) giantBoss.draw(ctx);
+      bossRollingBalls.forEach(b => b.draw(ctx));
       projectiles.forEach(p => p.draw());
       particles.forEach(p => p.draw());
       sunItems.forEach(s => s.draw());
@@ -2303,9 +2885,22 @@
         }
       }
 
-      // 2. 铲子拍僵尸机制 (拖到僵尸上“哐当！”敲击敲晕)
+      // 2. 铲子拍僵尸/机甲机制 (拖到目标上“哐当！”敲击敲晕)
       if (isShovelActive) {
-        // 查找点击位置的僵尸
+        // 查找点击位置的巨型机甲僵王
+        if (giantBoss && giantBoss.alive && Math.hypot(giantBoss.x - clickX, giantBoss.y - clickY) < 110) {
+          giantBoss.takeDamage(160);
+          Sound.shovelClang();
+          createFloatingText("🥄 哐当！金铲敲打机甲！", clickX, clickY - 20, "#f59e0b", 22);
+          for (let i = 0; i < 10; i++) {
+            particles.push(new Particle(clickX, clickY, 'arrow_spark'));
+          }
+          isShovelActive = false;
+          updateShovelUI();
+          return;
+        }
+
+        // 查找点击位置的普通僵尸
         const clickedZombie = zombies.find(z => Math.hypot(z.x - clickX, z.y - clickY) < 45 && z.hp > 0);
         if (clickedZombie) {
           clickedZombie.stunTimer = 3.0; // 眩晕3秒
@@ -2386,7 +2981,7 @@
       updateCardUI();
       updateShovelUI();
       if (isShovelActive) {
-        showGuide("点击僵尸头上可【哐当！】敲晕打扁，或点击火柴人铲除！", "🥄");
+        showGuide("点击僵尸或右侧机甲僵王头上可【哐当！】敲晕打扁，或点击火柴人铲除！", "🥄");
       }
     }
 
@@ -2417,7 +3012,7 @@
       }
     }
 
-    // 终极大招·终极雷霆加特林射手
+    // 终极大招·终极雷霆加特林射手 (轰炸普通僵尸 + 巨型机甲僵王)
     function useUltimateSkill() {
       if (energy < 100) return;
       energy = 0;
@@ -2437,6 +3032,14 @@
       }
 
       zombies.forEach(z => z.takeDamage(1200));
+
+      if (giantBoss && giantBoss.alive) {
+        giantBoss.takeDamage(1200);
+      }
+
+      bossRollingBalls.forEach(b => {
+        b.alive = false;
+      });
     }
 
     // 妈妈在睡觉轻柔模式切换
@@ -2475,6 +3078,12 @@
       triggerScreenShake(15);
       createFloatingText("🦸 火柴人超人神兵天降，全屏清场！", canvas.width / 2, canvas.height / 2, "#10b981", 28);
       zombies.forEach(z => z.takeDamage(9999));
+      if (giantBoss && giantBoss.alive) {
+        giantBoss.takeDamage(2000);
+      }
+      bossRollingBalls.forEach(b => {
+        b.alive = false;
+      });
       sun += 200;
       updateUI();
     }
