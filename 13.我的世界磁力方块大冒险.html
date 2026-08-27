@@ -1,0 +1,2058 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>我的世界磁力方块大冒险 · 5岁小英雄专属版</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    html,
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #0d1117;
+      font-family: 'Segoe UI', 'Microsoft YaHei', -apple-system, sans-serif;
+      color: #fff;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+    }
+
+    /* 顶部状态与控制栏 */
+    .top-bar {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    .top-left,
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    .chapter-badge {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.95));
+      border: 3px solid #6ee7b7;
+      border-radius: 30px;
+      padding: 8px 18px;
+      font-size: 18px;
+      font-weight: 900;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), 0 0 15px rgba(110, 231, 183, 0.4);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .resource-box {
+      background: rgba(15, 23, 42, 0.85);
+      border: 2px solid #38bdf8;
+      border-radius: 20px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 16px;
+      font-weight: 800;
+      color: #fef08a;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .hearts-box {
+      display: flex;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 2px solid #f43f5e;
+      font-size: 18px;
+    }
+
+    .btn-action {
+      background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+      border: 2px solid #bae6fd;
+      border-radius: 20px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 8px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      transition: transform 0.15s ease;
+      outline: none;
+    }
+
+    .btn-action:hover {
+      transform: scale(1.06);
+    }
+
+    .btn-action:active {
+      transform: scale(0.95);
+    }
+
+    .btn-action.yellow {
+      background: linear-gradient(180deg, #facc15 0%, #d97706 100%);
+      border-color: #fef08a;
+      color: #451a03;
+    }
+
+    /* 底部指引与技能控制区 */
+    .bottom-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    .guide-banner {
+      pointer-events: auto;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+      border: 3px solid #fbbf24;
+      border-radius: 35px;
+      padding: 10px 28px;
+      font-size: 20px;
+      font-weight: 900;
+      color: #fef08a;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), 0 0 25px rgba(251, 191, 36, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: guideBounce 2s infinite ease-in-out;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+      max-width: 90%;
+      text-align: center;
+    }
+
+    @keyframes guideBounce {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+
+    .skills-container {
+      pointer-events: auto;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 95%;
+    }
+
+    .skill-btn {
+      background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+      border: 3px solid #93c5fd;
+      border-radius: 24px;
+      padding: 10px 22px;
+      font-size: 18px;
+      font-weight: 900;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+      transition: all 0.15s ease;
+      outline: none;
+    }
+
+    .skill-btn:hover {
+      transform: scale(1.08) translateY(-3px);
+      filter: brightness(1.15);
+    }
+
+    .skill-btn:active {
+      transform: scale(0.95);
+    }
+
+    .skill-btn.sword {
+      background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+      border-color: #bae6fd;
+    }
+
+    .skill-btn.bow {
+      background: linear-gradient(180deg, #ec4899 0%, #be185d 100%);
+      border-color: #fbcfe8;
+    }
+
+    .skill-btn.golem {
+      background: linear-gradient(180deg, #f59e0b 0%, #b45309 100%);
+      border-color: #fde68a;
+    }
+
+    .skill-btn.magnet {
+      background: linear-gradient(180deg, #a855f7 0%, #6b21a8 100%);
+      border-color: #e9d5ff;
+      animation: pulseMagnet 1.5s infinite;
+    }
+
+    @keyframes pulseMagnet {
+
+      0%,
+      100% {
+        box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+      }
+
+      50% {
+        box-shadow: 0 0 30px rgba(168, 85, 247, 1);
+      }
+    }
+
+    /* 启动画面 */
+    #start-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: radial-gradient(ellipse at center, #1e1b4b 0%, #09061d 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .start-logo {
+      font-size: 72px;
+      margin-bottom: 8px;
+      animation: floatLogo 2.5s infinite ease-in-out;
+    }
+
+    @keyframes floatLogo {
+
+      0%,
+      100% {
+        transform: translateY(0) rotate(0deg);
+      }
+
+      50% {
+        transform: translateY(-12px) rotate(3deg);
+      }
+    }
+
+    .game-main-title {
+      font-size: 48px;
+      font-weight: 900;
+      background: linear-gradient(90deg, #fde047, #38bdf8, #a855f7, #4ade80);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+      text-shadow: 0 4px 25px rgba(56, 189, 248, 0.4);
+    }
+
+    .game-tagline {
+      font-size: 20px;
+      color: #c4b5fd;
+      max-width: 600px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 12px 24px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .start-play-btn {
+      font-size: 32px;
+      font-weight: 900;
+      color: #064e3b;
+      background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%);
+      border: 4px solid #bbf7d0;
+      border-radius: 50px;
+      padding: 18px 60px;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(74, 222, 128, 0.6), inset 0 3px 6px rgba(255, 255, 255, 0.8);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      outline: none;
+    }
+
+    .start-play-btn:hover {
+      transform: scale(1.08);
+      background: linear-gradient(180deg, #86efac 0%, #22c55e 100%);
+      box-shadow: 0 14px 40px rgba(74, 222, 128, 0.8);
+    }
+
+    .start-play-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* 通关胜利大弹窗 */
+    #victory-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 120;
+      background: radial-gradient(ellipse at center, rgba(30, 27, 75, 0.96) 0%, rgba(5, 5, 20, 0.98) 100%);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+
+    #victory-modal.active {
+      display: flex;
+    }
+
+    .trophy-icon {
+      font-size: 90px;
+      animation: spinTrophy 3s infinite ease-in-out;
+      margin-bottom: 12px;
+    }
+
+    @keyframes spinTrophy {
+
+      0%,
+      100% {
+        transform: scale(1) rotate(-5deg);
+      }
+
+      50% {
+        transform: scale(1.15) rotate(5deg);
+      }
+    }
+
+    .victory-title {
+      font-size: 52px;
+      font-weight: 900;
+      background: linear-gradient(90deg, #fde047, #f59e0b, #ef4444, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+
+    .victory-desc {
+      font-size: 22px;
+      color: #e0e7ff;
+      max-width: 600px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .victory-btn-group {
+      display: flex;
+      gap: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 顶部状态栏 -->
+  <div class="top-bar">
+    <div class="top-left">
+      <div class="chapter-badge" id="chapterBadge">
+        <span>🏝️</span> <span id="chapterTitle">第1章：浮岛起航 · 磁力拼搭</span>
+      </div>
+      <div class="resource-box">
+        <span>💎 钻石:</span> <span id="diamondCount">0</span>
+      </div>
+      <div class="resource-box">
+        <span>🌾 粮食:</span> <span id="cropCount">0</span>
+      </div>
+    </div>
+    <div class="top-right">
+      <div class="hearts-box">
+        <span>💖</span><span>💖</span><span>💖</span><span>💖</span><span>💖</span>
+      </div>
+      <button class="btn-action" id="voiceToggleBtn" onclick="toggleVoice()">
+        <span>🗣️ 语音解说: 开</span>
+      </button>
+      <button class="btn-action" id="audioToggleBtn" onclick="toggleAudio()">
+        <span>🔊 音效: 开</span>
+      </button>
+      <button class="btn-action yellow" onclick="restartGame()">
+        <span>🔄 重新开始</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 游戏主画布 -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- 底部指引与技能按键 -->
+  <div class="bottom-bar">
+    <div class="guide-banner" id="guideBanner">
+      <span>👉</span> <span id="guideText">点击或拖拽发光的磁力方块，咔哒拼好安全屋和下山楼梯！</span>
+    </div>
+    <div class="skills-container" id="skillsContainer">
+      <!-- 技能按钮在对应章节动态激活 -->
+    </div>
+  </div>
+
+  <!-- 开始游戏封面 -->
+  <div id="start-overlay">
+    <div class="start-logo">🧱✨🐲</div>
+    <h1 class="game-main-title">我的世界 · 磁力方块大冒险</h1>
+    <div class="game-tagline">
+      🌟 5岁小勇士专属神作！<br>
+      山峰浮岛磁力拼装 · 探索大村庄麦田丰收 · 打造神装升级伙伴 · 夜战僵尸 · 决战末影龙！
+    </div>
+    <button class="start-play-btn" onclick="startGame()">
+      <span>▶️</span> 立即开始冒险！
+    </button>
+  </div>
+
+  <!-- 通关胜利画面 -->
+  <div id="victory-modal">
+    <div class="trophy-icon">🏆✨🥚</div>
+    <div class="victory-title">🎉 大获全胜！末影龙被击败啦！🎉</div>
+    <div class="victory-desc">
+      太厉害啦！5岁的小勇士史蒂夫、神射手艾利克斯和超强铁傀儡成功守护了村庄，击败了终极末影龙，获得了至高无上的【末影龙蛋奖杯】！
+    </div>
+    <div class="victory-btn-group">
+      <button class="start-play-btn" onclick="restartGame()">
+        <span>🔄</span> 再玩一次
+      </button>
+      <button class="start-play-btn" style="background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);"
+        onclick="window.history.back()">
+        <span>🏠</span> 返回乐园
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // 音频合成引擎 (Web Audio API - 完全免外部依赖)
+    // ============================================================
+    let audioCtx = null;
+    let audioEnabled = true;
+    let voiceEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          audioCtx = new AudioContext();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('audioToggleBtn').innerHTML = `<span>🔊 音效: ${audioEnabled ? '开' : '关'}</span>`;
+      if (audioEnabled) playSound('click');
+    }
+
+    function toggleVoice() {
+      voiceEnabled = !voiceEnabled;
+      document.getElementById('voiceToggleBtn').innerHTML = `<span>🗣️ 语音解说: ${voiceEnabled ? '开' : '关'}</span>`;
+      if (voiceEnabled) speak("语音解说已开启！");
+    }
+
+    function playSound(type) {
+      if (!audioEnabled || !audioCtx) return;
+      try {
+        const now = audioCtx.currentTime;
+        if (type === 'click') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'snap') { // 磁力方块吸附音
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.exponentialRampToValueAtTime(660, now + 0.05);
+          osc.frequency.exponentialRampToValueAtTime(1100, now + 0.12);
+          gain.gain.setValueAtTime(0.4, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === 'pop') { // 收集粮食/宝石
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600 + Math.random() * 200, now);
+          osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'sword') { // 挥剑光效
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(150, now + 0.18);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        } else if (type === 'bow') { // 射箭
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.exponentialRampToValueAtTime(300, now + 0.15);
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === 'smash') { // 铁傀儡重砸
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(120, now);
+          osc.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+          gain.gain.setValueAtTime(0.5, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'upgrade') { // 升级朋友/神装
+          [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(f, now + i * 0.08);
+            gain.gain.setValueAtTime(0.3, now + i * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.2);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.08);
+            osc.stop(now + i * 0.08 + 0.25);
+          });
+        } else if (type === 'dragon_hit') { // 击中末影龙/水晶
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(350, now);
+          osc.frequency.exponentialRampToValueAtTime(80, now + 0.2);
+          gain.gain.setValueAtTime(0.4, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        } else if (type === 'victory') { // 胜利号角
+          [523, 659, 783, 1046, 1318].forEach((f, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(f, now + i * 0.12);
+            gain.gain.setValueAtTime(0.4, now + i * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.4);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.12);
+            osc.stop(now + i * 0.12 + 0.45);
+          });
+        }
+      } catch (e) {
+        console.error("Audio error:", e);
+      }
+    }
+
+    // 中文温馨语音播报 (Web Speech API)
+    function speak(text) {
+      if (!voiceEnabled || !('speechSynthesis' in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'zh-CN';
+        msg.pitch = 1.25; // 稍微童趣亲切的语调
+        msg.rate = 1.05;
+        window.speechSynthesis.speak(msg);
+      } catch (e) {
+        console.error("Speech error:", e);
+      }
+    }
+
+    // ============================================================
+    // 游戏核心状态与变量
+    // ============================================================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let currentChapter = 1; // 1 ~ 5
+    let diamonds = 0;
+    let crops = 0;
+    let particles = [];
+    let floatingTexts = [];
+    let isNight = false;
+    let skyTime = 0; // 日夜过渡时间
+    let screenShake = 0;
+
+    // 章节状态与数据
+    const state = {
+      ch1: {
+        // 浮岛磁力拼装：需要拼装房屋(3块)与楼梯(3块)
+        cubesPlaced: 0,
+        totalCubes: 6,
+        slots: [
+          { x: 300, y: 360, type: 'wood', placed: false, label: '房屋左柱' },
+          { x: 360, y: 360, type: 'wood', placed: false, label: '房屋右柱' },
+          { x: 330, y: 310, type: 'roof', placed: false, label: '磁力屋顶' },
+          { x: 420, y: 380, type: 'stair', placed: false, label: '楼梯第1阶' },
+          { x: 470, y: 410, type: 'stair', placed: false, label: '楼梯第2阶' },
+          { x: 520, y: 440, type: 'stair', placed: false, label: '楼梯第3阶' }
+        ],
+        availableCubes: [
+          { x: 140, y: 480, type: 'wood', color: '#b45309', icon: '🪵' },
+          { x: 220, y: 480, type: 'roof', color: '#ef4444', icon: '🏠' },
+          { x: 300, y: 480, type: 'stair', color: '#f59e0b', icon: '🪜' }
+        ]
+      },
+      ch2: {
+        // 发现村庄与麦田丰收
+        harvestCount: 0,
+        targetHarvest: 8,
+        plants: []
+      },
+      ch3: {
+        // 传奇工作台打造神装与朋友集结
+        craftedSword: false,
+        craftedBow: false,
+        craftedArmor: false,
+        alexJoined: false,
+        golemJoined: false
+      },
+      ch4: {
+        // 夜战僵尸与黎明升级朋友
+        zombies: [],
+        spawnTimer: 0,
+        zombiesDefeated: 0,
+        targetZombies: 15,
+        dawnReached: false,
+        friendsUpgraded: false
+      },
+      ch5: {
+        // 末地决战末影龙
+        crystals: [
+          { x: 220, y: 220, hp: 1, active: true },
+          { x: 500, y: 160, hp: 1, active: true },
+          { x: 780, y: 220, hp: 1, active: true }
+        ],
+        dragon: {
+          x: 500,
+          y: 200,
+          targetX: 500,
+          targetY: 200,
+          hp: 100,
+          maxHp: 100,
+          vx: 2,
+          vy: 1,
+          angle: 0,
+          state: 'flying' // flying, diving, defeated
+        },
+        dragonDefeated: false
+      }
+    };
+
+    // 角色实体
+    const steve = {
+      x: 200,
+      y: 350,
+      targetX: 200,
+      targetY: 350,
+      swordAngle: 0,
+      isAttacking: false,
+      level: 1
+    };
+
+    const alex = {
+      x: 160,
+      y: 370,
+      active: false,
+      bowAngle: 0,
+      isShooting: false,
+      upgraded: false
+    };
+
+    const golem = {
+      x: 120,
+      y: 340,
+      active: false,
+      smashTimer: 0,
+      upgraded: false
+    };
+
+    // 投射物与特效
+    let projectiles = [];
+
+    // 调整画布尺寸
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      updateLayoutPositions();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function updateLayoutPositions() {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      // 调整第1章槽位居中
+      state.ch1.slots[0].x = cx - 120; state.ch1.slots[0].y = cy - 20;
+      state.ch1.slots[1].x = cx - 60; state.ch1.slots[1].y = cy - 20;
+      state.ch1.slots[2].x = cx - 90; state.ch1.slots[2].y = cy - 80;
+      state.ch1.slots[3].x = cx + 0; state.ch1.slots[3].y = cy + 10;
+      state.ch1.slots[4].x = cx + 60; state.ch1.slots[4].y = cy + 50;
+      state.ch1.slots[5].x = cx + 120; state.ch1.slots[5].y = cy + 90;
+
+      // 底部可用磁力方块
+      state.ch1.availableCubes[0].x = cx - 140; state.ch1.availableCubes[0].y = cy + 180;
+      state.ch1.availableCubes[1].x = cx; state.ch1.availableCubes[1].y = cy + 180;
+      state.ch1.availableCubes[2].x = cx + 140; state.ch1.availableCubes[2].y = cy + 180;
+
+      // 第5章末影水晶位置
+      state.ch5.crystals[0].x = cx - 260; state.ch5.crystals[0].y = cy - 80;
+      state.ch5.crystals[1].x = cx; state.ch5.crystals[1].y = cy - 140;
+      state.ch5.crystals[2].x = cx + 260; state.ch5.crystals[2].y = cy - 80;
+      if (!state.ch5.dragonDefeated && state.ch5.dragon.x === 500) {
+        state.ch5.dragon.x = cx;
+        state.ch5.dragon.y = cy - 100;
+      }
+    }
+
+    // ============================================================
+    // 章节切换与管理
+    // ============================================================
+    function setChapter(chapterNum) {
+      currentChapter = chapterNum;
+      const titleElem = document.getElementById('chapterTitle');
+      const badgeElem = document.getElementById('chapterBadge');
+      const guideElem = document.getElementById('guideText');
+      const skillsElem = document.getElementById('skillsContainer');
+
+      skillsElem.innerHTML = '';
+
+      if (chapterNum === 1) {
+        titleElem.innerText = '第1章：浮岛起航 · 磁力拼搭';
+        badgeElem.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.95))';
+        guideElem.innerText = '点击发光的磁力方块，咔哒拼好安全小木屋与下山楼梯！';
+        speak("欢迎来到我的世界磁力大冒险！史蒂夫出生在山顶浮岛，快点击发光的磁力方块，搭好安全屋和楼梯吧！");
+
+        skillsElem.innerHTML = `
+        <button class="skill-btn magnet" onclick="autoBuildNextCube()">
+          <span>🧲 一键磁力吸附拼装</span>
+        </button>
+      `;
+      } else if (chapterNum === 2) {
+        titleElem.innerText = '第2章：发现村庄 · 麦田丰收';
+        badgeElem.style.background = 'linear-gradient(135deg, rgba(234, 179, 8, 0.9), rgba(202, 138, 4, 0.95))';
+        guideElem.innerText = '哇！找到大村庄啦！快点击金黄麦田和胡萝卜收割粮食与绿宝石！';
+        speak("哇！史蒂夫顺着楼梯下山，发现了一个大村庄！快点击成熟的麦田和胡萝卜，丰收满满的粮食和绿宝石！");
+        initChapter2Plants();
+
+        skillsElem.innerHTML = `
+        <button class="skill-btn golem" onclick="harvestAllCrops()">
+          <span>🌾 一键全屏麦浪大丰收</span>
+        </button>
+      `;
+      } else if (chapterNum === 3) {
+        titleElem.innerText = '第3章：传奇工作台 · 打造神装与朋友集结';
+        badgeElem.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(29, 78, 216, 0.95))';
+        guideElem.innerText = '点击发光的工作台，一键打造钻石剑、神弓，集结艾利克斯与铁傀儡！';
+        speak("太棒啦！史蒂夫找到了传奇工作台，快打造钻石神剑、附魔神弓，召唤好朋友艾利克斯和铁傀儡吧！");
+
+        skillsElem.innerHTML = `
+        <button class="skill-btn sword" onclick="craftGear('sword')">
+          <span>💎 打造炫彩钻石剑</span>
+        </button>
+        <button class="skill-btn bow" onclick="craftGear('bow')">
+          <span>🏹 打造附魔神火弓</span>
+        </button>
+        <button class="skill-btn golem" onclick="craftGear('golem')">
+          <span>🤖 召唤守护铁傀儡</span>
+        </button>
+      `;
+      } else if (chapterNum === 4) {
+        titleElem.innerText = '第4章：夜战僵尸 · 黎明升级超级朋友';
+        badgeElem.style.background = 'linear-gradient(135deg, rgba(168, 85, 247, 0.9), rgba(126, 34, 206, 0.95))';
+        guideElem.innerText = '夜晚来临！点击屏幕或技能挥剑射箭打退僵尸！天亮就能升级朋友！';
+        speak("天黑了！僵尸和苦力怕来啦！大家一起挥剑射箭保护村庄！天亮打败僵尸，鬼就怕了，朋友就会升级啦！");
+        isNight = true;
+        alex.active = true;
+        golem.active = true;
+
+        skillsElem.innerHTML = `
+        <button class="skill-btn sword" onclick="triggerAttack('sword')">
+          <span>⚔️ 钻石剑气旋风</span>
+        </button>
+        <button class="skill-btn bow" onclick="triggerAttack('bow')">
+          <span>🏹 艾利克斯彩虹箭</span>
+        </button>
+        <button class="skill-btn golem" onclick="triggerAttack('golem')">
+          <span>🔨 铁傀儡撼地轰鸣</span>
+        </button>
+      `;
+      } else if (chapterNum === 5) {
+        titleElem.innerText = '第5章：末地传送门 · 决战末影龙';
+        badgeElem.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(185, 28, 28, 0.95))';
+        guideElem.innerText = '先点击击破3座紫色末影水晶，再合力攻击末影龙赢得龙蛋奖杯！';
+        speak("末地传送门开启！我们来到末地啦！先点碎柱子上的紫色末影水晶，再合力击败末影龙！冲呀！");
+
+        skillsElem.innerHTML = `
+        <button class="skill-btn sword" onclick="triggerAttack('all')">
+          <span>⚡ 全员合力超级大招</span>
+        </button>
+        <button class="skill-btn bow" onclick="triggerAttack('bow')">
+          <span>🏹 彩虹穿透连射</span>
+        </button>
+      `;
+      }
+    }
+
+    // ============================================================
+    // 章节 1：浮岛磁力方块拼装
+    // ============================================================
+    function handleChapter1Click(mx, my) {
+      // 检查点击可用方块或槽位
+      for (let cube of state.ch1.availableCubes) {
+        const dist = Math.hypot(mx - cube.x, my - cube.y);
+        if (dist < 45) {
+          autoBuildNextCube();
+          return;
+        }
+      }
+
+      // 检查点击目标槽位
+      for (let slot of state.ch1.slots) {
+        if (!slot.placed) {
+          const dist = Math.hypot(mx - slot.x, my - slot.y);
+          if (dist < 50) {
+            placeCubeAtSlot(slot);
+            return;
+          }
+        }
+      }
+    }
+
+    function autoBuildNextCube() {
+      for (let slot of state.ch1.slots) {
+        if (!slot.placed) {
+          placeCubeAtSlot(slot);
+          return;
+        }
+      }
+    }
+
+    function placeCubeAtSlot(slot) {
+      slot.placed = true;
+      state.ch1.cubesPlaced++;
+      playSound('snap');
+      createSparkles(slot.x, slot.y, '#fde047', 20);
+      addFloatingText('🧲 磁力吸附！', slot.x, slot.y - 30, '#6ee7b7');
+
+      if (state.ch1.cubesPlaced === 3) {
+        speak("太棒啦！安全小木屋搭好啦！接下来把下山楼梯拼好！");
+      }
+
+      if (state.ch1.cubesPlaced >= state.ch1.totalCubes) {
+        playSound('upgrade');
+        speak("哇！磁力楼梯全部搭好啦！史蒂夫快顺着楼梯下山探索吧！");
+        setTimeout(() => {
+          setChapter(2);
+        }, 1500);
+      }
+    }
+
+    // ============================================================
+    // 章节 2：发现村庄与麦田丰收
+    // ============================================================
+    function initChapter2Plants() {
+      state.ch2.plants = [];
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const plantTypes = ['wheat', 'carrot', 'melon', 'wheat', 'carrot', 'wheat', 'melon', 'carrot'];
+      for (let i = 0; i < 8; i++) {
+        const row = Math.floor(i / 4);
+        const col = i % 4;
+        state.ch2.plants.push({
+          x: cx - 200 + col * 130,
+          y: cy + 40 + row * 80,
+          type: plantTypes[i],
+          harvested: false,
+          scale: 1
+        });
+      }
+    }
+
+    function handleChapter2Click(mx, my) {
+      for (let plant of state.ch2.plants) {
+        if (!plant.harvested) {
+          const dist = Math.hypot(mx - plant.x, my - plant.y);
+          if (dist < 50) {
+            harvestSingleCrop(plant);
+            return;
+          }
+        }
+      }
+    }
+
+    function harvestSingleCrop(plant) {
+      plant.harvested = true;
+      state.ch2.harvestCount++;
+      crops += 5;
+      diamonds += 2;
+      document.getElementById('cropCount').innerText = crops;
+      document.getElementById('diamondCount').innerText = diamonds;
+
+      playSound('pop');
+      createSparkles(plant.x, plant.y, '#22c55e', 15);
+      const icon = plant.type === 'wheat' ? '🌾 金黄小麦' : (plant.type === 'carrot' ? '🥕 胡萝卜' : '🍉 大西瓜');
+      addFloatingText(`${icon} +5! 💎+2`, plant.x, plant.y - 30, '#fde047');
+
+      if (state.ch2.harvestCount >= state.ch2.targetHarvest) {
+        playSound('upgrade');
+        speak("大丰收啦！村民们送给史蒂夫很多绿宝石和钻石！快去传奇工作台打造神装吧！");
+        setTimeout(() => {
+          setChapter(3);
+        }, 1500);
+      }
+    }
+
+    function harvestAllCrops() {
+      for (let plant of state.ch2.plants) {
+        if (!plant.harvested) {
+          harvestSingleCrop(plant);
+        }
+      }
+    }
+
+    // ============================================================
+    // 章节 3：传奇工作台打造神装与伙伴集结
+    // ============================================================
+    function craftGear(type) {
+      if (type === 'sword' && !state.ch3.craftedSword) {
+        state.ch3.craftedSword = true;
+        steve.level = 2;
+        playSound('upgrade');
+        createSparkles(steve.x, steve.y, '#38bdf8', 25);
+        addFloatingText('💎 炫彩钻石神剑 打造成功！', steve.x, steve.y - 40, '#38bdf8');
+        speak("哇！炫彩钻石神剑打造成功！锋利无比！");
+      } else if (type === 'bow' && !state.ch3.craftedBow) {
+        state.ch3.craftedBow = true;
+        alex.active = true;
+        playSound('upgrade');
+        createSparkles(alex.x, alex.y, '#ec4899', 25);
+        addFloatingText('🏹 附魔神火弓 打造成功！艾利克斯加入！', alex.x, alex.y - 40, '#ec4899');
+        speak("太棒啦！神射手艾利克斯带着附魔神火弓加入队伍！");
+      } else if (type === 'golem' && !state.ch3.golemJoined) {
+        state.ch3.golemJoined = true;
+        golem.active = true;
+        playSound('smash');
+        createSparkles(golem.x, golem.y, '#f59e0b', 30);
+        addFloatingText('🤖 守护铁傀儡 现身！', golem.x, golem.y - 40, '#f59e0b');
+        speak("轰隆隆！高大威猛的铁傀儡伙伴也来守护村庄啦！");
+      }
+
+      checkChapter3Completion();
+    }
+
+    function checkChapter3Completion() {
+      if (state.ch3.craftedSword && state.ch3.craftedBow && state.ch3.golemJoined) {
+        playSound('upgrade');
+        speak("神装打造完毕，最强小队集结！天色暗下来了，准备迎接夜晚的僵尸大挑战！");
+        setTimeout(() => {
+          setChapter(4);
+        }, 1800);
+      }
+    }
+
+    // ============================================================
+    // 章节 4：夜战僵尸与黎明升级超级朋友
+    // ============================================================
+    function spawnZombie() {
+      const cy = canvas.height / 2;
+      const types = ['zombie', 'skeleton', 'creeper'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      state.ch4.zombies.push({
+        x: canvas.width + 40,
+        y: cy + 20 + (Math.random() * 140 - 70),
+        type: type,
+        hp: type === 'creeper' ? 2 : 3,
+        maxHp: type === 'creeper' ? 2 : 3,
+        speed: 1.2 + Math.random() * 0.8,
+        color: type === 'zombie' ? '#16a34a' : (type === 'skeleton' ? '#94a3b8' : '#22c55e')
+      });
+    }
+
+    function triggerAttack(type) {
+      if (currentChapter === 4) {
+        if (type === 'sword' || type === 'all') {
+          steve.isAttacking = true;
+          playSound('sword');
+          // 剑气弧光飞出
+          projectiles.push({
+            x: steve.x + 30,
+            y: steve.y,
+            vx: 12,
+            vy: 0,
+            type: 'sword_slash',
+            damage: 2,
+            color: '#38bdf8'
+          });
+        }
+        if (type === 'bow' || type === 'all') {
+          alex.isShooting = true;
+          playSound('bow');
+          // 3发彩虹穿透箭
+          for (let angle of [-0.15, 0, 0.15]) {
+            projectiles.push({
+              x: alex.x + 20,
+              y: alex.y,
+              vx: 14 * Math.cos(angle),
+              vy: 14 * Math.sin(angle),
+              type: 'arrow',
+              damage: 2,
+              color: '#ec4899'
+            });
+          }
+        }
+        if (type === 'golem' || type === 'all') {
+          golem.smashTimer = 15;
+          playSound('smash');
+          screenShake = 10;
+          // 冲击波伤害周围所有僵尸
+          for (let z of state.ch4.zombies) {
+            if (z.x < canvas.width * 0.75) {
+              z.hp -= 2;
+              createSparkles(z.x, z.y, '#f59e0b', 12);
+              if (z.hp <= 0) eliminateZombie(z);
+            }
+          }
+        }
+      } else if (currentChapter === 5) {
+        // 第5章打末影龙
+        if (type === 'sword' || type === 'all') {
+          playSound('sword');
+          projectiles.push({
+            x: steve.x + 30,
+            y: steve.y,
+            vx: (state.ch5.dragon.x - steve.x) * 0.08,
+            vy: (state.ch5.dragon.y - steve.y) * 0.08,
+            type: 'sword_slash',
+            damage: 6,
+            color: '#38bdf8'
+          });
+        }
+        if (type === 'bow' || type === 'all') {
+          playSound('bow');
+          for (let i = 0; i < 3; i++) {
+            projectiles.push({
+              x: alex.x + 20,
+              y: alex.y,
+              vx: (state.ch5.dragon.x - alex.x) * 0.08 + (Math.random() * 2 - 1),
+              vy: (state.ch5.dragon.y - alex.y) * 0.08 + (Math.random() * 2 - 1),
+              type: 'arrow',
+              damage: 4,
+              color: '#f43f5e'
+            });
+          }
+        }
+      }
+    }
+
+    function eliminateZombie(z) {
+      playSound('pop');
+      createSparkles(z.x, z.y, '#fde047', 20);
+      diamonds += 3;
+      document.getElementById('diamondCount').innerText = diamonds;
+      addFloatingText('✨ 经验球 +3 💎', z.x, z.y - 20, '#6ee7b7');
+      state.ch4.zombiesDefeated++;
+
+      if (state.ch4.zombiesDefeated >= state.ch4.targetZombies && !state.ch4.dawnReached) {
+        reachDawnAndUpgrade();
+      }
+    }
+
+    function reachDawnAndUpgrade() {
+      state.ch4.dawnReached = true;
+      isNight = false;
+      state.ch4.zombies = []; // 鬼怪怕了，全部消散！
+      playSound('upgrade');
+      screenShake = 8;
+      createSparkles(canvas.width / 2, canvas.height / 2, '#fde047', 60);
+
+      alex.upgraded = true;
+      golem.upgraded = true;
+      state.ch4.friendsUpgraded = true;
+
+      speak("喔喔喔！公鸡打鸣，太阳升起啦！僵尸害怕太阳全都逃跑啦！太棒啦，朋友升级了！艾利克斯和铁傀儡获得了黄金神装！");
+      addFloatingText('🌟 黎明天亮！朋友超级升级！🌟', canvas.width / 2, canvas.height / 2 - 80, '#fde047');
+
+      setTimeout(() => {
+        setChapter(5);
+      }, 2500);
+    }
+
+    // ============================================================
+    // 章节 5：末地传送门与决战末影龙
+    // ============================================================
+    function handleChapter5Click(mx, my) {
+      // 检查点击末影水晶
+      for (let crystal of state.ch5.crystals) {
+        if (crystal.active) {
+          const dist = Math.hypot(mx - crystal.x, my - crystal.y);
+          if (dist < 60) {
+            destroyCrystal(crystal);
+            return;
+          }
+        }
+      }
+
+      // 点击末影龙或屏幕发射合力大招
+      triggerAttack('all');
+    }
+
+    function destroyCrystal(crystal) {
+      crystal.active = false;
+      playSound('dragon_hit');
+      screenShake = 12;
+      createSparkles(crystal.x, crystal.y, '#c084fc', 35);
+      addFloatingText('💥 水晶破碎！切断末影龙回血！', crystal.x, crystal.y - 40, '#e9d5ff');
+
+      const remaining = state.ch5.crystals.filter(c => c.active).length;
+      if (remaining > 0) {
+        speak(`太棒啦！打碎了一个末影水晶！还剩${remaining}个！`);
+      } else {
+        playSound('upgrade');
+        speak("所有末影水晶全部打碎啦！末影龙失去护盾，大家全力发射大招！");
+      }
+    }
+
+    function damageDragon(dmg) {
+      const activeCrystals = state.ch5.crystals.filter(c => c.active).length;
+      if (activeCrystals > 0) {
+        addFloatingText('🛡️ 水晶保护中！先点碎紫色水晶！', state.ch5.dragon.x, state.ch5.dragon.y - 60, '#f43f5e');
+        return;
+      }
+
+      state.ch5.dragon.hp -= dmg;
+      playSound('dragon_hit');
+      createSparkles(state.ch5.dragon.x, state.ch5.dragon.y, '#a855f7', 15);
+      screenShake = 6;
+
+      if (state.ch5.dragon.hp <= 0 && !state.ch5.dragonDefeated) {
+        defeatDragon();
+      }
+    }
+
+    function defeatDragon() {
+      state.ch5.dragonDefeated = true;
+      state.ch5.dragon.hp = 0;
+      playSound('victory');
+      screenShake = 20;
+
+      // 全屏彩虹经验雨与礼花
+      for (let i = 0; i < 100; i++) {
+        setTimeout(() => {
+          createSparkles(
+            Math.random() * canvas.width,
+            Math.random() * canvas.height,
+            ['#fde047', '#38bdf8', '#a855f7', '#f43f5e', '#4ade80'][Math.floor(Math.random() * 5)],
+            15
+          );
+        }, i * 30);
+      }
+
+      speak("哇啊啊！末影龙被彻底打败啦！漫天都是彩虹和经验球！恭喜5岁小英雄赢得龙蛋奖杯！");
+
+      setTimeout(() => {
+        document.getElementById('victory-modal').classList.add('active');
+      }, 2500);
+    }
+
+    // ============================================================
+    // 渲染循环 (2.5D Isometric 渲染引擎)
+    // ============================================================
+    function render() {
+      ctx.save();
+
+      // 屏幕震动
+      if (screenShake > 0) {
+        const sx = (Math.random() - 0.5) * screenShake;
+        const sy = (Math.random() - 0.5) * screenShake;
+        ctx.translate(sx, sy);
+        screenShake *= 0.9;
+        if (screenShake < 0.5) screenShake = 0;
+      }
+
+      // 1. 绘制天空背景 (白天/黄昏/黑夜/末地星空)
+      drawSky();
+
+      // 2. 绘制场景地面与环境
+      drawTerrain();
+
+      // 3. 绘制各章节专属元素
+      if (currentChapter === 1) {
+        drawChapter1();
+      } else if (currentChapter === 2) {
+        drawChapter2();
+      } else if (currentChapter === 3) {
+        drawChapter3();
+      } else if (currentChapter === 4) {
+        drawChapter4();
+      } else if (currentChapter === 5) {
+        drawChapter5();
+      }
+
+      // 4. 绘制主角团队 (史蒂夫、艾利克斯、铁傀儡)
+      drawTeam();
+
+      // 5. 绘制投射物与粒子
+      drawProjectilesAndParticles();
+
+      ctx.restore();
+
+      requestAnimationFrame(render);
+    }
+
+    // 绘制天空
+    function drawSky() {
+      const w = canvas.width;
+      const h = canvas.height;
+      let grad = ctx.createLinearGradient(0, 0, 0, h);
+
+      if (currentChapter === 5) {
+        // 末地暗紫星空
+        grad.addColorStop(0, '#0f051d');
+        grad.addColorStop(0.6, '#1e0c38');
+        grad.addColorStop(1, '#2d1554');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // 浮动末地粒子
+        ctx.fillStyle = 'rgba(192, 132, 252, 0.4)';
+        for (let i = 0; i < 30; i++) {
+          const px = (Math.sin(Date.now() * 0.001 + i) * 0.5 + 0.5) * w;
+          const py = ((i * 37 + Date.now() * 0.02) % h);
+          ctx.fillRect(px, py, 3, 3);
+        }
+      } else if (isNight) {
+        // 黑夜
+        grad.addColorStop(0, '#030712');
+        grad.addColorStop(0.6, '#0f172a');
+        grad.addColorStop(1, '#1e293b');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // 方块月亮
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(w - 180, 50, 48, 48);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(w - 160, 58, 20, 20);
+      } else {
+        // 晴朗白天
+        grad.addColorStop(0, '#38bdf8');
+        grad.addColorStop(0.6, '#7dd3fc');
+        grad.addColorStop(1, '#bae6fd');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // 方块太阳
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(w - 180, 50, 56, 56);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(w - 165, 65, 26, 26);
+
+        // 飘动方块云
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        const cloudX = (Date.now() * 0.02) % (w + 200) - 100;
+        ctx.fillRect(cloudX, 80, 140, 40);
+        ctx.fillRect(cloudX + 20, 65, 80, 20);
+      }
+    }
+
+    // 绘制地面与环境
+    function drawTerrain() {
+      const w = canvas.width;
+      const h = canvas.height;
+      const cy = h / 2;
+
+      if (currentChapter === 1) {
+        // 高山浮岛
+        drawFloatingIsland(w / 2 - 100, cy + 100, 480, 220);
+      } else if (currentChapter === 5) {
+        // 末地黑曜石浮岛
+        drawEndIsland(w / 2, cy + 120, 600, 240);
+      } else {
+        // 平原草地方块地面
+        ctx.fillStyle = '#15803d'; // 草地深绿
+        ctx.fillRect(0, cy + 50, w, h - cy - 50);
+
+        ctx.fillStyle = '#22c55e'; // 草地顶层亮绿
+        ctx.fillRect(0, cy + 50, w, 24);
+
+        // 像素草地纹理
+        ctx.fillStyle = '#16a34a';
+        for (let x = 0; x < w; x += 32) {
+          ctx.fillRect(x, cy + 74, 16, 16);
+          ctx.fillRect(x + 16, cy + 100, 16, 16);
+        }
+
+        // 泥土层
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(0, cy + 120, w, h - cy - 120);
+      }
+    }
+
+    // 绘制 2.5D 浮岛
+    function drawFloatingIsland(cx, cy, iw, ih) {
+      // 岛屿主体
+      ctx.fillStyle = '#78350f'; // 泥土
+      ctx.beginPath();
+      ctx.moveTo(cx - iw / 2, cy - 40);
+      ctx.lineTo(cx + iw / 2, cy - 40);
+      ctx.lineTo(cx + iw / 3, cy + ih);
+      ctx.lineTo(cx, cy + ih + 30);
+      ctx.lineTo(cx - iw / 3, cy + ih);
+      ctx.closePath();
+      ctx.fill();
+
+      // 顶部草方块
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy - 40, iw / 2, 45, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 绘制末地岛屿
+    function drawEndIsland(cx, cy, iw, ih) {
+      ctx.fillStyle = '#fef08a'; // 末地石淡黄
+      ctx.beginPath();
+      ctx.moveTo(cx - iw / 2, cy - 40);
+      ctx.lineTo(cx + iw / 2, cy - 40);
+      ctx.lineTo(cx + iw / 3, cy + ih);
+      ctx.lineTo(cx - iw / 3, cy + ih);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#fef9c3';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy - 40, iw / 2, 50, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 绘制第1章元素
+    function drawChapter1() {
+      // 绘制放置槽位与已拼装方块
+      for (let slot of state.ch1.slots) {
+        if (slot.placed) {
+          // 绘制方块
+          drawVoxelCube(slot.x, slot.y, 44, slot.type === 'roof' ? '#ef4444' : '#b45309', true);
+        } else {
+          // 绘制发光虚线引导框
+          ctx.strokeStyle = '#fde047';
+          ctx.lineWidth = 3;
+          ctx.setLineDash([6, 6]);
+          ctx.strokeRect(slot.x - 22, slot.y - 22, 44, 44);
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = 'rgba(253, 224, 71, 0.2)';
+          ctx.fillRect(slot.x - 22, slot.y - 22, 44, 44);
+
+          // 提示手势/箭头
+          ctx.font = '20px Arial';
+          ctx.fillText('👇', slot.x - 10, slot.y - 28 + Math.sin(Date.now() * 0.008) * 6);
+        }
+      }
+
+      // 底部可用磁力方块面板
+      for (let cube of state.ch1.availableCubes) {
+        drawVoxelCube(cube.x, cube.y, 50, cube.color, true);
+        ctx.fillStyle = '#fff';
+        ctx.font = '24px Arial';
+        ctx.fillText(cube.icon, cube.x - 12, cube.y + 8);
+
+        // 磁力光环
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cube.x, cube.y, 35 + Math.sin(Date.now() * 0.006) * 4, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    // 绘制第2章元素 (村庄、麦田、胡萝卜、村民)
+    function drawChapter2() {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      // 远景村庄小木屋
+      drawVillageHouse(cx + 260, cy - 40);
+      drawVillageHouse(cx - 320, cy - 50);
+
+      // 成熟植物
+      for (let p of state.ch2.plants) {
+        if (!p.harvested) {
+          // 泥土方块基座
+          ctx.fillStyle = '#451a03';
+          ctx.fillRect(p.x - 30, p.y + 10, 60, 20);
+
+          // 植物图标与摇曳动画
+          ctx.font = '36px Arial';
+          const sway = Math.sin(Date.now() * 0.005 + p.x) * 4;
+          const icon = p.type === 'wheat' ? '🌾' : (p.type === 'carrot' ? '🥕' : '🍉');
+          ctx.fillText(icon, p.x - 18 + sway, p.y + 8);
+
+          // 发光金圈指引
+          ctx.strokeStyle = '#fde047';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 32 + Math.sin(Date.now() * 0.008) * 3, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      // 可爱村民
+      drawVillager(cx + 180, cy + 20);
+    }
+
+    // 绘制第3章元素 (巨型发光传奇工作台)
+    function drawChapter3() {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      // 发光工作台
+      drawVoxelCube(cx, cy + 20, 80, '#b45309', true);
+      ctx.fillStyle = '#fde047';
+      ctx.font = '40px Arial';
+      ctx.fillText('🛠️', cx - 20, cy + 30);
+
+      // 工作台顶部魔法光芒
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(cx, cy + 20, 70 + Math.sin(Date.now() * 0.006) * 8, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 绘制第4章元素 (僵尸大军、黑夜战斗)
+    function drawChapter4() {
+      // 生成僵尸
+      state.ch4.spawnTimer++;
+      if (state.ch4.spawnTimer > 110 && state.ch4.zombies.length < 5 && !state.ch4.dawnReached) {
+        state.ch4.spawnTimer = 0;
+        spawnZombie();
+      }
+
+      // 移动与绘制僵尸
+      for (let i = state.ch4.zombies.length - 1; i >= 0; i--) {
+        const z = state.ch4.zombies[i];
+        z.x -= z.speed;
+
+        // 绘制方块怪物
+        drawVoxelMonster(z.x, z.y, z.type);
+
+        // 简易碰撞检测 (靠近队伍)
+        if (z.x < steve.x + 80) {
+          triggerAttack('all');
+        }
+      }
+    }
+
+    // 绘制第5章元素 (末地水晶柱、末影水晶、末影龙)
+    function drawChapter5() {
+      // 1. 绘制3座黑曜石柱与末影水晶
+      for (let crystal of state.ch5.crystals) {
+        // 黑曜石柱
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(crystal.x - 24, crystal.y, 48, canvas.height - crystal.y);
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(crystal.x - 20, crystal.y + 10, 8, canvas.height - crystal.y);
+
+        if (crystal.active) {
+          // 水晶旋转发光
+          ctx.save();
+          ctx.translate(crystal.x, crystal.y - 15);
+          ctx.rotate(Date.now() * 0.003);
+          drawVoxelCube(0, 0, 36, '#c084fc', true);
+          ctx.restore();
+
+          // 连向末影龙的紫色治疗激光
+          if (!state.ch5.dragonDefeated) {
+            ctx.strokeStyle = 'rgba(192, 132, 252, 0.6)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(crystal.x, crystal.y - 15);
+            ctx.lineTo(state.ch5.dragon.x, state.ch5.dragon.y);
+            ctx.stroke();
+          }
+
+          // 点击指引
+          ctx.font = '18px Arial';
+          ctx.fillStyle = '#fde047';
+          ctx.fillText('👇点我打碎', crystal.x - 40, crystal.y - 45 + Math.sin(Date.now() * 0.008) * 5);
+        }
+      }
+
+      // 2. 绘制与更新末影龙
+      updateAndDrawDragon();
+    }
+
+    // 更新与绘制末影龙
+    function updateAndDrawDragon() {
+      const d = state.ch5.dragon;
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      if (!state.ch5.dragonDefeated) {
+        // 盘旋飞行
+        d.angle += 0.02;
+        d.x = cx + Math.cos(d.angle) * (canvas.width * 0.35);
+        d.y = cy - 140 + Math.sin(d.angle * 2) * 50;
+
+        // 末影龙血条
+        const barW = 300;
+        const barH = 18;
+        ctx.fillStyle = '#1e1b4b';
+        ctx.fillRect(cx - barW / 2, 80, barW, barH);
+        ctx.fillStyle = 'linear-gradient(90deg, #a855f7, #ec4899)';
+        ctx.fillStyle = '#a855f7';
+        ctx.fillRect(cx - barW / 2, 80, (d.hp / d.maxHp) * barW, barH);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(cx - barW / 2, 80, barW, barH);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText(`🐲 末影龙 BOSS: ${d.hp}/${d.maxHp}`, cx - 75, 74);
+      }
+
+      // 绘制巨型末影龙身体与翅膀
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      if (Math.cos(d.angle) < 0) ctx.scale(-1, 1);
+
+      // 翅膀扇动
+      const wingFlap = Math.sin(Date.now() * 0.01) * 20;
+
+      // 龙身
+      ctx.fillStyle = '#09090b';
+      ctx.fillRect(-40, -20, 80, 40);
+
+      // 龙翅膀
+      ctx.fillStyle = '#27272a';
+      ctx.beginPath();
+      ctx.moveTo(-10, -10);
+      ctx.lineTo(-60, -60 + wingFlap);
+      ctx.lineTo(20, -50 + wingFlap);
+      ctx.closePath();
+      ctx.fill();
+
+      // 龙头与紫色眼睛
+      ctx.fillStyle = '#18181b';
+      ctx.fillRect(35, -25, 35, 30);
+      ctx.fillStyle = '#c084fc'; // 紫色龙眼
+      ctx.fillRect(55, -20, 8, 8);
+
+      // 龙尾
+      ctx.fillStyle = '#09090b';
+      ctx.fillRect(-75, -10, 40, 15);
+
+      ctx.restore();
+    }
+
+    // 绘制主角团队
+    function drawTeam() {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const bounce = Math.sin(Date.now() * 0.008) * 3;
+
+      // 调整团队站位
+      if (currentChapter >= 2) {
+        steve.x = cx - 200; steve.y = cy + 45 + bounce;
+        alex.x = cx - 265; alex.y = cy + 45 + Math.sin(Date.now() * 0.008 + 1) * 3;
+        golem.x = cx - 340; golem.y = cy + 45 + Math.sin(Date.now() * 0.008 + 2) * 2;
+      } else {
+        steve.x = cx - 200; steve.y = cy - 20 + bounce;
+      }
+
+      // 绘制史蒂夫 (Steve)
+      drawSteve(steve.x, steve.y);
+
+      // 绘制艾利克斯 (Alex)
+      if (alex.active) {
+        drawAlex(alex.x, alex.y);
+      }
+
+      // 绘制铁傀儡 (Iron Golem)
+      if (golem.active) {
+        drawGolem(golem.x, golem.y);
+      }
+    }
+
+    // 绘制史蒂夫
+    function drawSteve(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // 头部
+      ctx.fillStyle = '#92400e'; // 棕发
+      ctx.fillRect(-12, -44, 24, 8);
+      ctx.fillStyle = '#fed7aa'; // 脸
+      ctx.fillRect(-12, -36, 24, 16);
+      ctx.fillStyle = '#1e3a8a'; // 蓝眼
+      ctx.fillRect(-8, -32, 4, 4);
+      ctx.fillRect(4, -32, 4, 4);
+
+      // 身体 (经典青蓝短袖)
+      ctx.fillStyle = '#06b6d4';
+      ctx.fillRect(-12, -20, 24, 20);
+
+      // 裤子与双腿
+      ctx.fillStyle = '#1e3a8a';
+      ctx.fillRect(-10, 0, 9, 18);
+      ctx.fillRect(1, 0, 9, 18);
+      ctx.fillStyle = '#475569'; // 鞋子
+      ctx.fillRect(-10, 14, 9, 4);
+      ctx.fillRect(1, 14, 9, 4);
+
+      // 手持钻石剑
+      ctx.save();
+      const swing = steve.isAttacking ? Math.sin(Date.now() * 0.03) * 35 : 0;
+      ctx.translate(12, -10);
+      ctx.rotate((30 + swing) * Math.PI / 180);
+      ctx.fillStyle = '#38bdf8'; // 钻石剑身
+      ctx.fillRect(0, -28, 6, 28);
+      ctx.fillStyle = '#fde047'; // 剑身附魔金光
+      ctx.fillRect(2, -20, 2, 12);
+      ctx.fillStyle = '#78350f'; // 剑柄
+      ctx.fillRect(-3, 0, 12, 4);
+      ctx.restore();
+
+      ctx.restore();
+    }
+
+    // 绘制艾利克斯
+    function drawAlex(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // 头部 (橙色长发)
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(-12, -44, 24, 10);
+      ctx.fillRect(-12, -34, 4, 14); // 垂下的辫子
+      ctx.fillStyle = '#fed7aa';
+      ctx.fillRect(-8, -34, 20, 14);
+      ctx.fillStyle = '#047857'; // 绿眼
+      ctx.fillRect(-4, -30, 4, 4);
+      ctx.fillRect(6, -30, 4, 4);
+
+      // 身体 (绿衣/黄金圣衣)
+      ctx.fillStyle = alex.upgraded ? '#facc15' : '#15803d';
+      ctx.fillRect(-10, -20, 20, 20);
+
+      // 裤子与双腿
+      ctx.fillStyle = alex.upgraded ? '#ca8a04' : '#6b7280';
+      ctx.fillRect(-8, 0, 7, 18);
+      ctx.fillRect(1, 0, 7, 18);
+      ctx.fillStyle = '#374151'; // 鞋子
+      ctx.fillRect(-8, 14, 7, 4);
+      ctx.fillRect(1, 14, 7, 4);
+
+      // 手持神弓
+      ctx.strokeStyle = alex.upgraded ? '#f59e0b' : '#78350f';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(14, -8, 14, -Math.PI / 2, Math.PI / 2);
+      ctx.stroke();
+
+      // 升级黄金光环
+      if (alex.upgraded) {
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.7)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, -15, 32, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    // 绘制铁傀儡
+    function drawGolem(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // 巨大身体 (铁质淡灰)
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(-22, -45, 44, 40);
+
+      // 头部
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(-14, -65, 28, 20);
+      ctx.fillStyle = '#ef4444'; // 红眼
+      ctx.fillRect(-8, -58, 4, 4);
+      ctx.fillRect(4, -58, 4, 4);
+
+      // 双腿
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(-16, -5, 12, 25);
+      ctx.fillRect(4, -5, 12, 25);
+
+      // 手中红玫瑰花
+      ctx.fillStyle = '#ef4444';
+      ctx.font = '16px Arial';
+      ctx.fillText('🌹', 20, -25);
+
+      // 升级皇冠与电磁光环
+      if (golem.upgraded) {
+        ctx.fillStyle = '#fde047';
+        ctx.font = '20px Arial';
+        ctx.fillText('👑', -10, -68);
+      }
+
+      ctx.restore();
+    }
+
+    // 绘制可爱村民
+    function drawVillager(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // 头部与大鼻子
+      ctx.fillStyle = '#fed7aa';
+      ctx.fillRect(-10, -40, 20, 20);
+      ctx.fillStyle = '#f59e0b'; // 大鼻子
+      ctx.fillRect(-4, -30, 8, 12);
+
+      // 棕色长袍
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(-12, -20, 24, 35);
+
+      // 头顶绿宝石爱心气泡
+      ctx.fillStyle = '#22c55e';
+      ctx.font = '18px Arial';
+      ctx.fillText('💚💎', -14, -50 + Math.sin(Date.now() * 0.006) * 4);
+
+      ctx.restore();
+    }
+
+    // 绘制方块怪物 (僵尸/骷髅/苦力怕)
+    function drawVoxelMonster(x, y, type) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      if (type === 'zombie') {
+        // 绿头
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(-10, -36, 20, 16);
+        // 青蓝衣服
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(-10, -20, 20, 20);
+        // 伸直的双臂
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(-18, -18, 10, 8);
+      } else if (type === 'skeleton') {
+        // 灰白骷髅头
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(-10, -36, 20, 16);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-6, -30, 4, 4);
+        ctx.fillRect(2, -30, 4, 4);
+        // 骨骼身体
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(-8, -20, 16, 20);
+      } else if (type === 'creeper') {
+        // 苦力怕绿色方块头与经典表情
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(-12, -38, 24, 20);
+        ctx.fillStyle = '#052e16'; // 嘴巴表情
+        ctx.fillRect(-6, -30, 4, 4);
+        ctx.fillRect(2, -30, 4, 4);
+        ctx.fillRect(-4, -24, 8, 6);
+        // 绿色身躯
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(-10, -18, 20, 24);
+      }
+
+      ctx.restore();
+    }
+
+    // 绘制村庄房屋
+    function drawVillageHouse(x, y) {
+      ctx.fillStyle = '#78350f'; // 原木墙
+      ctx.fillRect(x - 40, y, 80, 60);
+      ctx.fillStyle = '#b91c1c'; // 红色屋顶
+      ctx.beginPath();
+      ctx.moveTo(x - 50, y);
+      ctx.lineTo(x, y - 35);
+      ctx.lineTo(x + 50, y);
+      ctx.closePath();
+      ctx.fill();
+
+      // 窗户与门
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(x - 24, y + 15, 14, 14);
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(x + 5, y + 20, 18, 40);
+    }
+
+    // 绘制 2.5D 立体方块 (Voxel Cube)
+    function drawVoxelCube(x, y, size, color, glowing) {
+      const half = size / 2;
+
+      // 顶部面
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x, y - half);
+      ctx.lineTo(x + half, y - half / 2);
+      ctx.lineTo(x, y);
+      ctx.lineTo(x - half, y - half / 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // 左侧面 (偏暗)
+      ctx.fillStyle = adjustBrightness(color, -25);
+      ctx.beginPath();
+      ctx.moveTo(x - half, y - half / 2);
+      ctx.lineTo(x, y);
+      ctx.lineTo(x, y + half);
+      ctx.lineTo(x - half, y + half / 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // 右侧面 (更暗)
+      ctx.fillStyle = adjustBrightness(color, -45);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + half, y - half / 2);
+      ctx.lineTo(x + half, y + half / 2);
+      ctx.lineTo(x, y + half);
+      ctx.closePath();
+      ctx.fill();
+
+      // 边缘描边
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    function adjustBrightness(hex, percent) {
+      let num = parseInt(hex.replace('#', ''), 16);
+      if (isNaN(num)) return hex;
+      let r = (num >> 16) + percent;
+      let g = ((num >> 8) & 0x00FF) + percent;
+      let b = (num & 0x0000FF) + percent;
+      r = Math.min(255, Math.max(0, r));
+      g = Math.min(255, Math.max(0, g));
+      b = Math.min(255, Math.max(0, b));
+      return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    }
+
+    // 绘制投射物与粒子
+    function drawProjectilesAndParticles() {
+      // 投射物移动与渲染
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        const p = projectiles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.type === 'sword_slash') {
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 20, -Math.PI / 3, Math.PI / 3);
+          ctx.stroke();
+        } else if (p.type === 'arrow') {
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y - 2, 16, 4);
+        }
+
+        // 第4章怪物命中检测
+        if (currentChapter === 4) {
+          for (let z of state.ch4.zombies) {
+            const dist = Math.hypot(p.x - z.x, p.y - z.y);
+            if (dist < 35) {
+              z.hp -= p.damage;
+              createSparkles(z.x, z.y, p.color, 8);
+              projectiles.splice(i, 1);
+              if (z.hp <= 0) eliminateZombie(z);
+              break;
+            }
+          }
+        } else if (currentChapter === 5) {
+          // 第5章末影龙命中检测
+          const dist = Math.hypot(p.x - state.ch5.dragon.x, p.y - state.ch5.dragon.y);
+          if (dist < 60) {
+            damageDragon(p.damage);
+            projectiles.splice(i, 1);
+          }
+        }
+
+        // 出屏移除
+        if (p.x > canvas.width + 50 || p.x < -50 || p.y < -50 || p.y > canvas.height + 50) {
+          projectiles.splice(i, 1);
+        }
+      }
+
+      // 粒子更新与渲染
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.life--;
+        pt.alpha = pt.life / pt.maxLife;
+
+        ctx.fillStyle = pt.color;
+        ctx.globalAlpha = pt.alpha;
+        ctx.fillRect(pt.x, pt.y, pt.size, pt.size);
+        ctx.globalAlpha = 1;
+
+        if (pt.life <= 0) particles.splice(i, 1);
+      }
+
+      // 飘动文字更新与渲染
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y -= 1.2;
+        ft.life--;
+        ctx.fillStyle = ft.color;
+        ctx.font = 'bold 20px "Microsoft YaHei", Arial';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(ft.text, ft.x - 20, ft.y);
+        ctx.shadowBlur = 0;
+
+        if (ft.life <= 0) floatingTexts.splice(i, 1);
+      }
+    }
+
+    function createSparkles(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 6 + 2;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: Math.random() * 6 + 3,
+          color: color,
+          life: 25 + Math.random() * 15,
+          maxLife: 40
+        });
+      }
+    }
+
+    function addFloatingText(text, x, y, color) {
+      floatingTexts.push({
+        text: text,
+        x: x,
+        y: y,
+        color: color,
+        life: 50
+      });
+    }
+
+    // ============================================================
+    // 事件与输入监听
+    // ============================================================
+    function handleCanvasClick(e) {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      if (currentChapter === 1) {
+        handleChapter1Click(mx, my);
+      } else if (currentChapter === 2) {
+        handleChapter2Click(mx, my);
+      } else if (currentChapter === 3) {
+        // 点击工作台自动打造
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        if (Math.hypot(mx - cx, my - (cy + 20)) < 70) {
+          if (!state.ch3.craftedSword) craftGear('sword');
+          else if (!state.ch3.craftedBow) craftGear('bow');
+          else if (!state.ch3.golemJoined) craftGear('golem');
+        }
+      } else if (currentChapter === 4) {
+        triggerAttack('all');
+      } else if (currentChapter === 5) {
+        handleChapter5Click(mx, my);
+      }
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      initAudio();
+      handleCanvasClick(e);
+    });
+
+    // 启动游戏
+    function startGame() {
+      initAudio();
+      document.getElementById('start-overlay').style.display = 'none';
+      resizeCanvas();
+      setChapter(1);
+    }
+
+    // 重新开始
+    function restartGame() {
+      location.reload();
+    }
+
+    // 页面初次加载自适应与渲染初始化
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      render();
+    });
+  </script>
+</body>
+
+</html>
