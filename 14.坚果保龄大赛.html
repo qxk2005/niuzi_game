@@ -1,0 +1,2454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>坚果保龄大赛 · 5岁小英雄专属超级神作</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #08120c;
+      font-family: 'Segoe UI', 'Microsoft YaHei', -apple-system, sans-serif;
+      color: #fff;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: #09170e;
+    }
+
+    /* 顶部控制栏与状态展示 */
+    .top-bar {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    .top-left, .top-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: auto;
+    }
+
+    .level-badge {
+      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+      border: 3px solid #6ee7b7;
+      border-radius: 30px;
+      padding: 6px 18px;
+      font-size: 18px;
+      font-weight: 900;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), 0 0 15px rgba(110, 231, 183, 0.4);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    }
+
+    .score-badge {
+      background: rgba(15, 23, 42, 0.85);
+      border: 2px solid #facc15;
+      border-radius: 20px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 16px;
+      font-weight: 800;
+      color: #fef08a;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-ui {
+      background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+      border: 2px solid #bae6fd;
+      border-radius: 20px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 8px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: all 0.15s ease;
+      outline: none;
+    }
+
+    .btn-ui:hover {
+      transform: scale(1.06);
+    }
+
+    .btn-ui:active {
+      transform: scale(0.95);
+    }
+
+    .btn-ui.gold {
+      background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+      border-color: #fef08a;
+      color: #451a03;
+      text-shadow: 0 1px 1px rgba(255, 255, 255, 0.6);
+    }
+
+    .btn-ui.purple {
+      background: linear-gradient(180deg, #a855f7 0%, #7e22ce 100%);
+      border-color: #e9d5ff;
+    }
+
+    /* 经典传送带 UI 栏 */
+    .conveyor-container {
+      position: absolute;
+      top: 68px;
+      left: 16px;
+      display: flex;
+      align-items: center;
+      background: linear-gradient(180deg, #475569 0%, #1e293b 100%);
+      border: 4px solid #94a3b8;
+      border-radius: 24px;
+      padding: 6px 14px;
+      gap: 12px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.6), inset 0 2px 6px rgba(255,255,255,0.2);
+      z-index: 40;
+    }
+
+    .conveyor-label {
+      font-size: 14px;
+      font-weight: 900;
+      color: #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.2;
+      border-right: 2px dashed #64748b;
+      padding-right: 10px;
+    }
+
+    .conveyor-belt {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      min-width: 320px;
+      height: 72px;
+      overflow-x: auto;
+      padding: 4px;
+    }
+    .conveyor-belt::-webkit-scrollbar { display: none; }
+
+    .nut-card {
+      position: relative;
+      width: 60px;
+      height: 64px;
+      background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+      border: 3px solid #64748b;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+
+    .nut-card:hover {
+      transform: translateY(-4px) scale(1.08);
+      border-color: #38bdf8;
+      box-shadow: 0 8px 20px rgba(56, 189, 248, 0.4);
+    }
+
+    .nut-card.selected {
+      border-color: #facc15;
+      background: linear-gradient(180deg, #854d0e 0%, #422006 100%);
+      box-shadow: 0 0 18px rgba(250, 204, 21, 0.8);
+      transform: translateY(-6px) scale(1.12);
+    }
+
+    .nut-card.ready-first {
+      border-color: #4ade80;
+      animation: pulseGreen 1.5s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0%, 100% { box-shadow: 0 0 8px rgba(74, 222, 128, 0.5); }
+      50% { box-shadow: 0 0 20px rgba(74, 222, 128, 0.9); }
+    }
+
+    .nut-card-icon {
+      font-size: 28px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+
+    .nut-card-name {
+      font-size: 10px;
+      font-weight: 800;
+      color: #f8fafc;
+      margin-top: 3px;
+    }
+
+    .nut-card-tag {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #ef4444;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 900;
+      padding: 2px 6px;
+      border-radius: 10px;
+      border: 1px solid #fff;
+    }
+
+    /* 底部大字指引条 */
+    .bottom-guide-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    .guide-box {
+      pointer-events: auto;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.96));
+      border: 3px solid #fbbf24;
+      border-radius: 35px;
+      padding: 10px 28px;
+      font-size: 20px;
+      font-weight: 900;
+      color: #fef08a;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 25px rgba(251, 191, 36, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: guideFloat 2s infinite ease-in-out;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+      max-width: 90%;
+      text-align: center;
+    }
+
+    @keyframes guideFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .guide-speak-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 2px solid #facc15;
+      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: transform 0.15s ease;
+    }
+    .guide-speak-btn:hover { transform: scale(1.15); }
+
+    /* 通用弹窗模态框 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(8, 12, 16, 0.88);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.25s ease forwards;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-card {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 4px solid #38bdf8;
+      border-radius: 32px;
+      padding: 30px;
+      max-width: 820px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(56, 189, 248, 0.35);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .modal-title {
+      font-size: 32px;
+      font-weight: 900;
+      color: #38bdf8;
+      text-align: center;
+      margin-bottom: 20px;
+      text-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sketch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      width: 100%;
+      margin-bottom: 25px;
+    }
+
+    .sketch-item {
+      background: rgba(15, 23, 42, 0.8);
+      border: 2px solid #64748b;
+      border-radius: 20px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sketch-canvas-box {
+      width: 100%;
+      height: 140px;
+      background: #f8fafc;
+      border-radius: 14px;
+      border: 3px dashed #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .sketch-item-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #facc15;
+    }
+
+    .sketch-item-desc {
+      font-size: 13px;
+      color: #cbd5e1;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .modal-close-btn {
+      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+      color: #fff;
+      font-size: 20px;
+      font-weight: 900;
+      padding: 12px 40px;
+      border-radius: 40px;
+      border: 3px solid #6ee7b7;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+      transition: transform 0.15s ease;
+    }
+    .modal-close-btn:hover { transform: scale(1.05); }
+
+    /* 结算胜利弹窗 */
+    .victory-box {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .trophy-anim {
+      font-size: 90px;
+      animation: trophyBounce 1.2s infinite ease-in-out;
+      filter: drop-shadow(0 10px 20px rgba(250, 204, 21, 0.6));
+    }
+
+    @keyframes trophyBounce {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.15) rotate(6deg); }
+    }
+
+    .victory-title {
+      font-size: 38px;
+      font-weight: 900;
+      background: linear-gradient(90deg, #facc15, #f59e0b, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .victory-desc {
+      font-size: 20px;
+      color: #e2e8f0;
+      max-width: 500px;
+      line-height: 1.6;
+    }
+
+    /* 移动端/触摸提示指引手势 */
+    .touch-hint-hand {
+      position: absolute;
+      pointer-events: none;
+      z-index: 45;
+      font-size: 40px;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));
+      animation: handClick 1.5s infinite ease-in-out;
+      display: none;
+    }
+
+    @keyframes handClick {
+      0%, 100% { transform: scale(1) translate(0, 0); }
+      50% { transform: scale(0.85) translate(4px, 4px); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 主游戏画布 -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- 顶部控制与状态栏 -->
+  <div class="top-bar">
+    <div class="top-left">
+      <div class="level-badge" id="levelBadge">
+        <span>🎳</span> <span id="levelName">第 1 关 · 单行新手冲刺</span>
+      </div>
+      <div class="score-badge">
+        <span>⭐ 击退僵尸:</span> <span id="killCount" style="color:#4ade80;">0</span> / <span id="targetKills">6</span>
+      </div>
+      <div class="score-badge">
+        <span>🏆 得分:</span> <span id="scoreVal">0</span>
+      </div>
+    </div>
+
+    <div class="top-right">
+      <button class="btn-ui gold" onclick="openSketchModal()">
+        <span>📜</span> 5岁小设计师手稿
+      </button>
+      <button class="btn-ui purple" id="voiceToggleBtn" onclick="toggleVoice()">
+        <span>🔊</span> 语音: 开
+      </button>
+      <button class="btn-ui" onclick="toggleFullscreen()">
+        <span>⛶</span> 全屏
+      </button>
+      <button class="btn-ui" onclick="restartLevel()">
+        <span>🔄</span> 重玩本关
+      </button>
+    </div>
+  </div>
+
+  <!-- 经典坚果传送带 -->
+  <div class="conveyor-container" id="conveyorContainer">
+    <div class="conveyor-label">
+      <span>坚果</span>
+      <span>传送带</span>
+      <span style="font-size:16px;">➡️</span>
+    </div>
+    <div class="conveyor-belt" id="conveyorBelt">
+      <!-- 动态注入待发射坚果卡片 -->
+    </div>
+  </div>
+
+  <!-- 底部大字儿童友好指引条 -->
+  <div class="bottom-guide-bar">
+    <div class="guide-box" id="guideBox">
+      <span id="guideIcon">👉</span>
+      <span id="guideText">把鼠标移到草坪上，点击草坪发射坚果，撞倒所有僵尸！</span>
+      <div class="guide-speak-btn" onclick="speakCurrentGuide()" title="朗读指引">📢</div>
+    </div>
+  </div>
+
+  <!-- 小设计师手稿展示弹窗 -->
+  <div class="modal-overlay" id="sketchModal">
+    <div class="modal-card">
+      <div class="modal-title">
+        <span>🎨</span> 5岁小天才设计师手绘原型图鉴
+      </div>
+      <p style="font-size:15px; color:#94a3b8; margin-bottom:18px; text-align:center;">
+        每一张图都是小朋友亲手用马克笔在白纸上绘制的童趣设想，游戏100%严格还原了小朋友的奇思妙想！
+      </p>
+
+      <div class="sketch-grid">
+        <!-- 手稿 1: 第4关经典全网格草坪 -->
+        <div class="sketch-item">
+          <div class="sketch-canvas-box" id="sketchBox1">
+            <svg viewBox="0 0 200 140" width="100%" height="100%">
+              <rect width="200" height="140" fill="#f8fafc"/>
+              <g stroke="#16a34a" stroke-width="5" stroke-linecap="round">
+                <!-- 绿色手绘网格 -->
+                <line x1="20" y1="20" x2="180" y2="20" />
+                <line x1="18" y1="50" x2="182" y2="48" />
+                <line x1="16" y1="80" x2="184" y2="82" />
+                <line x1="22" y1="110" x2="178" y2="108" />
+                <line x1="20" y1="130" x2="180" y2="130" />
+                <!-- 竖线 -->
+                <line x1="25" y1="15" x2="22" y2="135" />
+                <line x1="55" y1="18" x2="58" y2="132" />
+                <line x1="90" y1="15" x2="88" y2="135" />
+                <line x1="125" y1="18" x2="122" y2="130" />
+                <line x1="155" y1="16" x2="157" y2="134" />
+                <line x1="178" y1="18" x2="175" y2="132" />
+              </g>
+            </svg>
+          </div>
+          <div class="sketch-item-title">图1 · 第4关全草坪</div>
+          <div class="sketch-item-desc">小朋友画的五行经典大草坪，迎战巨人僵尸与机枪射手！</div>
+        </div>
+
+        <!-- 手稿 2: 第1关单行新手跑道 -->
+        <div class="sketch-item">
+          <div class="sketch-canvas-box" id="sketchBox2">
+            <svg viewBox="0 0 200 140" width="100%" height="100%">
+              <rect width="200" height="140" fill="#f8fafc"/>
+              <g stroke="#16a34a" stroke-width="6" stroke-linecap="round">
+                <!-- 单行跑道 -->
+                <rect x="25" y="45" width="150" height="50" fill="none" rx="8" />
+                <line x1="60" y1="45" x2="62" y2="95" />
+                <line x1="100" y1="45" x2="98" y2="95" />
+                <line x1="140" y1="45" x2="142" y2="95" />
+              </g>
+            </svg>
+          </div>
+          <div class="sketch-item-title">图2 · 第1关单跑道</div>
+          <div class="sketch-item-desc">小朋友设想的单行保龄球，新手一滚全中，爽快极简！</div>
+        </div>
+
+        <!-- 手稿 3: 第2/3关多行与墓碑 -->
+        <div class="sketch-item">
+          <div class="sketch-canvas-box" id="sketchBox3">
+            <svg viewBox="0 0 200 140" width="100%" height="100%">
+              <rect width="200" height="140" fill="#f8fafc"/>
+              <g stroke="#16a34a" stroke-width="5" stroke-linecap="round">
+                <!-- 3行跑道 -->
+                <line x1="20" y1="30" x2="180" y2="30" />
+                <line x1="18" y1="70" x2="182" y2="70" />
+                <line x1="22" y1="110" x2="178" y2="110" />
+                <line x1="40" y1="28" x2="38" y2="112" />
+                <line x1="75" y1="28" x2="78" y2="112" />
+                <line x1="115" y1="28" x2="112" y2="112" />
+                <line x1="150" y1="28" x2="152" y2="112" />
+              </g>
+            </svg>
+          </div>
+          <div class="sketch-item-title">图3 · 第2~3关三跑道</div>
+          <div class="sketch-item-desc">两到三行草坪，竖起3次才能撞碎的墓碑，还有末影僵尸！</div>
+        </div>
+
+        <!-- 手稿 4: 坚果头像图鉴 (五大神奇坚果) -->
+        <div class="sketch-item">
+          <div class="sketch-canvas-box" id="sketchBox4">
+            <svg viewBox="0 0 200 140" width="100%" height="100%">
+              <rect width="200" height="140" fill="#f8fafc"/>
+              <!-- 黄色细长高坚果 -->
+              <ellipse cx="40" cy="40" rx="16" ry="28" fill="none" stroke="#eab308" stroke-width="4"/>
+              <circle cx="35" cy="35" r="2" fill="#eab308"/>
+              <circle cx="45" cy="35" r="2" fill="#eab308"/>
+              <path d="M 32 48 Q 40 56 48 48" stroke="#eab308" stroke-width="3" fill="none"/>
+              <!-- 红色爆裂坚果 -->
+              <circle cx="100" cy="40" r="22" fill="none" stroke="#ef4444" stroke-width="4"/>
+              <circle cx="93" cy="35" r="2" fill="#ef4444"/>
+              <circle cx="107" cy="35" r="2" fill="#ef4444"/>
+              <path d="M 88 45 Q 100 60 112 45" stroke="#ef4444" stroke-width="3" fill="none"/>
+              <!-- 红蓝天线杂交跟踪坚果 -->
+              <circle cx="160" cy="42" r="20" fill="none" stroke="#3b82f6" stroke-width="4"/>
+              <path d="M 160 22 Q 155 10 145 12" stroke="#ef4444" stroke-width="3" fill="none"/>
+              <path d="M 165 22 Q 175 10 180 15" stroke="#3b82f6" stroke-width="3" fill="none"/>
+              <!-- 向日葵坚果 -->
+              <circle cx="50" cy="105" r="16" fill="none" stroke="#eab308" stroke-width="4"/>
+              <circle cx="50" cy="85" r="8" fill="none" stroke="#eab308" stroke-width="2"/>
+              <circle cx="70" cy="105" r="8" fill="none" stroke="#eab308" stroke-width="2"/>
+              <circle cx="50" cy="125" r="8" fill="none" stroke="#eab308" stroke-width="2"/>
+              <circle cx="30" cy="105" r="8" fill="none" stroke="#eab308" stroke-width="2"/>
+              <!-- 呆萌绿坚果 -->
+              <ellipse cx="120" cy="105" rx="14" ry="20" fill="none" stroke="#22c55e" stroke-width="4"/>
+              <path d="M 112 110 Q 120 118 128 110" stroke="#ef4444" stroke-width="3" fill="none"/>
+            </svg>
+          </div>
+          <div class="sketch-item-title">图4 · 5大坚果头像</div>
+          <div class="sketch-item-desc">高坚果军团、爆裂红坚果、科技跟踪坚果、向日葵与普通坚果！</div>
+        </div>
+      </div>
+
+      <button class="modal-close-btn" onclick="closeSketchModal()">
+        <span>🚀</span> 回到保龄球赛场！
+      </button>
+    </div>
+  </div>
+
+  <!-- 关卡胜利/通关奖杯模态框 -->
+  <div class="modal-overlay" id="victoryModal">
+    <div class="modal-card">
+      <div class="victory-box">
+        <div class="trophy-anim" id="victoryTrophy">🏆</div>
+        <div class="victory-title" id="victoryTitle">太棒了！全中胜利！</div>
+        <div class="victory-desc" id="victoryDesc">
+          你用保龄球精准击溃了僵尸！获得了保龄球大师金徽章！
+        </div>
+        <button class="modal-close-btn" id="nextLevelBtn" onclick="nextLevel()">
+          <span>⏩</span> 进入下一关！
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. 音频引擎 (Web Audio API 纯合成卡通音效 + Web Speech 伴读语音)
+       ========================================================================== */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.voiceEnabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // 保龄球滚出滑行声
+      playRoll() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(260, now + 0.35);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+
+      // 保龄球撞击木瓶/僵尸当啷声
+      playHit() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(220, now + 0.22);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.22);
+
+        // 辅加木质敲击啪声
+        const noiseBuffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.05, this.ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseBuffer.length; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        const whiteNoise = this.ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        const nGain = this.ctx.createGain();
+        nGain.gain.setValueAtTime(0.15, now);
+        nGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+        whiteNoise.connect(nGain);
+        nGain.connect(this.ctx.destination);
+        whiteNoise.start(now);
+      }
+
+      // 爆裂大爆炸声 (BOOM!)
+      playExplode() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // 低频震撼
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.5);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.5);
+
+        // 爆裂白噪声
+        const noiseBuffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.4, this.ctx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseBuffer.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.12));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = noiseBuffer;
+        const nGain = this.ctx.createGain();
+        nGain.gain.setValueAtTime(0.35, now);
+        nGain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+        noise.connect(nGain);
+        nGain.connect(this.ctx.destination);
+        noise.start(now);
+      }
+
+      // 金币/阳光叮咚声
+      playCoin() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const freqs = [988, 1318];
+        freqs.forEach((f, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.08);
+          osc.stop(now + idx * 0.08 + 0.25);
+        });
+      }
+
+      // 末影瞬移紫雾咻声
+      playTeleport() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(240, now + 0.25);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+
+      // 小推车轰鸣清屏声
+      playMower() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(80, now);
+        osc.frequency.linearRampToValueAtTime(140, now + 1.2);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.2);
+      }
+
+      // 胜利赞歌 (Fanfare)
+      playVictory() {
+        this.init();
+        if (!this.ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        const now = this.ctx.currentTime;
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.12);
+          gain.gain.setValueAtTime(0.3, now + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.12);
+          osc.stop(now + i * 0.12 + 0.45);
+        });
+      }
+
+      // 朗读语音提示
+      speak(text) {
+        if (!this.voiceEnabled || !('speechSynthesis' in window)) return;
+        try {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = 'zh-CN';
+          u.pitch = 1.2;
+          u.rate = 1.05;
+          window.speechSynthesis.speak(u);
+        } catch(e) {}
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    /* ==========================================================================
+       2. 游戏核心数据结构与关卡定义 (忠实还原小朋友手绘5大关)
+       ========================================================================== */
+    const NUT_TYPES = {
+      NORMAL: {
+        id: 'NORMAL',
+        name: '呆萌绿坚果',
+        icon: '🟢',
+        tag: '反弹',
+        color: '#22c55e',
+        speed: 7.5,
+        radius: 26,
+        bounceCount: 5,
+        desc: '撞到僵尸向斜上方或斜下方反弹，连环击飞！'
+      },
+      EXPLODE: {
+        id: 'EXPLODE',
+        name: '爆裂红坚果',
+        icon: '💥',
+        tag: '大爆炸',
+        color: '#ef4444',
+        speed: 8.5,
+        radius: 28,
+        desc: '撞击时引发 3x3 范围毁灭大爆炸，威力超强！'
+      },
+      RADAR: {
+        id: 'RADAR',
+        name: '雷达跟踪坚果',
+        icon: '📡',
+        tag: '追踪',
+        color: '#3b82f6',
+        speed: 9.0,
+        radius: 27,
+        desc: '带有智能激光导向线，拐弯自动追踪最近僵尸，绝不打空！'
+      },
+      SUNFLOWER: {
+        id: 'SUNFLOWER',
+        name: '向日葵金坚果',
+        icon: '🌻',
+        tag: '阳光雨',
+        color: '#facc15',
+        speed: 7.0,
+        radius: 28,
+        desc: '滚动留下金色跑道，撞击僵尸爆出满天太阳和高额分数！'
+      },
+      GIANT: {
+        id: 'GIANT',
+        name: '巨型高坚果',
+        icon: '👑',
+        tag: '军团',
+        color: '#eab308',
+        speed: 6.8,
+        radius: 36,
+        desc: '高大威猛，整行直线碾压不反弹，并召唤小坚果军团大冲锋！'
+      }
+    };
+
+    const LEVEL_CONFIGS = [
+      // 第1关：手绘图2，只有 1 行单通道草坪，新手建立成就感
+      {
+        level: 1,
+        title: '第 1 关 · 单行新手保龄冲刺',
+        rows: 1,
+        targetKills: 6,
+        allowNuts: ['NORMAL', 'NORMAL', 'EXPLODE'],
+        spawnInterval: 2800,
+        zombiesPool: ['NORMAL', 'CONE', 'FLAG'],
+        graves: [],
+        guideText: '🎳 欢迎来到坚果保龄大赛！把鼠标移到跑道上点击，发射坚果把僵尸全部打倒！',
+        specialEvent: null
+      },
+      // 第2关：手绘图3，3行草坪，加入需要撞击3次的墓碑
+      {
+        level: 2,
+        title: '第 2 关 · 三跑道与神秘墓碑',
+        rows: 3,
+        targetKills: 12,
+        allowNuts: ['NORMAL', 'EXPLODE', 'SUNFLOWER'],
+        spawnInterval: 2500,
+        zombiesPool: ['NORMAL', 'CONE', 'BUCKET', 'FLAG'],
+        graves: [
+          { row: 1, col: 5, hp: 3, maxHp: 3 },
+          { row: 0, col: 7, hp: 3, maxHp: 3 }
+        ],
+        guideText: '🪨 草坪上出现了墓碑！坚果撞到僵尸会斜向反弹，墓碑要撞击3次才能砸碎哦！',
+        specialEvent: null
+      },
+      // 第3关：星空夜色，末影僵尸瞬移与雪人僵尸滑冰
+      {
+        level: 3,
+        title: '第 3 关 · 星空夜幕与末影僵尸',
+        rows: 3,
+        targetKills: 16,
+        allowNuts: ['NORMAL', 'EXPLODE', 'RADAR', 'SUNFLOWER'],
+        spawnInterval: 2300,
+        zombiesPool: ['NORMAL', 'BUCKET', 'ENDER', 'SNOWMAN', 'FLAG'],
+        graves: [
+          { row: 0, col: 4, hp: 3, maxHp: 3 },
+          { row: 2, col: 6, hp: 3, maxHp: 3 }
+        ],
+        guideText: '🌌 紫色末影僵尸会瞬移！快用【雷达跟踪坚果】自动拐弯抓它！',
+        specialEvent: null
+      },
+      // 第4关：手绘图1，5行完整全草坪，巨人僵尸与机枪射手
+      {
+        level: 4,
+        title: '第 4 关 · 经典全草坪与巨人僵尸',
+        rows: 5,
+        targetKills: 22,
+        allowNuts: ['NORMAL', 'EXPLODE', 'RADAR', 'SUNFLOWER', 'GIANT'],
+        spawnInterval: 2000,
+        zombiesPool: ['NORMAL', 'CONE', 'BUCKET', 'GARGANTUAR', 'GATLING', 'FLAG'],
+        graves: [
+          { row: 1, col: 5, hp: 3, maxHp: 3 },
+          { row: 3, col: 6, hp: 3, maxHp: 3 },
+          { row: 2, col: 8, hp: 3, maxHp: 3 }
+        ],
+        guideText: '👑 巨人僵尸震地而来！使用【巨型高坚果】碾碎整行墓碑与僵尸！',
+        specialEvent: null
+      },
+      // 第5关：终极狂欢庆典 (小朋友口述：送5个豌豆射手、5个向日葵、最后坚果军团大冲刺)
+      {
+        level: 5,
+        title: '第 5 关 · 植物大集结 & 终极坚果狂欢',
+        rows: 5,
+        targetKills: 30,
+        allowNuts: ['GIANT', 'EXPLODE', 'RADAR', 'NORMAL', 'SUNFLOWER'],
+        spawnInterval: 1600,
+        zombiesPool: ['NORMAL', 'CONE', 'BUCKET', 'GARGANTUAR', 'ENDER', 'FLAG'],
+        graves: [
+          { row: 0, col: 7, hp: 3, maxHp: 3 },
+          { row: 4, col: 7, hp: 3, maxHp: 3 }
+        ],
+        guideText: '🎉 终极决战！左侧集结了5位豌豆射手与向日葵，保龄坚果无限狂刷，冲啊！',
+        specialEvent: 'PLANT_ALLIANCE'
+      }
+    ];
+
+    /* ==========================================================================
+       3. 游戏主状态机与引擎
+       ========================================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let currentLevelIdx = 0;
+    let currentConfig = LEVEL_CONFIGS[currentLevelIdx];
+    let score = 0;
+    let kills = 0;
+
+    // 传送带队伍
+    let conveyorQueue = [];
+    const MAX_CONVEYOR_ITEMS = 6;
+    let selectedNutIndex = 0;
+    let conveyorTimer = 0;
+
+    // 游戏元素集合
+    let activeNuts = [];
+    let zombies = [];
+    let particles = [];
+    let floatingTexts = [];
+    let mowers = [];      // 推草车保底
+    let allies = [];      // 第5关助阵的豌豆射手与向日葵
+    let graves = [];      // 墓碑
+
+    // 交互状态
+    let mousePos = { x: 0, y: 0 };
+    let hoveredRow = 0;
+    let isMouseOnCanvas = false;
+
+    // 网格与草坪几何尺寸
+    let gridLayout = {
+      left: 140,
+      top: 150,
+      width: 0,
+      height: 0,
+      rowHeight: 90,
+      cols: 9,
+      rows: 1
+    };
+
+    // 计时器与生成逻辑
+    let zombieSpawnTimer = 0;
+    let waveEnded = false;
+    let levelCompleted = false;
+
+    // 初始化窗口大小
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      updateGridLayout();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function updateGridLayout() {
+      const rows = currentConfig.rows;
+      gridLayout.rows = rows;
+      gridLayout.left = Math.max(160, canvas.width * 0.14);
+      gridLayout.width = canvas.width - gridLayout.left - 40;
+      
+      // 垂直居中草坪
+      const availableHeight = canvas.height - 230; // 避开顶部栏与底部栏
+      gridLayout.rowHeight = Math.min(105, Math.floor(availableHeight / rows));
+      gridLayout.height = gridLayout.rowHeight * rows;
+      gridLayout.top = 150 + Math.max(10, Math.floor((availableHeight - gridLayout.height) / 2));
+
+      // 更新推草车位置
+      mowers.forEach(m => {
+        m.y = gridLayout.top + m.row * gridLayout.rowHeight + gridLayout.rowHeight / 2;
+      });
+    }
+
+    /* ==========================================================================
+       4. 实体类定义 (坚果保龄球、僵尸、推草机、助阵植物、墓碑)
+       ========================================================================== */
+    class NutBall {
+      constructor(typeKey, row) {
+        this.type = NUT_TYPES[typeKey];
+        this.row = row;
+        this.x = gridLayout.left - 40;
+        this.y = gridLayout.top + row * gridLayout.rowHeight + gridLayout.rowHeight / 2;
+        this.vx = this.type.speed;
+        this.vy = 0; // 反弹垂直速度
+        this.radius = this.type.radius;
+        this.rotation = 0;
+        this.active = true;
+        this.bouncesLeft = this.type.bounceCount || 1;
+        this.hitZombies = new Set();
+        this.trail = [];
+        this.pulse = 0;
+        
+        // 跟踪型坚果属性
+        this.targetZombie = null;
+
+        // 音效触发
+        sound.playRoll();
+      }
+
+      update() {
+        if (!this.active) return;
+        this.pulse += 0.1;
+        this.rotation += 0.15;
+
+        // 记录尾迹粒子
+        if (Math.random() < 0.6) {
+          particles.push(new Particle(this.x, this.y, this.type.color, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, 18));
+        }
+
+        // 雷达坚果智能索敌与拐弯
+        if (this.type.id === 'RADAR') {
+          if (!this.targetZombie || !this.targetZombie.active) {
+            this.targetZombie = findNearestZombie(this.x, this.y);
+          }
+          if (this.targetZombie) {
+            const targetY = this.targetZombie.y;
+            const dy = targetY - this.y;
+            this.y += Math.sign(dy) * Math.min(Math.abs(dy), 3.8);
+            // 同步修正所在行
+            this.row = Math.floor((this.y - gridLayout.top) / gridLayout.rowHeight);
+            this.row = Math.max(0, Math.min(gridLayout.rows - 1, this.row));
+          }
+        }
+
+        // 普通移动
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // 碰壁反弹检测 (上/下草坪边缘)
+        const minY = gridLayout.top + this.radius;
+        const maxY = gridLayout.top + gridLayout.height - this.radius;
+
+        if (this.y < minY) {
+          this.y = minY;
+          this.vy = Math.abs(this.vy);
+          spawnImpactSparks(this.x, this.y, '#4ade80', 6);
+        } else if (this.y > maxY) {
+          this.y = maxY;
+          this.vy = -Math.abs(this.vy);
+          spawnImpactSparks(this.x, this.y, '#4ade80', 6);
+        }
+
+        // 飞出屏幕右侧则销毁
+        if (this.x > canvas.width + 60) {
+          this.active = false;
+        }
+
+        // 碰撞墓碑检测
+        for (let g of graves) {
+          if (g.active && g.row === Math.floor((this.y - gridLayout.top) / gridLayout.rowHeight)) {
+            const gx = gridLayout.left + g.col * (gridLayout.width / gridLayout.cols) + 30;
+            const dist = Math.hypot(this.x - gx, this.y - (gridLayout.top + g.row * gridLayout.rowHeight + gridLayout.rowHeight/2));
+            if (dist < this.radius + 30) {
+              this.hitGrave(g);
+              break;
+            }
+          }
+        }
+
+        // 碰撞僵尸检测
+        for (let z of zombies) {
+          if (z.active && !this.hitZombies.has(z)) {
+            const dist = Math.hypot(this.x - z.x, this.y - z.y);
+            if (dist < this.radius + z.radius) {
+              this.hitZombie(z);
+              if (!this.active) break;
+            }
+          }
+        }
+      }
+
+      hitGrave(grave) {
+        grave.hp -= 1;
+        sound.playHit();
+        spawnFloatingText(this.x, this.y - 20, "CRACK!", "#facc15");
+        spawnImpactSparks(this.x, this.y, "#94a3b8", 12);
+
+        if (this.type.id === 'EXPLODE') {
+          triggerExplosion(this.x, this.y);
+          this.active = false;
+          return;
+        }
+
+        if (grave.hp <= 0) {
+          grave.active = false;
+          sound.playCoin();
+          score += 200;
+          spawnFloatingText(grave.col * (gridLayout.width / gridLayout.cols) + gridLayout.left + 30, this.y, "+200 金币!", "#fef08a");
+          for (let i = 0; i < 15; i++) {
+            particles.push(new Particle(this.x, this.y, '#f59e0b', (Math.random()-0.5)*8, (Math.random()-0.5)*8, 25));
+          }
+        }
+
+        // 反弹或消失
+        if (this.type.id !== 'GIANT') {
+          this.bouncesLeft--;
+          if (this.bouncesLeft <= 0) {
+            this.active = false;
+          } else {
+            this.vy = (Math.random() > 0.5 ? 1 : -1) * (this.vx * 0.7);
+          }
+        }
+      }
+
+      hitZombie(zombie) {
+        this.hitZombies.add(zombie);
+
+        // 末影僵尸瞬移特性判断 (被雷达坚果瞄准无法瞬移，或者第一次遇到普通坚果时炫酷闪现)
+        if (zombie.type === 'ENDER' && !zombie.hasTeleported && this.type.id !== 'RADAR') {
+          zombie.teleport();
+          sound.playTeleport();
+          spawnFloatingText(zombie.x, zombie.y - 30, "瞬移闪避!", "#c084fc");
+          return;
+        }
+
+        // 爆裂红坚果 -> 触发超炫大爆炸
+        if (this.type.id === 'EXPLODE') {
+          sound.playExplode();
+          triggerExplosion(this.x, this.y);
+          this.active = false;
+          return;
+        }
+
+        // 向日葵金坚果 -> 满屏掉落阳光
+        if (this.type.id === 'SUNFLOWER') {
+          sound.playCoin();
+          score += 150;
+          spawnFloatingText(this.x, this.y - 30, "🌻 阳光大丰收!", "#fef08a");
+          for (let i = 0; i < 8; i++) {
+            particles.push(new Particle(this.x, this.y, '#facc15', (Math.random()-0.5)*7, (Math.random()-0.5)*7, 30));
+          }
+        }
+
+        // 巨型高坚果 -> 碾压全场，继续直线狂飙！
+        if (this.type.id === 'GIANT') {
+          zombie.takeDamage(100);
+          sound.playHit();
+          spawnImpactSparks(this.x, this.y, '#eab308', 16);
+          // 召唤小坚果军团大冲锋
+          if (Math.random() < 0.4) {
+            spawnLittleNutSquad(this.row);
+          }
+          return;
+        }
+
+        // 普通坚果与雷达坚果 -> 造成伤害并斜向45度反弹
+        zombie.takeDamage(35);
+        sound.playHit();
+        spawnImpactSparks(this.x, this.y, '#4ade80', 10);
+
+        this.bouncesLeft--;
+        if (this.bouncesLeft <= 0 || gridLayout.rows === 1) {
+          // 第1关单行或者次数耗尽，如果还有速度就继续向前或者自然退场
+          if (gridLayout.rows === 1) {
+            // 单行新手模式：穿透击退一串！爽快度爆棚
+            this.vx *= 0.9;
+          } else {
+            this.active = false;
+          }
+        } else {
+          // 反弹到上下相邻跑道
+          const bounceAngle = (Math.random() > 0.5 ? 1 : -1) * (this.vx * 0.75);
+          this.vy = bounceAngle;
+          spawnFloatingText(this.x, this.y - 25, "STRIKE! 连击!", "#38bdf8");
+        }
+      }
+
+      draw(c) {
+        if (!this.active) return;
+        c.save();
+        c.translate(this.x, this.y);
+
+        // 绘制发光外光晕
+        c.beginPath();
+        c.arc(0, 0, this.radius + 6, 0, Math.PI * 2);
+        c.fillStyle = this.type.color + '44';
+        c.fill();
+
+        // 坚果球旋转本体
+        c.rotate(this.rotation);
+
+        // 绘制坚果外壳
+        c.beginPath();
+        if (this.type.id === 'GIANT') {
+          c.ellipse(0, 0, this.radius * 0.85, this.radius * 1.1, 0, 0, Math.PI * 2);
+        } else {
+          c.arc(0, 0, this.radius, 0, Math.PI * 2);
+        }
+        c.fillStyle = this.type.color;
+        c.fill();
+        c.lineWidth = 4;
+        c.strokeStyle = '#ffffff';
+        c.stroke();
+
+        // 内部卡通纹理与五官表情
+        c.rotate(-this.rotation); // 保持五官面朝前进方向(向右)
+
+        if (this.type.id === 'NORMAL') {
+          // 呆萌绿色圆滚眼
+          c.fillStyle = '#ffffff';
+          c.beginPath();
+          c.arc(6, -6, 6, 0, Math.PI * 2);
+          c.arc(6, 6, 6, 0, Math.PI * 2);
+          c.fill();
+          c.fillStyle = '#0f172a';
+          c.beginPath();
+          c.arc(8, -6, 3, 0, Math.PI * 2);
+          c.arc(8, 6, 3, 0, Math.PI * 2);
+          c.fill();
+          // 微笑嘴巴
+          c.strokeStyle = '#052e16';
+          c.lineWidth = 3;
+          c.beginPath();
+          c.arc(8, 0, 5, 0, Math.PI);
+          c.stroke();
+        } else if (this.type.id === 'EXPLODE') {
+          // 爆裂红脸大笑
+          c.fillStyle = '#ffffff';
+          c.beginPath();
+          c.arc(6, -7, 7, 0, Math.PI * 2);
+          c.arc(6, 7, 7, 0, Math.PI * 2);
+          c.fill();
+          c.fillStyle = '#7f1d1d';
+          c.beginPath();
+          c.arc(8, -7, 4, 0, Math.PI * 2);
+          c.arc(8, 7, 4, 0, Math.PI * 2);
+          c.fill();
+          // 火热大笑大嘴巴
+          c.fillStyle = '#fef08a';
+          c.beginPath();
+          c.arc(10, 0, 8, -Math.PI / 2, Math.PI / 2);
+          c.fill();
+        } else if (this.type.id === 'RADAR') {
+          // 科技蓝眼与可爱天线
+          c.fillStyle = '#38bdf8';
+          c.beginPath();
+          c.arc(6, -5, 5, 0, Math.PI * 2);
+          c.arc(6, 5, 5, 0, Math.PI * 2);
+          c.fill();
+          // 头顶激光小天线
+          c.strokeStyle = '#ef4444';
+          c.lineWidth = 4;
+          c.beginPath();
+          c.moveTo(-4, -this.radius + 4);
+          c.lineTo(-10, -this.radius - 8);
+          c.stroke();
+          c.beginPath();
+          c.arc(-10, -this.radius - 8, 4, 0, Math.PI * 2);
+          c.fillStyle = '#ef4444';
+          c.fill();
+        } else if (this.type.id === 'SUNFLOWER') {
+          // 向日葵花瓣外圈
+          for (let p = 0; p < 8; p++) {
+            const ang = (p * Math.PI) / 4;
+            const px = Math.cos(ang) * (this.radius + 6);
+            const py = Math.sin(ang) * (this.radius + 6);
+            c.beginPath();
+            c.arc(px, py, 6, 0, Math.PI * 2);
+            c.fillStyle = '#fbbf24';
+            c.fill();
+          }
+          // 阳光笑脸
+          c.fillStyle = '#451a03';
+          c.beginPath();
+          c.arc(6, -5, 4, 0, Math.PI * 2);
+          c.arc(6, 5, 4, 0, Math.PI * 2);
+          c.fill();
+          c.strokeStyle = '#451a03';
+          c.lineWidth = 3;
+          c.beginPath();
+          c.arc(8, 0, 6, 0, Math.PI);
+          c.stroke();
+        } else if (this.type.id === 'GIANT') {
+          // 高坚果王者皇冠与坚毅表情
+          c.fillStyle = '#facc15';
+          c.beginPath();
+          c.moveTo(-12, -this.radius - 2);
+          c.lineTo(-6, -this.radius - 14);
+          c.lineTo(0, -this.radius - 4);
+          c.lineTo(6, -this.radius - 14);
+          c.lineTo(12, -this.radius - 2);
+          c.closePath();
+          c.fill();
+          c.stroke();
+          // 大眼睛
+          c.fillStyle = '#ffffff';
+          c.beginPath();
+          c.arc(8, -8, 8, 0, Math.PI * 2);
+          c.arc(8, 8, 8, 0, Math.PI * 2);
+          c.fill();
+          c.fillStyle = '#000000';
+          c.beginPath();
+          c.arc(11, -8, 4, 0, Math.PI * 2);
+          c.arc(11, 8, 4, 0, Math.PI * 2);
+          c.fill();
+        }
+
+        c.restore();
+
+        // 如果是雷达坚果，画出闪烁的激光追踪瞄准线
+        if (this.type.id === 'RADAR' && this.targetZombie && this.targetZombie.active) {
+          c.save();
+          c.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+          c.lineWidth = 2.5;
+          c.setLineDash([8, 6]);
+          c.beginPath();
+          c.moveTo(this.x, this.y);
+          c.lineTo(this.targetZombie.x, this.targetZombie.y);
+          c.stroke();
+          // 目标脚下准星光环
+          c.beginPath();
+          c.arc(this.targetZombie.x, this.targetZombie.y, 35 + Math.sin(this.pulse * 2) * 5, 0, Math.PI * 2);
+          c.strokeStyle = '#ef4444';
+          c.lineWidth = 3;
+          c.stroke();
+          c.restore();
+        }
+      }
+    }
+
+    class Zombie {
+      constructor(type, row) {
+        this.type = type;
+        this.row = row;
+        this.y = gridLayout.top + row * gridLayout.rowHeight + gridLayout.rowHeight / 2;
+        this.x = canvas.width + 40;
+        this.active = true;
+        this.radius = 28;
+        this.walkCycle = Math.random() * Math.PI * 2;
+        this.flashWhite = 0;
+        this.hasTeleported = false;
+
+        // 根据类型配置生命值与速度
+        if (type === 'NORMAL') {
+          this.name = '普通僵尸';
+          this.hp = 35;
+          this.maxHp = 35;
+          this.speed = 0.55;
+          this.color = '#64748b';
+        } else if (type === 'CONE') {
+          this.name = '路障僵尸';
+          this.hp = 70;
+          this.maxHp = 70;
+          this.speed = 0.5;
+          this.color = '#f97316';
+        } else if (type === 'BUCKET') {
+          this.name = '铁桶僵尸';
+          this.hp = 110;
+          this.maxHp = 110;
+          this.speed = 0.45;
+          this.color = '#94a3b8';
+        } else if (type === 'FLAG') {
+          this.name = '旗帜僵尸';
+          this.hp = 40;
+          this.maxHp = 40;
+          this.speed = 0.8;
+          this.color = '#ef4444';
+        } else if (type === 'ENDER') {
+          this.name = '末影僵尸';
+          this.hp = 60;
+          this.maxHp = 60;
+          this.speed = 0.7;
+          this.color = '#8b5cf6';
+        } else if (type === 'SNOWMAN') {
+          this.name = '雪人僵尸';
+          this.hp = 80;
+          this.maxHp = 80;
+          this.speed = 0.5;
+          this.color = '#e0f2fe';
+        } else if (type === 'GATLING') {
+          this.name = '机枪射手僵尸';
+          this.hp = 85;
+          this.maxHp = 85;
+          this.speed = 0.45;
+          this.color = '#15803d';
+        } else if (type === 'GARGANTUAR') {
+          this.name = '巨人僵尸BOSS';
+          this.hp = 260;
+          this.maxHp = 260;
+          this.speed = 0.32;
+          this.radius = 45;
+          this.color = '#334155';
+        }
+      }
+
+      teleport() {
+        this.hasTeleported = true;
+        // 瞬间向后闪避一段距离或随机换行
+        const targetRow = Math.floor(Math.random() * gridLayout.rows);
+        this.row = targetRow;
+        this.y = gridLayout.top + this.row * gridLayout.rowHeight + gridLayout.rowHeight / 2;
+        this.x += 120;
+        // 释放紫色末影粒子
+        for (let i = 0; i < 20; i++) {
+          particles.push(new Particle(this.x, this.y, '#c084fc', (Math.random()-0.5)*8, (Math.random()-0.5)*8, 25));
+        }
+      }
+
+      takeDamage(amt) {
+        this.hp -= amt;
+        this.flashWhite = 6;
+        if (this.hp <= 0) {
+          this.defeat();
+        }
+      }
+
+      defeat() {
+        this.active = false;
+        kills++;
+        score += (this.maxHp >= 150 ? 500 : 100);
+        updateScoreDisplay();
+
+        // 击败特效
+        sound.playCoin();
+        spawnFloatingText(this.x, this.y - 20, "击倒! +100", "#4ade80");
+        for (let i = 0; i < 15; i++) {
+          particles.push(new Particle(this.x, this.y, this.color, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8, 25));
+        }
+
+        // 检查关卡目标是否达成
+        if (kills >= currentConfig.targetKills && !levelCompleted) {
+          levelCompleted = true;
+          setTimeout(() => { triggerVictory(); }, 1200);
+        }
+      }
+
+      update() {
+        if (!this.active) return;
+        this.walkCycle += 0.08;
+        if (this.flashWhite > 0) this.flashWhite--;
+
+        // 向左蹒跚迈步
+        this.x -= this.speed;
+
+        // 如果是末影僵尸，周身环绕紫光粒子
+        if (this.type === 'ENDER' && Math.random() < 0.3) {
+          particles.push(new Particle(this.x + (Math.random()-0.5)*30, this.y + (Math.random()-0.5)*30, '#a855f7', 0, -1, 15));
+        }
+
+        // 到达左侧防守红线，触发小推车保底碾压！
+        if (this.x <= gridLayout.left + 20) {
+          triggerMower(this.row);
+        }
+      }
+
+      draw(c) {
+        if (!this.active) return;
+        c.save();
+        c.translate(this.x, this.y);
+
+        // 走路摇晃
+        const sway = Math.sin(this.walkCycle) * 0.12;
+        c.rotate(sway);
+
+        // 闪白受击效果
+        if (this.flashWhite > 0) {
+          c.filter = 'brightness(2.2)';
+        }
+
+        const r = this.radius;
+
+        // 僵尸灰色衣服身体
+        c.fillStyle = (this.type === 'GARGANTUAR' ? '#1e293b' : '#334155');
+        c.beginPath();
+        c.roundRect(-r * 0.7, -r * 0.2, r * 1.4, r * 1.2, 8);
+        c.fill();
+        c.strokeStyle = '#000';
+        c.lineWidth = 2.5;
+        c.stroke();
+
+        // 绿色呆萌僵尸脑袋
+        c.fillStyle = (this.type === 'ENDER' ? '#3b0764' : (this.type === 'SNOWMAN' ? '#f0f9ff' : '#65a30d'));
+        c.beginPath();
+        c.arc(0, -r * 0.6, r * 0.75, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+
+        // 眼睛
+        c.fillStyle = (this.type === 'ENDER' ? '#e879f9' : '#ffffff');
+        c.beginPath();
+        c.arc(-8, -r * 0.7, 5, 0, Math.PI * 2);
+        c.arc(4, -r * 0.7, 7, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = '#000000';
+        c.beginPath();
+        c.arc(-9, -r * 0.7, 2.5, 0, Math.PI * 2);
+        c.arc(3, -r * 0.7, 3, 0, Math.PI * 2);
+        c.fill();
+
+        // 嘴巴歪歪
+        c.strokeStyle = '#1e293b';
+        c.lineWidth = 2.5;
+        c.beginPath();
+        c.moveTo(-6, -r * 0.35);
+        c.lineTo(6, -r * 0.4);
+        c.stroke();
+
+        // 特色帽子/装饰物
+        if (this.type === 'CONE') {
+          // 橙色路障帽
+          c.fillStyle = '#f97316';
+          c.beginPath();
+          c.moveTo(-14, -r * 1.2);
+          c.lineTo(0, -r * 2.2);
+          c.lineTo(14, -r * 1.2);
+          c.closePath();
+          c.fill();
+          c.stroke();
+          // 路障反光白条
+          c.strokeStyle = '#ffffff';
+          c.lineWidth = 3;
+          c.beginPath();
+          c.moveTo(-7, -r * 1.6);
+          c.lineTo(7, -r * 1.6);
+          c.stroke();
+        } else if (this.type === 'BUCKET') {
+          // 闪亮铁桶
+          c.fillStyle = '#94a3b8';
+          c.beginPath();
+          c.roundRect(-15, -r * 2.0, 30, 24, 4);
+          c.fill();
+          c.stroke();
+          // 铁把手
+          c.strokeStyle = '#475569';
+          c.lineWidth = 3;
+          c.beginPath();
+          c.arc(0, -r * 1.5, 14, 0, Math.PI);
+          c.stroke();
+        } else if (this.type === 'FLAG') {
+          // 红色胜利旗帜
+          c.fillStyle = '#ef4444';
+          c.beginPath();
+          c.moveTo(14, -r * 0.6);
+          c.lineTo(34, -r * 1.2);
+          c.lineTo(14, -r * 1.6);
+          c.closePath();
+          c.fill();
+          c.stroke();
+        } else if (this.type === 'GATLING') {
+          // 机枪射手帽
+          c.fillStyle = '#16a34a';
+          c.beginPath();
+          c.arc(0, -r * 1.4, 12, 0, Math.PI * 2);
+          c.fill();
+          c.stroke();
+          // 四个枪管
+          c.fillStyle = '#14532d';
+          c.fillRect(-18, -r * 1.5, 10, 5);
+        } else if (this.type === 'GARGANTUAR') {
+          // 巨人巨大电线杆武器
+          c.fillStyle = '#78350f';
+          c.fillRect(-35, -r * 1.2, 14, 80);
+        }
+
+        // 血条 (HP Bar)
+        if (this.hp < this.maxHp) {
+          const barW = r * 1.8;
+          const barH = 6;
+          c.fillStyle = 'rgba(0,0,0,0.6)';
+          c.fillRect(-barW / 2, -r * 1.8, barW, barH);
+          c.fillStyle = '#22c55e';
+          c.fillRect(-barW / 2, -r * 1.8, barW * (this.hp / this.maxHp), barH);
+          c.strokeStyle = '#fff';
+          c.lineWidth = 1;
+          c.strokeRect(-barW / 2, -r * 1.8, barW, barH);
+        }
+
+        c.restore();
+      }
+    }
+
+    // 推草机 (每行一辆，儿童绝对零挫败安全感)
+    class LawnCleaner {
+      constructor(row) {
+        this.row = row;
+        this.x = gridLayout.left - 65;
+        this.y = gridLayout.top + row * gridLayout.rowHeight + gridLayout.rowHeight / 2;
+        this.triggered = false;
+        this.speed = 0;
+        this.active = true;
+      }
+
+      trigger() {
+        if (this.triggered) return;
+        this.triggered = true;
+        this.speed = 14;
+        sound.playMower();
+        spawnFloatingText(this.x, this.y - 30, "🚜 推车冲锋清屏!", "#38bdf8");
+      }
+
+      update() {
+        if (!this.active) return;
+        if (this.triggered) {
+          this.x += this.speed;
+          // 狂飙路上碾碎此行所有僵尸
+          zombies.forEach(z => {
+            if (z.active && z.row === this.row && Math.abs(z.x - this.x) < 45) {
+              z.defeat();
+              spawnImpactSparks(z.x, z.y, '#f59e0b', 20);
+            }
+          });
+          // 喷出青草与火花粒子
+          particles.push(new Particle(this.x - 20, this.y + 10, '#84cc16', (Math.random()-0.5)*4, (Math.random()-0.5)*4, 15));
+
+          if (this.x > canvas.width + 100) {
+            this.active = false;
+          }
+        }
+      }
+
+      draw(c) {
+        if (!this.active) return;
+        c.save();
+        c.translate(this.x, this.y);
+
+        // 红色炫酷车身
+        c.fillStyle = '#dc2626';
+        c.beginPath();
+        c.roundRect(-24, -18, 48, 36, 10);
+        c.fill();
+        c.lineWidth = 3;
+        c.strokeStyle = '#ffffff';
+        c.stroke();
+
+        // 旋转除草叶片
+        c.fillStyle = '#e2e8f0';
+        c.beginPath();
+        c.arc(16, 0, 14, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = '#475569';
+        c.lineWidth = 2;
+        c.stroke();
+
+        // 车轮
+        c.fillStyle = '#0f172a';
+        c.beginPath();
+        c.arc(-14, 16, 8, 0, Math.PI * 2);
+        c.arc(10, 16, 8, 0, Math.PI * 2);
+        c.fill();
+
+        // 车头大灯发光
+        c.fillStyle = '#fef08a';
+        c.beginPath();
+        c.arc(22, -6, 5, 0, Math.PI * 2);
+        c.fill();
+
+        c.restore();
+      }
+    }
+
+    // 第5关助阵的植物军团 (5个豌豆射手 + 5个向日葵)
+    class AllyPlant {
+      constructor(type, row, col) {
+        this.type = type; // 'PEASHOOTER' or 'SUNFLOWER'
+        this.row = row;
+        this.col = col;
+        this.x = gridLayout.left + col * 55 - 40;
+        this.y = gridLayout.top + row * gridLayout.rowHeight + gridLayout.rowHeight / 2;
+        this.shootTimer = Math.random() * 60;
+        this.active = true;
+      }
+
+      update() {
+        this.shootTimer++;
+        if (this.type === 'PEASHOOTER' && this.shootTimer >= 70) {
+          this.shootTimer = 0;
+          // 发射高速绿色豌豆飞弹
+          alliesBullets.push({
+            x: this.x + 20,
+            y: this.y - 6,
+            row: this.row,
+            vx: 9,
+            active: true
+          });
+          sound.playRoll();
+        } else if (this.type === 'SUNFLOWER' && this.shootTimer >= 120) {
+          this.shootTimer = 0;
+          score += 50;
+          sound.playCoin();
+          particles.push(new Particle(this.x, this.y - 20, '#facc15', (Math.random()-0.5)*4, -3, 30));
+        }
+      }
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+        if (this.type === 'PEASHOOTER') {
+          // 可爱绿色豌豆射手
+          c.fillStyle = '#22c55e';
+          c.beginPath();
+          c.arc(0, 0, 18, 0, Math.PI * 2);
+          c.fill();
+          c.strokeStyle = '#14532d';
+          c.lineWidth = 3;
+          c.stroke();
+          // 炮管
+          c.fillStyle = '#16a34a';
+          c.beginPath();
+          c.ellipse(14, -2, 10, 7, 0, 0, Math.PI * 2);
+          c.fill();
+          c.stroke();
+          // 大眼睛
+          c.fillStyle = '#ffffff';
+          c.beginPath();
+          c.arc(2, -6, 5, 0, Math.PI * 2);
+          c.fill();
+          c.fillStyle = '#000';
+          c.beginPath();
+          c.arc(4, -6, 2.5, 0, Math.PI * 2);
+          c.fill();
+        } else {
+          // 金灿灿向日葵
+          for (let p = 0; p < 8; p++) {
+            const ang = (p * Math.PI) / 4;
+            c.beginPath();
+            c.arc(Math.cos(ang)*18, Math.sin(ang)*18, 7, 0, Math.PI*2);
+            c.fillStyle = '#facc15';
+            c.fill();
+          }
+          c.fillStyle = '#78350f';
+          c.beginPath();
+          c.arc(0, 0, 13, 0, Math.PI * 2);
+          c.fill();
+          // 笑脸
+          c.fillStyle = '#ffffff';
+          c.beginPath();
+          c.arc(-4, -3, 3, 0, Math.PI*2);
+          c.arc(4, -3, 3, 0, Math.PI*2);
+          c.fill();
+        }
+        c.restore();
+      }
+    }
+
+    let alliesBullets = [];
+
+    // 经典粒子与特效字
+    class Particle {
+      constructor(x, y, color, vx, vy, life) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.vx = vx;
+        this.vy = vy;
+        this.maxLife = life;
+        this.life = life;
+        this.radius = Math.random() * 4 + 2;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.life--;
+      }
+      draw(c) {
+        const alpha = Math.max(0, this.life / this.maxLife);
+        c.save();
+        c.globalAlpha = alpha;
+        c.fillStyle = this.color;
+        c.beginPath();
+        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    class FloatingText {
+      constructor(x, y, text, color) {
+        this.x = x;
+        this.y = y;
+        this.text = text;
+        this.color = color;
+        this.alpha = 1;
+        this.vy = -1.8;
+      }
+      update() {
+        this.y += this.vy;
+        this.alpha -= 0.025;
+      }
+      draw(c) {
+        c.save();
+        c.globalAlpha = Math.max(0, this.alpha);
+        c.font = 'bold 20px "Segoe UI", sans-serif';
+        c.fillStyle = this.color;
+        c.textAlign = 'center';
+        c.shadowColor = 'rgba(0,0,0,0.8)';
+        c.shadowBlur = 8;
+        c.fillText(this.text, this.x, this.y);
+        c.restore();
+      }
+    }
+
+    /* ==========================================================================
+       5. 游戏行为逻辑与事件触发
+       ========================================================================== */
+    function triggerExplosion(cx, cy) {
+      sound.playExplode();
+      spawnFloatingText(cx, cy - 30, "💥 BOOM! 超级大爆炸!", "#ef4444");
+
+      // 范围杀伤僵尸与墓碑
+      const radius = 180;
+      zombies.forEach(z => {
+        if (z.active && Math.hypot(z.x - cx, z.y - cy) < radius) {
+          z.takeDamage(120);
+        }
+      });
+      graves.forEach(g => {
+        if (g.active) {
+          const gx = gridLayout.left + g.col * (gridLayout.width / gridLayout.cols) + 30;
+          const gy = gridLayout.top + g.row * gridLayout.rowHeight + gridLayout.rowHeight/2;
+          if (Math.hypot(gx - cx, gy - cy) < radius) {
+            g.hp -= 2;
+            if (g.hp <= 0) g.active = false;
+          }
+        }
+      });
+
+      // 震撼大火球与冲击波粒子
+      for (let i = 0; i < 45; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 8 + 3;
+        const color = ['#ef4444', '#f97316', '#facc15', '#ffffff'][Math.floor(Math.random() * 4)];
+        particles.push(new Particle(cx, cy, color, Math.cos(ang) * spd, Math.sin(ang) * spd, 35));
+      }
+    }
+
+    function triggerMower(row) {
+      const m = mowers.find(item => item.row === row && !item.triggered && item.active);
+      if (m) {
+        m.trigger();
+      }
+    }
+
+    function spawnLittleNutSquad(row) {
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          const b = new NutBall('NORMAL', row);
+          b.radius = 16;
+          b.vx = 9.5;
+          activeNuts.push(b);
+        }, i * 180);
+      }
+      spawnFloatingText(gridLayout.left + 50, gridLayout.top + row * gridLayout.rowHeight + 30, "坚果军团冲锋!", "#facc15");
+    }
+
+    function spawnImpactSparks(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        particles.push(new Particle(x, y, color, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, 20));
+      }
+    }
+
+    function spawnFloatingText(x, y, text, color) {
+      floatingTexts.push(new FloatingText(x, y, text, color));
+    }
+
+    function findNearestZombie(x, y) {
+      let nearest = null;
+      let minDst = Infinity;
+      for (let z of zombies) {
+        if (z.active && z.x > x) {
+          const d = Math.hypot(z.x - x, z.y - y);
+          if (d < minDst) {
+            minDst = d;
+            nearest = z;
+          }
+        }
+      }
+      return nearest;
+    }
+
+    /* ==========================================================================
+       6. 传送带与保龄球发射逻辑 (含第5关依次传送5豌豆、5向日葵、最后坚果狂欢)
+       ========================================================================== */
+    let stage5Phase = 'NORMAL'; // 'PEASHOOTER', 'SUNFLOWER', 'FRENZY'
+    let peashootersPlanted = 0;
+    let sunflowersPlanted = 0;
+
+    function refillConveyor() {
+      if (currentConfig.specialEvent === 'PLANT_ALLIANCE') {
+        if (stage5Phase === 'PEASHOOTER') {
+          if (conveyorQueue.length < 5 && (peashootersPlanted + conveyorQueue.length) < 5) {
+            conveyorQueue.push('CARD_PEASHOOTER');
+            renderConveyorUI();
+          }
+          return;
+        } else if (stage5Phase === 'SUNFLOWER') {
+          if (conveyorQueue.length < 5 && (sunflowersPlanted + conveyorQueue.length) < 5) {
+            conveyorQueue.push('CARD_SUNFLOWER');
+            renderConveyorUI();
+          }
+          return;
+        }
+      }
+
+      if (conveyorQueue.length < MAX_CONVEYOR_ITEMS) {
+        const pool = currentConfig.allowNuts;
+        const randomNutKey = pool[Math.floor(Math.random() * pool.length)];
+        conveyorQueue.push(randomNutKey);
+        renderConveyorUI();
+      }
+    }
+
+    function renderConveyorUI() {
+      const container = document.getElementById('conveyorBelt');
+      container.innerHTML = '';
+      conveyorQueue.forEach((nutKey, index) => {
+        let tag = '反弹', icon = '🟢', name = '坚果';
+        if (nutKey === 'CARD_PEASHOOTER') {
+          tag = '助阵射手'; icon = '🌱'; name = '豌豆射手';
+        } else if (nutKey === 'CARD_SUNFLOWER') {
+          tag = '阳光助阵'; icon = '🌻'; name = '向日葵';
+        } else if (NUT_TYPES[nutKey]) {
+          const nut = NUT_TYPES[nutKey];
+          tag = nut.tag; icon = nut.icon; name = nut.name;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'nut-card' + (index === selectedNutIndex ? ' selected' : '') + (index === 0 ? ' ready-first' : '');
+        card.innerHTML = `
+          <span class="nut-card-tag">${tag}</span>
+          <div class="nut-card-icon">${icon}</div>
+          <div class="nut-card-name">${name}</div>
+        `;
+        card.onclick = (e) => {
+          e.stopPropagation();
+          selectedNutIndex = index;
+          renderConveyorUI();
+          sound.playCoin();
+        };
+        container.appendChild(card);
+      });
+    }
+
+    // 玩家点击草坪发射坚果球 或 种下助阵植物
+    function launchNutAtRow(row) {
+      if (conveyorQueue.length === 0) return;
+      if (row < 0 || row >= gridLayout.rows) return;
+
+      const itemKey = conveyorQueue.splice(selectedNutIndex, 1)[0];
+      if (selectedNutIndex >= conveyorQueue.length) {
+        selectedNutIndex = Math.max(0, conveyorQueue.length - 1);
+      }
+      renderConveyorUI();
+
+      // 第5关特殊互动：种下豌豆射手
+      if (itemKey === 'CARD_PEASHOOTER') {
+        allies.push(new AllyPlant('PEASHOOTER', row, 0));
+        peashootersPlanted++;
+        sound.playCoin();
+        spawnFloatingText(gridLayout.left + 20, gridLayout.top + row * gridLayout.rowHeight + 30, "🌱 豌豆射手就位！", "#4ade80");
+        if (peashootersPlanted >= 5) {
+          stage5Phase = 'SUNFLOWER';
+          sound.speak("太棒啦！5位豌豆射手就位！接下来传送5个向日葵！");
+          document.getElementById('guideText').innerText = "🌻 传送带送来了5个向日葵！快点击草坪把他们种下！";
+          for (let i = 0; i < 5; i++) conveyorQueue.push('CARD_SUNFLOWER');
+          renderConveyorUI();
+        }
+        return;
+      }
+
+      // 第5关特殊互动：种下向日葵
+      if (itemKey === 'CARD_SUNFLOWER') {
+        allies.push(new AllyPlant('SUNFLOWER', row, 1));
+        sunflowersPlanted++;
+        sound.playCoin();
+        spawnFloatingText(gridLayout.left + 75, gridLayout.top + row * gridLayout.rowHeight + 30, "🌻 向日葵就位！", "#facc15");
+        if (sunflowersPlanted >= 5) {
+          stage5Phase = 'FRENZY';
+          sound.playVictory();
+          sound.speak("植物大军全员集结！终极坚果保龄狂欢冲刺开始！");
+          document.getElementById('guideText').innerText = "🎳 终极狂欢！无限高坚果、爆炸坚果连环冲锋，砸扁僵尸！";
+          conveyorQueue = ['GIANT', 'EXPLODE', 'RADAR', 'GIANT', 'EXPLODE'];
+          renderConveyorUI();
+        }
+        return;
+      }
+
+      // 普通坚果保龄球发射
+      const ball = new NutBall(itemKey, row);
+      activeNuts.push(ball);
+
+      if (itemKey === 'EXPLODE') {
+        sound.speak("大爆炸坚果，发射！");
+      } else if (itemKey === 'GIANT') {
+        sound.speak("坚果军团大冲锋！");
+      } else if (itemKey === 'RADAR') {
+        sound.speak("雷达坚果，锁定目标！");
+      }
+    }
+
+    /* ==========================================================================
+       7. 关卡加载与重置
+       ========================================================================== */
+    function loadLevel(levelIdx) {
+      currentLevelIdx = levelIdx;
+      currentConfig = LEVEL_CONFIGS[currentLevelIdx];
+      kills = 0;
+      levelCompleted = false;
+
+      // 更新界面徽章与指引
+      document.getElementById('levelName').innerText = currentConfig.title;
+      document.getElementById('targetKills').innerText = currentConfig.targetKills;
+      document.getElementById('guideText').innerText = currentConfig.guideText;
+      updateScoreDisplay();
+
+      // 清空旧实体
+      activeNuts = [];
+      zombies = [];
+      particles = [];
+      floatingTexts = [];
+      allies = [];
+      alliesBullets = [];
+
+      // 重新布局草坪网格
+      updateGridLayout();
+
+      // 初始化墓碑
+      graves = currentConfig.graves.map(g => ({ ...g, active: true }));
+
+      // 初始化各行推草车保底
+      mowers = [];
+      for (let r = 0; r < gridLayout.rows; r++) {
+        mowers.push(new LawnCleaner(r));
+      }
+
+      // 初始化传送带队列
+      conveyorQueue = [];
+      if (currentConfig.specialEvent === 'PLANT_ALLIANCE') {
+        stage5Phase = 'PEASHOOTER';
+        peashootersPlanted = 0;
+        sunflowersPlanted = 0;
+        for (let i = 0; i < 5; i++) {
+          conveyorQueue.push('CARD_PEASHOOTER');
+        }
+        document.getElementById('guideText').innerText = "🌱 第5关启动！传送带送来了5个豌豆射手，快点击各行草坪种下他们！";
+      } else {
+        stage5Phase = 'NORMAL';
+        for (let i = 0; i < 4; i++) {
+          const pool = currentConfig.allowNuts;
+          conveyorQueue.push(pool[Math.floor(Math.random() * pool.length)]);
+        }
+      }
+      selectedNutIndex = 0;
+      renderConveyorUI();
+
+      // 语音播报新关卡指引
+      sound.speak(document.getElementById('guideText').innerText);
+    }
+
+    function spawnZombie() {
+      if (kills + zombies.filter(z => z.active).length >= currentConfig.targetKills + 2) return;
+      const pool = currentConfig.zombiesPool;
+      const type = pool[Math.floor(Math.random() * pool.length)];
+      const row = Math.floor(Math.random() * gridLayout.rows);
+      zombies.push(new Zombie(type, row));
+    }
+
+    function updateScoreDisplay() {
+      document.getElementById('killCount').innerText = kills;
+      document.getElementById('scoreVal').innerText = score;
+    }
+
+    function triggerVictory() {
+      sound.playVictory();
+      sound.speak("太棒啦！你赢得了保龄球大赛的大奖杯！");
+
+      document.getElementById('victoryModal').classList.add('active');
+      document.getElementById('victoryTitle').innerText = (currentLevelIdx === LEVEL_CONFIGS.length - 1) ? "🎉 恭喜通关！终极保龄大师！" : "🌟 太棒了！全中过关！";
+      document.getElementById('victoryDesc').innerHTML = `
+        你成功击退了全部僵尸大军！<br>
+        当前累计得分：<b style="color:#facc15; font-size:26px;">${score}</b> 分！<br>
+        ${currentLevelIdx === LEVEL_CONFIGS.length - 1 ? '你完成了小设计师所有的设想，获得了最高荣誉坚果超级金奖杯！' : '准备好迎接下一张精彩手绘关卡了吗？'}
+      `;
+
+      if (currentLevelIdx === LEVEL_CONFIGS.length - 1) {
+        document.getElementById('nextLevelBtn').innerHTML = '<span>🏆</span> 再次狂欢玩一遍！';
+      } else {
+        document.getElementById('nextLevelBtn').innerHTML = '<span>⏩</span> 开启下一关！';
+      }
+
+      // 燃放全屏彩带烟花
+      for (let i = 0; i < 60; i++) {
+        particles.push(new Particle(canvas.width / 2, canvas.height / 2, ['#fbbf24', '#38bdf8', '#ec4899', '#4ade80'][Math.floor(Math.random() * 4)], (Math.random()-0.5)*16, (Math.random()-0.5)*16, 60));
+      }
+    }
+
+    function nextLevel() {
+      document.getElementById('victoryModal').classList.remove('active');
+      if (currentLevelIdx < LEVEL_CONFIGS.length - 1) {
+        loadLevel(currentLevelIdx + 1);
+      } else {
+        loadLevel(0);
+      }
+    }
+
+    function restartLevel() {
+      document.getElementById('victoryModal').classList.remove('active');
+      loadLevel(currentLevelIdx);
+    }
+
+    /* ==========================================================================
+       8. 绘制系统 (草坪、瞄准线、墓碑、阴影)
+       ========================================================================== */
+    function drawGameScene() {
+      // 1. 背景渐变 (夜幕/白天自然交替)
+      const isNight = (currentLevelIdx === 2);
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      if (isNight) {
+        bgGrad.addColorStop(0, '#020617');
+        bgGrad.addColorStop(0.5, '#0f172a');
+        bgGrad.addColorStop(1, '#022c22');
+      } else {
+        bgGrad.addColorStop(0, '#064e3b');
+        bgGrad.addColorStop(0.5, '#065f46');
+        bgGrad.addColorStop(1, '#022c22');
+      }
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 星空夜景小星星
+      if (isNight) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        for (let s = 0; s < 30; s++) {
+          const sx = (s * 97) % canvas.width;
+          const sy = (s * 53) % 220;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // 2. 绘制草坪各行网格
+      for (let r = 0; r < gridLayout.rows; r++) {
+        const rowY = gridLayout.top + r * gridLayout.rowHeight;
+        const isHovered = (isMouseOnCanvas && hoveredRow === r);
+
+        // 深浅相间草坪条纹
+        ctx.fillStyle = (r % 2 === 0) ? '#15803d' : '#16a34a';
+        if (isNight) {
+          ctx.fillStyle = (r % 2 === 0) ? '#0f4d2a' : '#136237';
+        }
+        ctx.fillRect(gridLayout.left, rowY, gridLayout.width, gridLayout.rowHeight);
+
+        // 格子网格竖虚线 (手绘草坪网格质感)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.lineWidth = 1.5;
+        for (let c = 1; c < gridLayout.cols; c++) {
+          const colX = gridLayout.left + c * (gridLayout.width / gridLayout.cols);
+          ctx.beginPath();
+          ctx.moveTo(colX, rowY);
+          ctx.lineTo(colX, rowY + gridLayout.rowHeight);
+          ctx.stroke();
+        }
+
+        // 鼠标悬停的高亮跑道轨道与预测瞄准虚线
+        if (isHovered) {
+          ctx.fillStyle = 'rgba(250, 204, 21, 0.15)';
+          ctx.fillRect(gridLayout.left, rowY, gridLayout.width, gridLayout.rowHeight);
+
+          // 瞄准激光虚线
+          ctx.strokeStyle = '#facc15';
+          ctx.lineWidth = 3.5;
+          ctx.setLineDash([12, 8]);
+          ctx.beginPath();
+          ctx.moveTo(gridLayout.left, rowY + gridLayout.rowHeight / 2);
+          ctx.lineTo(canvas.width, rowY + gridLayout.rowHeight / 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // 提示瞄准箭头
+          ctx.fillStyle = '#fef08a';
+          ctx.font = 'bold 22px sans-serif';
+          ctx.fillText('👉 点击发射！', gridLayout.left + 80, rowY + gridLayout.rowHeight / 2 + 7);
+        }
+
+        // 草坪边界分界线
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(gridLayout.left, rowY + gridLayout.rowHeight);
+        ctx.lineTo(gridLayout.left + gridLayout.width, rowY + gridLayout.rowHeight);
+        ctx.stroke();
+      }
+
+      // 3. 经典植物大战僵尸左侧红线防守标志
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(gridLayout.left, gridLayout.top);
+      ctx.lineTo(gridLayout.left, gridLayout.top + gridLayout.height);
+      ctx.stroke();
+
+      // 4. 绘制墓碑
+      graves.forEach(g => {
+        if (!g.active) return;
+        const gx = gridLayout.left + g.col * (gridLayout.width / gridLayout.cols) + 30;
+        const gy = gridLayout.top + g.row * gridLayout.rowHeight + gridLayout.rowHeight / 2;
+
+        ctx.save();
+        ctx.translate(gx, gy);
+
+        // 墓碑石头
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath();
+        ctx.roundRect(-20, -32, 40, 60, [15, 15, 2, 2]);
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#334155';
+        ctx.stroke();
+
+        // 墓碑 RIP 标志
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('RIP', 0, -10);
+
+        // 裂纹 (根据剩余血量展现裂纹)
+        if (g.hp < g.maxHp) {
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(-10, -20);
+          ctx.lineTo(2, -5);
+          ctx.lineTo(-4, 12);
+          ctx.stroke();
+        }
+
+        // 墓碑血量点 (3次撞击倒下)
+        ctx.fillStyle = '#ef4444';
+        for (let i = 0; i < g.maxHp; i++) {
+          ctx.beginPath();
+          ctx.arc(-10 + i * 10, 18, 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = (i < g.hp) ? '#4ade80' : '#475569';
+          ctx.fill();
+        }
+
+        ctx.restore();
+      });
+
+      // 5. 绘制第5关豌豆飞弹
+      alliesBullets.forEach(b => {
+        if (!b.active) return;
+        b.x += b.vx;
+        ctx.fillStyle = '#4ade80';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#14532d';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 碰撞僵尸
+        zombies.forEach(z => {
+          if (z.active && z.row === b.row && Math.abs(z.x - b.x) < 25) {
+            z.takeDamage(15);
+            b.active = false;
+            sound.playHit();
+            spawnImpactSparks(b.x, b.y, '#4ade80', 6);
+          }
+        });
+        if (b.x > canvas.width) b.active = false;
+      });
+      alliesBullets = alliesBullets.filter(b => b.active);
+
+      // 6. 绘制助阵植物、推草机、保龄坚果、僵尸、粒子
+      allies.forEach(a => { a.update(); a.draw(ctx); });
+      mowers.forEach(m => { m.update(); m.draw(ctx); });
+      activeNuts.forEach(n => { n.update(); n.draw(ctx); });
+      zombies.forEach(z => { z.update(); z.draw(ctx); });
+
+      // 清理失活实体
+      activeNuts = activeNuts.filter(n => n.active);
+      zombies = zombies.filter(z => z.active);
+
+      // 绘制粒子与浮动文字
+      particles.forEach(p => { p.update(); p.draw(ctx); });
+      particles = particles.filter(p => p.life > 0);
+
+      floatingTexts.forEach(t => { t.update(); t.draw(ctx); });
+      floatingTexts = floatingTexts.filter(t => t.alpha > 0);
+    }
+
+    /* ==========================================================================
+       9. 游戏主循环 (60fps)
+       ========================================================================== */
+    let lastTime = 0;
+    function gameLoop(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const dt = timestamp - lastTime;
+      lastTime = timestamp;
+
+      // 刷新传送带计时
+      conveyorTimer += dt;
+      if (conveyorTimer >= 3200) {
+        conveyorTimer = 0;
+        refillConveyor();
+      }
+
+      // 刷新僵尸生成计时
+      zombieSpawnTimer += dt;
+      if (zombieSpawnTimer >= currentConfig.spawnInterval) {
+        zombieSpawnTimer = 0;
+        spawnZombie();
+      }
+
+      // 渲染场景
+      drawGameScene();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    /* ==========================================================================
+       10. 交互事件绑定 (鼠标/触摸点选发射坚果)
+       ========================================================================== */
+    function updateHoveredRow(clientX, clientY) {
+      mousePos.x = clientX;
+      mousePos.y = clientY;
+      isMouseOnCanvas = (clientX >= gridLayout.left && clientX <= canvas.width &&
+                         clientY >= gridLayout.top && clientY <= gridLayout.top + gridLayout.height);
+
+      if (isMouseOnCanvas) {
+        hoveredRow = Math.floor((clientY - gridLayout.top) / gridLayout.rowHeight);
+        hoveredRow = Math.max(0, Math.min(gridLayout.rows - 1, hoveredRow));
+      }
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+      updateHoveredRow(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      isMouseOnCanvas = false;
+    });
+
+    canvas.addEventListener('click', (e) => {
+      sound.init();
+      updateHoveredRow(e.clientX, e.clientY);
+      if (isMouseOnCanvas) {
+        launchNutAtRow(hoveredRow);
+      }
+    });
+
+    // 移动端触摸支持
+    canvas.addEventListener('touchstart', (e) => {
+      sound.init();
+      const t = e.touches[0];
+      updateHoveredRow(t.clientX, t.clientY);
+      if (isMouseOnCanvas) {
+        launchNutAtRow(hoveredRow);
+      }
+    }, { passive: true });
+
+    /* ==========================================================================
+       11. 辅助功能与弹窗模态框控制
+       ========================================================================== */
+    function openSketchModal() {
+      document.getElementById('sketchModal').classList.add('active');
+      sound.playCoin();
+      sound.speak("快看，这些全都是你亲手画的手稿！有单行跑道、三行跑道、全草坪和五种坚果！");
+    }
+
+    function closeSketchModal() {
+      document.getElementById('sketchModal').classList.remove('active');
+    }
+
+    function toggleVoice() {
+      sound.voiceEnabled = !sound.voiceEnabled;
+      document.getElementById('voiceToggleBtn').innerHTML = sound.voiceEnabled ? '<span>🔊</span> 语音: 开' : '<span>🔇</span> 语音: 关';
+      if (sound.voiceEnabled) sound.speak("语音伴读已开启！");
+    }
+
+    function speakCurrentGuide() {
+      sound.speak(document.getElementById('guideText').innerText);
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    // 初始化启动游戏
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      loadLevel(0);
+      requestAnimationFrame(gameLoop);
+    });
+  </script>
+</body>
+</html>
