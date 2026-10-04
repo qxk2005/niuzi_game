@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>僵尸大战樱桃炸弹 · 火柴人经典后院塔防版 - 5岁小英雄超级大冒险</title>
   <style>
     * {
@@ -444,8 +444,10 @@
       filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));
     }
   </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="11">
 
   <!-- 主游戏框架容器 -->
   <div id="game-wrapper">
@@ -773,7 +775,7 @@
 
       playSunCollect() {
         this.playTone(523.25, 'sine', 0.08, 0.05);
-        setTimeout(() => this.playTone(659.25, 'sine', 0.09, 0.05), 60);
+        GameUI.setTimeout(() => this.playTone(659.25, 'sine', 0.09, 0.05), 60);
       }
 
       playPlant() {
@@ -816,7 +818,7 @@
       playVictory() {
         const notes = [261.63, 329.63, 392.00, 523.25];
         notes.forEach((f, i) => {
-          setTimeout(() => this.playTone(f, 'sine', 0.25, 0.05), i * 100);
+          GameUI.setTimeout(() => this.playTone(f, 'sine', 0.25, 0.05), i * 100);
         });
       }
     }
@@ -883,7 +885,7 @@
       canvas.addEventListener('pointermove', handleCanvasPointerMove);
       window.addEventListener('pointermove', handleGlobalPointerMove);
 
-      requestAnimationFrame(gameLoop);
+      GameUI.requestFrame(gameLoop);
     });
 
     function initGrid() {
@@ -985,8 +987,9 @@
 
     function handleCanvasPointerMove(e) {
       const rect = canvas.getBoundingClientRect();
-      spotlightPos.targetX = e.clientX - rect.left;
-      spotlightPos.targetY = e.clientY - rect.top;
+      const point = GameUI.point(canvas, e);
+      spotlightPos.targetX = point.x;
+      spotlightPos.targetY = point.y;
     }
 
     /* ============================================================
@@ -1003,7 +1006,7 @@
 
     function showStartLevelSelect() {
       if (autoNextTimer) {
-        clearInterval(autoNextTimer);
+        GameUI.clearInterval(autoNextTimer);
         autoNextTimer = null;
       }
       document.getElementById('screen-victory').classList.add('hidden');
@@ -1014,7 +1017,7 @@
 
     function replayCurrentLevel() {
       if (autoNextTimer) {
-        clearInterval(autoNextTimer);
+        GameUI.clearInterval(autoNextTimer);
         autoNextTimer = null;
       }
       document.getElementById('screen-victory').classList.add('hidden');
@@ -1025,7 +1028,7 @@
 
     function loadLevel(levelIdx) {
       if (autoNextTimer) {
-        clearInterval(autoNextTimer);
+        GameUI.clearInterval(autoNextTimer);
         autoNextTimer = null;
       }
 
@@ -1111,7 +1114,7 @@
 
     function nextLevel() {
       if (autoNextTimer) {
-        clearInterval(autoNextTimer);
+        GameUI.clearInterval(autoNextTimer);
         autoNextTimer = null;
       }
       document.getElementById('screen-victory').classList.add('hidden');
@@ -1124,7 +1127,7 @@
 
     function restartFromBeginning() {
       if (autoNextTimer) {
-        clearInterval(autoNextTimer);
+        GameUI.clearInterval(autoNextTimer);
         autoNextTimer = null;
       }
       document.getElementById('screen-finale').classList.add('hidden');
@@ -1161,7 +1164,7 @@
         bossMech.hp = 0;
         bossMech.alive = false;
         createSparks(bossMech.x, bossMech.y, '#f59e0b', 60);
-        setTimeout(onLevelCleared, 1000);
+        GameUI.setTimeout(onLevelCleared, 1000);
       }
     }
 
@@ -1171,8 +1174,7 @@
     function handleCanvasClick(e) {
       sound.init();
       const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
+      const { x: clickX, y: clickY } = GameUI.point(canvas, e);
 
       // 1. 优先检查点击阳光收集
       for (let i = suns.length - 1; i >= 0; i--) {
@@ -1372,7 +1374,7 @@
     function gameLoop() {
       update();
       render();
-      requestAnimationFrame(gameLoop);
+      GameUI.requestFrame(gameLoop);
     }
 
     function update() {
@@ -1547,7 +1549,7 @@
             bossMech.hp = 0;
             bossMech.alive = false;
             createSparks(bossMech.x, bossMech.y, '#f59e0b', 60);
-            setTimeout(onLevelCleared, 1000);
+            GameUI.setTimeout(onLevelCleared, 1000);
           }
         }
 
@@ -1572,7 +1574,7 @@
               bossMech.hp = 0;
               bossMech.alive = false;
               createSparks(bossMech.x, bossMech.y, '#f59e0b', 60);
-              setTimeout(onLevelCleared, 1000);
+              GameUI.setTimeout(onLevelCleared, 1000);
             }
           }
         });
@@ -1844,7 +1846,7 @@
       }
 
       for (let i = 0; i < count; i++) {
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           let row = Math.floor(Math.random() * ROWS);
           const isPool = (level.bgType === 'day_pool' || level.bgType === 'fog_pool');
           
@@ -1927,7 +1929,7 @@
             bossMech.hp = 0;
             bossMech.alive = false;
             createSparks(bossMech.x, bossMech.y, '#f59e0b', 80);
-            setTimeout(onLevelCleared, 1000);
+            GameUI.setTimeout(onLevelCleared, 1000);
           }
         }
       }
@@ -1996,9 +1998,9 @@
     function onLevelCleared() {
       sound.playVictory();
       if (currentLevelIndex === LEVELS_DEF.length - 1) {
-        setTimeout(showFinaleCelebration, 1200);
+        GameUI.setTimeout(showFinaleCelebration, 1200);
       } else {
-        setTimeout(showVictoryModal, 900);
+        GameUI.setTimeout(showVictoryModal, 900);
       }
     }
 
@@ -2011,13 +2013,13 @@
       const cdEl = document.getElementById('auto-next-countdown');
       cdEl.innerText = `⏱️ ${autoSec} 秒后自动前往下一关...`;
 
-      if (autoNextTimer) clearInterval(autoNextTimer);
-      autoNextTimer = setInterval(() => {
+      if (autoNextTimer) GameUI.clearInterval(autoNextTimer);
+      autoNextTimer = GameUI.setInterval(() => {
         autoSec--;
         if (autoSec > 0) {
           cdEl.innerText = `⏱️ ${autoSec} 秒后自动前往下一关...`;
         } else {
-          clearInterval(autoNextTimer);
+          GameUI.clearInterval(autoNextTimer);
           autoNextTimer = null;
           nextLevel();
         }

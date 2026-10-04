@@ -2,10 +2,9 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>快乐麦当劳 - 5岁儿童快乐外卖送餐大冒险</title>
     <!-- 可爱圆润字体 -->
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-gradient: linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fef08a 100%);
@@ -615,8 +614,10 @@
             .board-box, .fryer-vat-linear { width: 290px; }
         }
     </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="2">
 
 <div id="floatingFinger" class="floating-finger">👇</div>
 
@@ -1135,7 +1136,7 @@
         if (stageNum === 1) {
             pipeStep1.classList.add('active');
             stageOrder.classList.add('active');
-            setTimeout(() => moveFingerTo(startCookBtn), 300);
+            GameUI.setTimeout(() => moveFingerTo(startCookBtn), 300);
         } else if (stageNum === 2) {
             pipeStep2.classList.add('active');
             stageBurger.classList.add('active');
@@ -1151,7 +1152,7 @@
         } else if (stageNum === 5) {
             pipeStep5.classList.add('active');
             stageServe.classList.add('active');
-            setTimeout(() => moveFingerTo(btnServeFinal), 300);
+            GameUI.setTimeout(() => moveFingerTo(btnServeFinal), 300);
         }
     }
 
@@ -1190,7 +1191,7 @@
             c.classList.remove('super-glow');
         });
 
-        setTimeout(() => moveFingerTo(pattyGrillBtn), 300);
+        GameUI.setTimeout(() => moveFingerTo(pattyGrillBtn), 300);
     }
 
     pattyGrillBtn.addEventListener('click', () => {
@@ -1204,7 +1205,7 @@
         steam1.style.opacity = '1';
         steam2.style.opacity = '1';
 
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
             state.pattyState = 'cooked';
             playDingSound();
 
@@ -1244,14 +1245,14 @@
             const activeCard = burgerCards[state.burgerStep - 1];
             activeCard.classList.remove('disabled');
             activeCard.classList.add('super-glow');
-            setTimeout(() => moveFingerTo(activeCard), 200);
+            GameUI.setTimeout(() => moveFingerTo(activeCard), 200);
 
         } else if (state.burgerStep > 7) {
             playDingSound();
             playSound('fanfare');
             moveFingerTo(null);
             burgerGuideText.innerHTML = '<span>✨ 汉堡做好啦！自动准备做薯条...</span>';
-            setTimeout(() => {
+            GameUI.setTimeout(() => {
                 setPipelineStage(3);
             }, 1200);
         }
@@ -1298,20 +1299,21 @@
     let isPeeling = false;
     function scrubPeel(e) {
         if (!isPeeling) return;
-        const rect = peelCanvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         ctx.globalCompositeOperation = 'destination-out';
-        ctx.beginPath(); ctx.arc(clientX - rect.left, clientY - rect.top, 24, 0, Math.PI * 2); ctx.fill();
+        const p = GameUI.point(peelCanvas, e);
+        ctx.beginPath(); ctx.arc(p.x, p.y, 24, 0, Math.PI * 2); ctx.fill();
         playSound('chop');
     }
 
-    peelCanvas.addEventListener('mousedown', () => isPeeling = true);
-    peelCanvas.addEventListener('mouseup', () => isPeeling = false);
-    peelCanvas.addEventListener('mousemove', scrubPeel);
-    peelCanvas.addEventListener('touchstart', (e) => { isPeeling = true; scrubPeel(e); });
-    peelCanvas.addEventListener('touchend', () => isPeeling = false);
-    peelCanvas.addEventListener('touchmove', scrubPeel);
+    peelCanvas.addEventListener('pointerdown', e => {
+        isPeeling = true; peelCanvas.setPointerCapture(e.pointerId); scrubPeel(e);
+    });
+    peelCanvas.addEventListener('pointermove', scrubPeel);
+    const stopPeeling = () => { isPeeling = false; };
+    peelCanvas.addEventListener('pointerup', stopPeeling);
+    peelCanvas.addEventListener('pointercancel', stopPeeling);
+    peelCanvas.addEventListener('lostpointercapture', stopPeeling);
+    window.addEventListener('niuzi:release-input', stopPeeling);
 
     btnNextToChop.addEventListener('click', () => {
         playSound('pop');
@@ -1336,7 +1338,7 @@
         if (state.chopCount >= 5) {
             playDingSound();
             playSound('fanfare');
-            setTimeout(() => setFriesSubStep(3), 800);
+            GameUI.setTimeout(() => setFriesSubStep(3), 800);
         }
     });
 
@@ -1354,13 +1356,13 @@
             fryingStripsFlex.appendChild(strip);
         });
 
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
             document.querySelectorAll('#fryingStripsFlex .potato-strip-item').forEach(el => {
                 el.style.background = 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)';
             });
             playDingSound();
             playSound('fanfare');
-            setTimeout(() => setFriesSubStep(4), 1000);
+            GameUI.setTimeout(() => setFriesSubStep(4), 1000);
         }, 2200);
     });
 
@@ -1371,7 +1373,7 @@
         playDingSound();
         playSound('fanfare');
 
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
             setPipelineStage(4); // 薯条挤酱完成 ➔ 自动进入外卖送餐车环节！
         }, 1200);
     });
@@ -1382,23 +1384,23 @@
 
         if (stepNum === 1) {
             subPeel.classList.add('active');
-            setTimeout(() => moveFingerTo(btnNextToChop), 300);
+            GameUI.setTimeout(() => moveFingerTo(btnNextToChop), 300);
         } else if (stepNum === 2) {
             subChop.classList.add('active');
             state.chopCount = 0;
             boardStripsBox.innerHTML = '';
             chopNumText.textContent = '0';
-            setTimeout(() => moveFingerTo(btnChopAction), 300);
+            GameUI.setTimeout(() => moveFingerTo(btnChopAction), 300);
         } else if (stepNum === 3) {
             subFry.classList.add('active');
             btnStartFry.textContent = '🍳 下锅炸薯条！';
             btnStartFry.style.pointerEvents = 'auto';
-            setTimeout(() => moveFingerTo(btnStartFry), 300);
+            GameUI.setTimeout(() => moveFingerTo(btnStartFry), 300);
         } else if (stepNum === 4) {
             subSauce.classList.add('active');
             ketchupRedBlob.style.width = '0';
             ketchupRedBlob.style.height = '0';
-            setTimeout(() => moveFingerTo(btnSqueezeSauce), 300);
+            GameUI.setTimeout(() => moveFingerTo(btnSqueezeSauce), 300);
         }
     }
 
@@ -1408,12 +1410,12 @@
         wheelLeftGroup.classList.remove('wheel-rotate');
         wheelRightGroup.classList.remove('wheel-rotate');
 
-        setTimeout(() => moveFingerTo(btnDriveTruck), 300);
+        GameUI.setTimeout(() => moveFingerTo(btnDriveTruck), 300);
     }
 
     btnDriveTruck.addEventListener('click', () => {
         playBeepSound(); // 嘟嘟喇叭
-        setTimeout(() => playVroomSound(), 300); // 轰轰轰引擎
+        GameUI.setTimeout(() => playVroomSound(), 300); // 轰轰轰引擎
 
         btnDriveTruck.style.pointerEvents = 'none';
         btnDriveTruck.textContent = '🛵 正在开车外卖送餐中...';
@@ -1422,7 +1424,7 @@
         wheelLeftGroup.classList.add('wheel-rotate');
         wheelRightGroup.classList.add('wheel-rotate');
 
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
             playDingSound();
             playSound('fanfare');
             btnDriveTruck.style.pointerEvents = 'auto';
@@ -1443,7 +1445,7 @@
         btnServeFinal.innerHTML = '<span>❤️ 外卖送到家！(+1分)</span>';
         btnServeFinal.style.background = 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)';
 
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
             btnServeFinal.innerHTML = '<span>🎁 卖给顾客 (+1分)</span>';
             btnServeFinal.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
 
@@ -1495,7 +1497,7 @@
             cCtx.restore();
         });
         particles = particles.filter(p => p.y < confettiCanvas.height);
-        if (particles.length > 0) requestAnimationFrame(animateConfetti);
+        if (particles.length > 0) GameUI.requestFrame(animateConfetti);
         else cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
     }
 

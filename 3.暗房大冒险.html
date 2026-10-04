@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>暗房大冒险 - 5岁小朋友的专属游戏</title>
   <style>
     * {
@@ -320,8 +320,10 @@
       transform: scale(1.1);
     }
   </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="3">
 
   <div id="game-container">
     <!-- HTML5 Canvas for Game Rendering -->
@@ -343,7 +345,7 @@
 
       <!-- Control Tip -->
       <div class="control-tip">
-        <span>🖱️ 按住鼠标左键移动角色！</span>
+        <span>👆 按住并滑动移动，松手停下</span>
       </div>
 
       <!-- Guidance Banner -->
@@ -472,7 +474,7 @@
         this.init();
         const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
         notes.forEach((freq, idx) => {
-          setTimeout(() => this.playTone(freq, 0.2, 'triangle', 0.3), idx * 80);
+          GameUI.setTimeout(() => this.playTone(freq, 0.2, 'triangle', 0.3), idx * 80);
         });
       }
 
@@ -505,7 +507,7 @@
           { f: 1046.50, d: 0.4 }
         ];
         melody.forEach((note, i) => {
-          setTimeout(() => this.playTone(note.f, note.d, 'square', 0.25), i * 150);
+          GameUI.setTimeout(() => this.playTone(note.f, note.d, 'square', 0.25), i * 150);
         });
       }
 
@@ -519,7 +521,7 @@
       playDoorOpen() {
         this.init();
         this.playTone(300, 0.3, 'sine', 0.3);
-        setTimeout(() => this.playTone(450, 0.4, 'triangle', 0.3), 100);
+        GameUI.setTimeout(() => this.playTone(450, 0.4, 'triangle', 0.3), 100);
       }
     }
 
@@ -559,12 +561,24 @@
       offsetY = (canvas.height - mapRows * TILE_SIZE) / 2;
     }
 
+    let entitiesReady = false;
     function resizeCanvas() {
       const parent = canvas.parentElement;
       if (parent) {
+        const oldTile = TILE_SIZE, oldX = offsetX, oldY = offsetY;
         canvas.width = parent.clientWidth;
         canvas.height = parent.clientHeight;
         updateTileMetrics();
+        if (entitiesReady) {
+          const ratio = TILE_SIZE / oldTile;
+          for (const entity of [player, keyItem, exitDoor, ...monsters, ...researchersAI, mousePos, ...footprintTrail]) {
+            entity.x = offsetX + (entity.x - oldX) * ratio;
+            entity.y = offsetY + (entity.y - oldY) * ratio;
+            if (entity.radius) entity.radius *= ratio;
+            if (entity.speed) entity.speed *= ratio;
+          }
+          particles = [];
+        }
       }
     }
     window.addEventListener('resize', resizeCanvas);
@@ -599,6 +613,7 @@
     let researchersAI = []; // For Monster Mode
     let particles = [];
     let footprintTrail = [];
+    entitiesReady = true;
 
     /* Helper to find a random open floor tile (never inside wall) */
     function getRandomFloorTile(excludeRadius = 0, originX = 0, originY = 0) {
@@ -663,6 +678,7 @@
       player.x = offsetX + 1.5 * TILE_SIZE;
       player.y = offsetY + 1.5 * TILE_SIZE;
       player.radius = TILE_SIZE * 0.35;
+      player.speed = TILE_SIZE * 0.075;
       mousePos = { x: player.x, y: player.y };
 
       // Key Spawn (Guaranteed Floor Tile away from player)
@@ -688,7 +704,7 @@
           y: mTile.y,
           type: type,
           radius: TILE_SIZE * 0.35,
-          speed: 1.8 + Math.random() * 0.8,
+          speed: TILE_SIZE * (0.03 + Math.random() * 0.013),
           dirX: Math.random() < 0.5 ? 1 : -1,
           dirY: Math.random() < 0.5 ? 1 : -1,
           angle: Math.random() * Math.PI * 2
@@ -704,7 +720,7 @@
             x: aiTile.x,
             y: aiTile.y,
             radius: TILE_SIZE * 0.35,
-            speed: 2.2,
+            speed: TILE_SIZE * 0.037,
             isCaught: false,
             transformed: false
           });
@@ -747,39 +763,20 @@
       };
     }
 
-    // Mouse Events
-    canvas.addEventListener('mousedown', (e) => {
-      mouseIsDown = true;
-      mousePos = getCanvasCoordinates(e);
-      soundFX.init();
+    let movementPointer = null;
+    canvas.addEventListener('pointerdown', e => {
+      if (movementPointer !== null) return;
+      movementPointer = e.pointerId; canvas.setPointerCapture(e.pointerId);
+      mouseIsDown = true; mousePos = getCanvasCoordinates(e); soundFX.init();
     });
-
-    window.addEventListener('mousemove', (e) => {
-      if (mouseIsDown) {
-        mousePos = getCanvasCoordinates(e);
-      }
+    canvas.addEventListener('pointermove', e => {
+      if (e.pointerId === movementPointer) mousePos = getCanvasCoordinates(e);
     });
-
-    window.addEventListener('mouseup', () => {
-      mouseIsDown = false;
-    });
-
-    // Touch Events for Mobile / Tablet
-    canvas.addEventListener('touchstart', (e) => {
-      mouseIsDown = true;
-      mousePos = getCanvasCoordinates(e);
-      soundFX.init();
-    }, { passive: true });
-
-    canvas.addEventListener('touchmove', (e) => {
-      if (mouseIsDown) {
-        mousePos = getCanvasCoordinates(e);
-      }
-    }, { passive: true });
-
-    canvas.addEventListener('touchend', () => {
-      mouseIsDown = false;
-    });
+    const stopMovement = () => { movementPointer = null; mouseIsDown = false; };
+    canvas.addEventListener('pointerup', e => { if (e.pointerId === movementPointer) stopMovement(); });
+    canvas.addEventListener('pointercancel', stopMovement);
+    canvas.addEventListener('lostpointercapture', stopMovement);
+    window.addEventListener('niuzi:release-input', stopMovement);
 
     /* ==========================================================================
        6. COLLISION & MOVEMENT UPDATE
@@ -1116,7 +1113,7 @@
         console.error("Render loop caught error:", err);
       }
 
-      requestAnimationFrame(render);
+      GameUI.requestFrame(render);
     }
 
     /* --------------------------------------------------------------------------

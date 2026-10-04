@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>火柴人大战僵尸 - 5岁小英雄专属超级神作</title>
   <style>
     * {
@@ -549,8 +549,10 @@
       transform: scale(1.08);
     }
   </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="12">
 
   <div id="game-wrapper">
     <!-- 顶部状态栏 -->
@@ -889,7 +891,7 @@
       },
       coin: () => {
         playTone(987.77, 'sine', 0.1, 0.25);
-        setTimeout(() => playTone(1318.51, 'sine', 0.18, 0.25), 80);
+        GameUI.setTimeout(() => playTone(1318.51, 'sine', 0.18, 0.25), 80);
       },
       melonBoom: () => {
         playTone(180, 'triangle', 0.25, 0.3, -100);
@@ -903,21 +905,21 @@
       },
       honorRed: () => {
         playTone(300, 'sawtooth', 0.4, 0.3, 400);
-        setTimeout(() => playTone(600, 'sawtooth', 0.5, 0.35, 600), 120);
+        GameUI.setTimeout(() => playTone(600, 'sawtooth', 0.5, 0.35, 600), 120);
       },
       honorBlue: () => {
         playTone(400, 'sine', 0.4, 0.3, 300);
-        setTimeout(() => playTone(800, 'sine', 0.5, 0.35, 500), 120);
+        GameUI.setTimeout(() => playTone(800, 'sine', 0.5, 0.35, 500), 120);
       },
       ultimate: () => {
         for (let i = 0; i < 8; i++) {
-          setTimeout(() => playTone(300 + i * 80, 'sawtooth', 0.12, 0.25, 100), i * 60);
+          GameUI.setTimeout(() => playTone(300 + i * 80, 'sawtooth', 0.12, 0.25, 100), i * 60);
         }
       },
       victory: () => {
         const notes = [523.25, 659.25, 783.99, 1046.50];
         notes.forEach((n, idx) => {
-          setTimeout(() => playTone(n, 'triangle', 0.3, 0.3), idx * 150);
+          GameUI.setTimeout(() => playTone(n, 'triangle', 0.3, 0.3), idx * 150);
         });
       },
       mower: () => {
@@ -930,8 +932,8 @@
        ========================================================= */
     function resizeCanvas() {
       const container = document.getElementById('canvas-container');
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
+      canvas.width = 1000;
+      canvas.height = 500;
 
       // 动态计算 5x9 网格
       gridOffsetX = Math.max(90, canvas.width * 0.08);
@@ -1972,7 +1974,7 @@
           for (let i = 0; i < 60; i++) {
             particles.push(new Particle(this.x + (Math.random() - 0.5) * 80, this.y + (Math.random() - 0.5) * 120, 'explosion'));
           }
-          setTimeout(triggerVictory, 1500);
+          GameUI.setTimeout(triggerVictory, 1500);
           return;
         }
 
@@ -2583,7 +2585,7 @@
     /* =========================================================
        5. 游戏主循环与波次控制
        ========================================================= */
-    let lastTime = performance.now();
+    let lastTime = 0;
     let zombieSpawnTimer = 0;
     let waveTimer = 0;
     let screenShakeAmount = 0;
@@ -2623,7 +2625,7 @@
     }
 
     function gameLoop(now) {
-      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      const dt = lastTime ? Math.min((now - lastTime) / 1000, 0.1) : 1 / 60;
       lastTime = now;
 
       if (!isPaused && !isGameOver) {
@@ -2631,7 +2633,7 @@
       }
 
       renderGame();
-      requestAnimationFrame(gameLoop);
+      GameUI.requestFrame(gameLoop);
     }
 
     function updateGame(dt) {
@@ -2863,19 +2865,19 @@
     /* =========================================================
        7. 玩家交互与事件响应 (鼠标/触控/键盘)
        ========================================================= */
-    canvas.addEventListener('mousemove', (e) => {
+    canvas.addEventListener('pointermove', (e) => {
       const rect = canvas.getBoundingClientRect();
-      mousePos.x = e.clientX - rect.left;
-      mousePos.y = e.clientY - rect.top;
+      const point = GameUI.point(canvas, e);
+      mousePos.x = point.x;
+      mousePos.y = point.y;
       const cell = getGridCell(mousePos.x, mousePos.y);
       mousePos.row = cell.row;
       mousePos.col = cell.col;
     });
 
-    canvas.addEventListener('click', (e) => {
+    canvas.addEventListener('pointerdown', (e) => {
       const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
+      const { x: clickX, y: clickY } = GameUI.point(canvas, e);
 
       // 1. 优先检测点击收集掉落金币
       for (let s of sunItems) {
@@ -3024,7 +3026,7 @@
 
       // 全屏飞弹狂轰所有僵尸
       for (let i = 0; i < 50; i++) {
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           const rx = Math.random() * canvas.width;
           const ry = Math.random() * canvas.height;
           particles.push(new Particle(rx, ry, 'explosion'));
@@ -3201,7 +3203,7 @@
     // 启动游戏
     window.onload = () => {
       initGame();
-      requestAnimationFrame(gameLoop);
+      GameUI.requestFrame(gameLoop);
     };
   </script>
 </body>

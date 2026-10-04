@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>除雪大作战 - 5岁小勇士的冰雪冒险</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
@@ -112,8 +112,10 @@
     }
     .tutorial-next:hover { transform: scale(1.05); }
   </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="10">
 
 <!-- Start Screen -->
 <div id="start-screen">
@@ -200,21 +202,21 @@ class AudioSystem {
   monsterRoar() { this.tone(80, 0.6, 'sawtooth', 0.12); this.tone(60, 0.8, 'square', 0.08); this.noise(0.3, 0.06); }
   rescuePerson() {
     this.tone(523, 0.15, 'sine', 0.12);
-    setTimeout(() => this.tone(659, 0.15, 'sine', 0.12), 100);
-    setTimeout(() => this.tone(784, 0.2, 'sine', 0.12), 200);
+    GameUI.setTimeout(() => this.tone(659, 0.15, 'sine', 0.12), 100);
+    GameUI.setTimeout(() => this.tone(784, 0.2, 'sine', 0.12), 200);
   }
   furnaceUpgrade() {
     for (let i = 0; i < 6; i++) {
-      setTimeout(() => this.tone(400 + i * 100, 0.3, 'sine', 0.1), i * 80);
+      GameUI.setTimeout(() => this.tone(400 + i * 100, 0.3, 'sine', 0.1), i * 80);
     }
-    setTimeout(() => this.noise(0.4, 0.08), 400);
+    GameUI.setTimeout(() => this.noise(0.4, 0.08), 400);
   }
   depositResource() { this.tone(440, 0.1, 'sine', 0.08); this.tone(660, 0.15, 'sine', 0.1); }
   hitPlayer() { this.tone(150, 0.2, 'square', 0.1); this.noise(0.15, 0.08); }
   attackMonster() { this.tone(300, 0.1, 'sawtooth', 0.08); this.tone(200, 0.15, 'square', 0.06); }
   victory() {
     const notes = [523, 659, 784, 1047, 784, 1047, 1319];
-    notes.forEach((n, i) => setTimeout(() => this.tone(n, 0.3, 'sine', 0.12), i * 150));
+    notes.forEach((n, i) => GameUI.setTimeout(() => this.tone(n, 0.3, 'sine', 0.12), i * 150));
   }
   pickUp() { this.tone(600, 0.08, 'sine', 0.08); this.tone(800, 0.1, 'sine', 0.06); }
   wrongSlot() { this.tone(200, 0.15, 'square', 0.08); this.tone(150, 0.2, 'square', 0.06); }
@@ -249,11 +251,11 @@ const ctx = canvas.getContext('2d');
 let W, H, scale;
 
 function resizeCanvas() {
-  W = canvas.width = window.innerWidth * window.devicePixelRatio;
-  H = canvas.height = window.innerHeight * window.devicePixelRatio;
+  const rect = canvas.getBoundingClientRect();
+  const ratio = Math.min(window.devicePixelRatio || 1, 2);
+  W = canvas.width = Math.round(rect.width * ratio);
+  H = canvas.height = Math.round(rect.height * ratio);
   scale = Math.min(W, H) / 900;
-  canvas.style.width = window.innerWidth + 'px';
-  canvas.style.height = window.innerHeight + 'px';
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -874,7 +876,7 @@ function checkVictory() {
   if (allMonstersDead && furnaceMaxed) {
     game.victory = true;
     audio.victory();
-    setTimeout(() => {
+    GameUI.setTimeout(() => {
       document.getElementById('victory-screen').classList.add('show');
     }, 1500);
   }
@@ -1932,7 +1934,7 @@ document.getElementById('tutorial-next').addEventListener('click', () => {
 // --- Main Game Loop ---
 function gameLoop() {
   if (!game.running) {
-    requestAnimationFrame(gameLoop);
+    GameUI.requestFrame(gameLoop);
     return;
   }
   
@@ -1971,39 +1973,16 @@ function gameLoop() {
   drawGuideArrow();
   drawUI();
   
-  requestAnimationFrame(gameLoop);
+  GameUI.requestFrame(gameLoop);
 }
 
 // --- Input Handling ---
-canvas.addEventListener('click', (e) => {
+canvas.addEventListener('pointerdown', e => {
   if (!game.running || game.victory) return;
-  
-  const rect = canvas.getBoundingClientRect();
-  const clickX = (e.clientX - rect.left) * window.devicePixelRatio;
-  const clickY = (e.clientY - rect.top) * window.devicePixelRatio;
-  
-  // Convert to world coordinates
-  const worldX = (clickX - W / 2) / scale + game.camera.x;
-  const worldY = (clickY - H / 2) / scale + game.camera.y;
-  
-  handleClick(worldX, worldY);
+  const p = GameUI.point(canvas, e);
+  handleClick((p.x - W / 2) / scale + game.camera.x,
+    (p.y - H / 2) / scale + game.camera.y);
 });
-
-// Touch support
-canvas.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  if (!game.running || game.victory) return;
-  
-  const touch = e.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  const clickX = (touch.clientX - rect.left) * window.devicePixelRatio;
-  const clickY = (touch.clientY - rect.top) * window.devicePixelRatio;
-  
-  const worldX = (clickX - W / 2) / scale + game.camera.x;
-  const worldY = (clickY - H / 2) / scale + game.camera.y;
-  
-  handleClick(worldX, worldY);
-}, { passive: false });
 
 // --- Start Screen ---
 function createStartSnowflakes() {
@@ -2031,7 +2010,7 @@ document.getElementById('start-btn').addEventListener('click', () => {
   generateWorld();
   
   // Start tutorial after a short delay
-  setTimeout(() => {
+  GameUI.setTimeout(() => {
     showTutorial(0);
   }, 500);
   

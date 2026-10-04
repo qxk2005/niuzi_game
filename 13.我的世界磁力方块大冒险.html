@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>我的世界磁力方块大冒险 · 5岁小英雄专属版</title>
   <style>
     * {
@@ -375,9 +375,11 @@
       gap: 20px;
     }
   </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
 
-<body>
+<body data-game="13">
 
   <!-- 顶部状态栏 -->
   <div class="top-bar">
@@ -446,7 +448,7 @@
         <span>🔄</span> 再玩一次
       </button>
       <button class="start-play-btn" style="background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);"
-        onclick="window.history.back()">
+        onclick="GameUI.home()">
         <span>🏠</span> 返回乐园
       </button>
     </div>
@@ -734,8 +736,8 @@
 
     // 调整画布尺寸
     function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      canvas.width = 1000;
+      canvas.height = 600;
       updateLayoutPositions();
     }
     window.addEventListener('resize', resizeCanvas);
@@ -904,7 +906,7 @@
       if (state.ch1.cubesPlaced >= state.ch1.totalCubes) {
         playSound('upgrade');
         speak("哇！磁力楼梯全部搭好啦！史蒂夫快顺着楼梯下山探索吧！");
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           setChapter(2);
         }, 1500);
       }
@@ -959,7 +961,7 @@
       if (state.ch2.harvestCount >= state.ch2.targetHarvest) {
         playSound('upgrade');
         speak("大丰收啦！村民们送给史蒂夫很多绿宝石和钻石！快去传奇工作台打造神装吧！");
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           setChapter(3);
         }, 1500);
       }
@@ -1007,7 +1009,7 @@
       if (state.ch3.craftedSword && state.ch3.craftedBow && state.ch3.golemJoined) {
         playSound('upgrade');
         speak("神装打造完毕，最强小队集结！天色暗下来了，准备迎接夜晚的僵尸大挑战！");
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           setChapter(4);
         }, 1800);
       }
@@ -1135,7 +1137,7 @@
       speak("喔喔喔！公鸡打鸣，太阳升起啦！僵尸害怕太阳全都逃跑啦！太棒啦，朋友升级了！艾利克斯和铁傀儡获得了黄金神装！");
       addFloatingText('🌟 黎明天亮！朋友超级升级！🌟', canvas.width / 2, canvas.height / 2 - 80, '#fde047');
 
-      setTimeout(() => {
+      GameUI.setTimeout(() => {
         setChapter(5);
       }, 2500);
     }
@@ -1200,7 +1202,7 @@
 
       // 全屏彩虹经验雨与礼花
       for (let i = 0; i < 100; i++) {
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           createSparkles(
             Math.random() * canvas.width,
             Math.random() * canvas.height,
@@ -1212,7 +1214,7 @@
 
       speak("哇啊啊！末影龙被彻底打败啦！漫天都是彩虹和经验球！恭喜5岁小英雄赢得龙蛋奖杯！");
 
-      setTimeout(() => {
+      GameUI.setTimeout(() => {
         document.getElementById('victory-modal').classList.add('active');
       }, 2500);
     }
@@ -1259,7 +1261,7 @@
 
       ctx.restore();
 
-      requestAnimationFrame(render);
+      GameUI.requestFrame(render);
     }
 
     // 绘制天空
@@ -2006,8 +2008,7 @@
     // ============================================================
     function handleCanvasClick(e) {
       const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
+      const { x: mx, y: my } = GameUI.point(canvas, e);
 
       if (currentChapter === 1) {
         handleChapter1Click(mx, my);

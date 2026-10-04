@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>植物大战僵尸升级第二版 - 5岁小英雄超级高对比版</title>
   <style>
     * {
@@ -260,8 +260,10 @@
       background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
     }
   </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="8">
 
 <div id="game-wrapper">
   <!-- 顶部状态与植物选牌 -->
@@ -334,7 +336,7 @@ const SFX = {
     try {
       const a = getAudioCtx();
       [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           const o = a.createOscillator(), g = a.createGain();
           o.type = 'triangle'; o.frequency.value = freq;
           g.gain.setValueAtTime(0.2, a.currentTime);
@@ -360,7 +362,7 @@ const SFX = {
     try {
       const a = getAudioCtx();
       for(let i=0; i<4; i++){
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           const o = a.createOscillator(), g = a.createGain();
           o.type = 'sawtooth'; o.frequency.setValueAtTime(450 - i*50, a.currentTime);
           g.gain.setValueAtTime(0.1, a.currentTime);
@@ -385,7 +387,7 @@ const SFX = {
     try {
       const a = getAudioCtx();
       [300, 450, 600, 900].forEach((f, i) => {
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           const o = a.createOscillator(), g = a.createGain();
           o.type = 'sine'; o.frequency.value = f;
           g.gain.setValueAtTime(0.2, a.currentTime);
@@ -412,7 +414,7 @@ const SFX = {
     try {
       const a = getAudioCtx();
       [200, 400, 600, 800, 1200].forEach((f, i) => {
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           const o = a.createOscillator(), g = a.createGain();
           o.type = 'sawtooth'; o.frequency.setValueAtTime(f, a.currentTime);
           o.frequency.exponentialRampToValueAtTime(f/2, a.currentTime + 0.2);
@@ -429,7 +431,7 @@ const SFX = {
       const a = getAudioCtx();
       const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
       notes.forEach((f, i) => {
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           const o = a.createOscillator(), g = a.createGain();
           o.type = 'triangle'; o.frequency.value = f;
           g.gain.setValueAtTime(0.25, a.currentTime);
@@ -668,7 +670,7 @@ function selectCard(plantDef, cardElem) {
 // ═══════════════════════════════════════════════════
 // 点击与拖拽放置/升级逻辑 (5岁友情设计)
 // ═══════════════════════════════════════════════════
-canvas.onclick = (e) => {
+canvas.onpointerdown = (e) => {
   const rect = canvas.getBoundingClientRect();
   const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
   const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
@@ -1154,7 +1156,7 @@ function update() {
 
   if (zombiesSpawned >= currentLvl.zombiesToSpawn && zombies.length === 0 && !isLevelCompleted) {
     isLevelCompleted = true;
-    setTimeout(showLevelWinModal, 600);
+    GameUI.setTimeout(showLevelWinModal, 600);
   }
 }
 
@@ -1560,7 +1562,7 @@ function startLevel(idx) {
 function gameLoop() {
   update();
   render();
-  requestAnimationFrame(gameLoop);
+  GameUI.requestFrame(gameLoop);
 }
 
 // 启动游戏
