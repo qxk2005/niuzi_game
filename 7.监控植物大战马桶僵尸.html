@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>监控植物大战马桶僵尸 - 5岁小英雄超级版</title>
   <style>
     * {
@@ -379,8 +379,10 @@
       opacity: 1;
     }
   </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="7">
 
   <div id="game-container">
     <!-- 顶部状态栏 -->
@@ -807,8 +809,8 @@
        ========================================================================= */
     function resizeCanvas() {
       const container = document.getElementById('main-stage');
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
+      canvas.width = 1000;
+      canvas.height = 500;
 
       gridOffsetX = 110;
       gridOffsetY = 70;
@@ -870,7 +872,7 @@
       const toast = document.getElementById('tip-toast');
       toast.innerText = msg;
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2500);
+      GameUI.setTimeout(() => toast.classList.remove('show'), 2500);
     }
 
     /* =========================================================================
@@ -1986,7 +1988,7 @@
 
       ctx.restore();
 
-      requestAnimationFrame(gameLoop);
+      GameUI.requestFrame(gameLoop);
     }
 
     /* =========================================================================
@@ -2072,10 +2074,9 @@
     /* =========================================================================
        15. 交互点击放置植物 & 能量收集
        ========================================================================= */
-    canvas.addEventListener('click', (e) => {
+    canvas.addEventListener('pointerdown', (e) => {
       const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
+      const { x: clickX, y: clickY } = GameUI.point(canvas, e);
 
       // 1. 检查是否点中能量粒子
       energyParticles.forEach(p => {
@@ -2203,7 +2204,7 @@
       if (currentLevelIdx === 0) guideStep = 1;
 
       isPlaying = true;
-      requestAnimationFrame(gameLoop);
+      GameUI.requestFrame(gameLoop);
     }
 
     function triggerVictorySequence() {

@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>乐高植物大战僵尸 - 5岁小英雄超级拼装大选角版</title>
   <style>
     * {
@@ -454,13 +454,15 @@
     .level-item-num { font-size: 22px; font-weight: 900; color: #facc15; }
     .level-item-name { font-size: 12px; color: #e2e8f0; }
   </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="9">
 
   <div id="game-container">
     <!-- 顶部导航栏 -->
     <div id="top-bar">
-      <button class="btn-icon" onclick="window.location.href='index.html'">
+      <button class="btn-icon" onclick="GameUI.home()">
         🏠 返回主页
       </button>
 
@@ -887,14 +889,14 @@
       loadLevel(currentLevelIdx);
       renderLevelGridModal();
 
-      cancelAnimationFrame(animationFrameId);
+      GameUI.cancelFrame(animationFrameId);
       loop();
     }
 
     function resizeCanvas() {
       const container = document.getElementById('canvas-container');
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
+      canvas.width = 1000;
+      canvas.height = 500;
     }
 
     function loadLevel(idx) {
@@ -1094,8 +1096,8 @@
        ========================================================================== */
     function resetInactiveTimer() {
       hideGuideFinger();
-      clearTimeout(inactiveTimer);
-      inactiveTimer = setTimeout(showGuideFinger, 2200);
+      GameUI.clearTimeout(inactiveTimer);
+      inactiveTimer = GameUI.setTimeout(showGuideFinger, 2200);
     }
 
     function showGuideFinger() {
@@ -1150,7 +1152,7 @@
       }
 
       updateAndDrawParticles();
-      animationFrameId = requestAnimationFrame(loop);
+      animationFrameId = GameUI.requestFrame(loop);
     }
 
     let weatherTick = 0;

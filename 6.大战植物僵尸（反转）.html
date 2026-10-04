@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>大战植物僵尸 - 反转奇妙大冒险 (原版PVZ画风+僵王BOSS版)</title>
   <style>
     * {
@@ -375,8 +375,10 @@
       to { transform: translate(15px, 15px) scale(1.15); }
     }
   </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="6">
 
 <div id="game-container">
   <!-- Game Canvas -->
@@ -1489,7 +1491,7 @@ function gameLoop() {
     }
   }
 
-  requestAnimationFrame(gameLoop);
+  GameUI.requestFrame(gameLoop);
 }
 
 function showModal(title, desc, btnText, callback) {
@@ -1502,7 +1504,7 @@ function showModal(title, desc, btnText, callback) {
   modal.style.display = 'flex';
 }
 
-requestAnimationFrame(gameLoop);
+GameUI.requestFrame(gameLoop);
 
 </script>
 </body>

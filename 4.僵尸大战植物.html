@@ -2,15 +2,17 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>僵尸大战植物 - 反转大冒险</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;background:#111;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
 canvas{display:block;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
 </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="4">
 <canvas id="c"></canvas>
 <script>
 (()=>{
@@ -56,14 +58,14 @@ function playNoise(dur, vol=0.1){
 const SFX = {
   place(){ playTone(200,0.15,'sine',0.2); playTone(300,0.1,'sine',0.15); },
   shoot(){ playTone(800,0.08,'square',0.08); },
-  collect(){ playTone(880,0.08,'sine',0.15); setTimeout(()=>playTone(1100,0.12,'sine',0.15),80); },
+  collect(){ playTone(880,0.08,'sine',0.15); GameUI.setTimeout(()=>playTone(1100,0.12,'sine',0.15),80); },
   explode(){ playNoise(0.4,0.25); playTone(80,0.3,'sawtooth',0.15); },
   hit(){ playTone(200,0.06,'square',0.08); },
-  win(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,0.3,'sine',0.2),i*150)); },
-  lose(){ [400,350,300,200].forEach((f,i)=>setTimeout(()=>playTone(f,0.3,'sine',0.15),i*200)); },
-  wave(){ playTone(440,0.15,'square',0.12); setTimeout(()=>playTone(550,0.2,'square',0.12),150); },
+  win(){ [523,659,784,1047].forEach((f,i)=>GameUI.setTimeout(()=>playTone(f,0.3,'sine',0.2),i*150)); },
+  lose(){ [400,350,300,200].forEach((f,i)=>GameUI.setTimeout(()=>playTone(f,0.3,'sine',0.15),i*200)); },
+  wave(){ playTone(440,0.15,'square',0.12); GameUI.setTimeout(()=>playTone(550,0.2,'square',0.12),150); },
   click(){ playTone(600,0.05,'sine',0.1); },
-  somersault(){ playTone(400,0.1,'sine',0.1); setTimeout(()=>playTone(600,0.1,'sine',0.1),100); setTimeout(()=>playTone(800,0.15,'sine',0.1),200); },
+  somersault(){ playTone(400,0.1,'sine',0.1); GameUI.setTimeout(()=>playTone(600,0.1,'sine',0.1),100); GameUI.setTimeout(()=>playTone(800,0.15,'sine',0.1),200); },
   brainDrop(){ playTone(500,0.1,'triangle',0.08); },
 };
 
@@ -143,7 +145,7 @@ canvas.width = W; canvas.height = H;
 
 function resizeCanvas(){
   const r = W/H;
-  let cw = window.innerWidth, ch = window.innerHeight;
+  let cw = window.innerWidth, ch = (window.innerHeight - (window.parent === window ? 54 : 0));
   if(cw/ch > r){ cw = ch*r; } else { ch = cw/r; }
   canvas.style.width = cw+'px';
   canvas.style.height = ch+'px';
@@ -154,8 +156,8 @@ resizeCanvas();
 // 坐标转换
 function canvasCoord(e){
   const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX||e.touches[0].clientX) - rect.left;
-  const y = (e.clientY||e.touches[0].clientY) - rect.top;
+  const x = (e.clientX ?? e.touches[0].clientX) - rect.left;
+  const y = (e.clientY ?? e.touches[0].clientY) - rect.top;
   return { x: x * W / rect.width, y: y * H / rect.height };
 }
 
@@ -635,7 +637,7 @@ class ZombieUnit {
         size: 5, color: '#7dce54', type:'pea'
       });
       // 紧接着 0.25秒(250毫秒)后，再吐一颗巨型大豆 (威力加倍，size=13, vx=8)
-      setTimeout(() => {
+      GameUI.setTimeout(() => {
         if(!this.dead && game.state === STATES.PLAYING){
           SFX.shoot();
           game.projectiles.push({
@@ -1591,7 +1593,7 @@ class Game {
         this.waveCompleted = true;
         const nextWaveIdx = this.wave + 1;
         // 下一波
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           if(this.state === STATES.PLAYING){
             this.waveCompleted = false;
             this.startWave(nextWaveIdx);
@@ -1614,7 +1616,7 @@ class Game {
         
         // 庆祝粒子
         for(let i=0;i<5;i++){
-          setTimeout(() => {
+          GameUI.setTimeout(() => {
             spawnParticles(200+Math.random()*560, 200+Math.random()*200, 20,
               ['#f1c40f','#e74c3c','#3498db','#2ecc71','#9b59b6','#fff'],
               [3,10],[2,6],[30,60],0.05);
@@ -2315,25 +2317,8 @@ function handleMove(e){
   game.handleMouseMove(pos.x, pos.y);
 }
 
-canvas.addEventListener('click', handlePointer);
-canvas.addEventListener('touchend', (e) => {
-  e.preventDefault();
-  if(e.changedTouches.length > 0){
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.changedTouches[0].clientX - rect.left) * W / rect.width;
-    const y = (e.changedTouches[0].clientY - rect.top) * H / rect.height;
-    game.handleClick(x, y);
-  }
-});
-canvas.addEventListener('mousemove', handleMove);
-canvas.addEventListener('touchmove', (e) => {
-  e.preventDefault();
-  if(e.touches.length > 0){
-    handleMove(e);
-  }
-}, {passive:false});
-
-// 右键取消选择
+canvas.addEventListener('pointerdown', handlePointer);
+canvas.addEventListener('pointermove', handleMove);
 canvas.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   game.selectedZombie = -1;
@@ -2343,7 +2328,7 @@ canvas.addEventListener('contextmenu', (e) => {
 function gameLoop(){
   game.update();
   game.render();
-  requestAnimationFrame(gameLoop);
+  GameUI.requestFrame(gameLoop);
 }
 gameLoop();
 

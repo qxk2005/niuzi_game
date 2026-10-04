@@ -120,3 +120,7 @@ secrets.json
 oauth_tokens.json
 credentials.json
 *.db
+
+# Development-only verification output
+node_modules/
+test-results/

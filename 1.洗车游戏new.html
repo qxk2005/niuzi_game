@@ -2,10 +2,9 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>牛子超级洗车场 - Shiny Car Wash Adventure</title>
     <!-- 引入可爱的卡通圆润字体 -->
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #fae8ff 100%);
@@ -364,8 +363,10 @@
             100% { box-shadow: 0 0 0 0 rgba(219, 39, 119, 0); }
         }
     </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="1">
 
     <div class="game-container">
         <!-- 顶部状态 -->
@@ -453,7 +454,7 @@
         </div>
 
         <div class="instructions">
-            温馨提示：按键盘【左方向键】向后退，【右方向键】向前进，【下方向键】可停下哦！
+            点大按钮让小车前进、后退或停下；也可以点「自动服务」。电脑支持方向键。
         </div>
     </div>
 
@@ -516,7 +517,7 @@
             startBGM() {
                 if (!this.ctx) return;
                 
-                this.bgmInterval = setInterval(() => {
+                this.bgmInterval = GameUI.setInterval(() => {
                     if (this.muted) return;
                     if (this.ctx.state === 'suspended') return;
 
@@ -609,7 +610,7 @@
                     const time = this.ctx.currentTime;
                     snd.gain.gain.setValueAtTime(snd.gain.gain.value, time);
                     snd.gain.gain.linearRampToValueAtTime(0, time + 0.2);
-                    setTimeout(() => {
+                    GameUI.setTimeout(() => {
                         try {
                             snd.source.stop();
                             snd.lfo.stop();
@@ -662,7 +663,7 @@
                     const time = this.ctx.currentTime;
                     snd.gain.gain.setValueAtTime(snd.gain.gain.value, time);
                     snd.gain.gain.linearRampToValueAtTime(0, time + 0.15);
-                    setTimeout(() => {
+                    GameUI.setTimeout(() => {
                         try {
                             snd.source.stop();
                             snd.osc.stop();
@@ -711,7 +712,7 @@
                     const time = this.ctx.currentTime;
                     snd.gain.gain.setValueAtTime(snd.gain.gain.value, time);
                     snd.gain.gain.linearRampToValueAtTime(0, time + 0.3);
-                    setTimeout(() => {
+                    GameUI.setTimeout(() => {
                         try {
                             snd.source.stop();
                             snd.lfo.stop();
@@ -759,7 +760,7 @@
                     const time = this.ctx.currentTime;
                     snd.gain.gain.setValueAtTime(snd.gain.gain.value, time);
                     snd.gain.gain.linearRampToValueAtTime(0, time + 0.1);
-                    setTimeout(() => {
+                    GameUI.setTimeout(() => {
                         try {
                             snd.source.stop();
                             snd.lfo.stop();
@@ -772,13 +773,13 @@
                 this.init();
                 if (active) {
                     if (this.wrenchInterval) return;
-                    this.wrenchInterval = setInterval(() => {
+                    this.wrenchInterval = GameUI.setInterval(() => {
                         if (this.muted) return;
                         this.playWrenchTap();
                     }, 350);
                 } else {
                     if (this.wrenchInterval) {
-                        clearInterval(this.wrenchInterval);
+                        GameUI.clearInterval(this.wrenchInterval);
                         this.wrenchInterval = null;
                     }
                 }
@@ -832,7 +833,7 @@
                     gain.connect(this.masterGain);
                     noise.start();
 
-                    const intervalId = setInterval(() => {
+                    const intervalId = GameUI.setInterval(() => {
                         if (this.muted) return;
                         this.playFuelBubble();
                     }, 120);
@@ -842,11 +843,11 @@
                     if (!this.activeSounds.fuel) return;
                     const snd = this.activeSounds.fuel;
                     this.activeSounds.fuel = null;
-                    clearInterval(snd.interval);
+                    GameUI.clearInterval(snd.interval);
                     const time = this.ctx.currentTime;
                     snd.gain.gain.setValueAtTime(snd.gain.gain.value, time);
                     snd.gain.gain.linearRampToValueAtTime(0, time + 0.15);
-                    setTimeout(() => {
+                    GameUI.setTimeout(() => {
                         try {
                             snd.source.stop();
                         } catch(e) {}
@@ -921,7 +922,7 @@
                 const time = this.ctx.currentTime;
                 const notes = [523.25, 659.25, 783.99, 987.77, 1046.50];
                 notes.forEach((freq, idx) => {
-                    setTimeout(() => {
+                    GameUI.setTimeout(() => {
                         if (this.muted) return;
                         this.playPluck(freq, 0.22, 0.8);
                     }, idx * 100);
@@ -2537,13 +2538,11 @@
                     this.keys[e.key] = false;
                 });
 
-                document.getElementById('btn-back').addEventListener('mousedown', () => { sound.playClick(); this.moveBack(); });
-                document.getElementById('btn-stop').addEventListener('mousedown', () => { sound.playClick(); this.stopCar(); });
-                document.getElementById('btn-forward').addEventListener('mousedown', () => { sound.playClick(); this.moveForward(); });
-
-                document.getElementById('btn-back').addEventListener('touchstart', (e) => { e.preventDefault(); sound.playClick(); this.moveBack(); });
-                document.getElementById('btn-stop').addEventListener('touchstart', (e) => { e.preventDefault(); sound.playClick(); this.stopCar(); });
-                document.getElementById('btn-forward').addEventListener('touchstart', (e) => { e.preventDefault(); sound.playClick(); this.moveForward(); });
+                for (const [id, action] of [['btn-back', 'moveBack'], ['btn-stop', 'stopCar'], ['btn-forward', 'moveForward']]) {
+                    document.getElementById(id).addEventListener('pointerdown', (e) => {
+                        e.preventDefault(); sound.playClick(); this[action]();
+                    });
+                }
 
                 const autoBtn = document.getElementById('btn-auto');
                 autoBtn.addEventListener('click', () => {
@@ -2961,7 +2960,7 @@
             gameLoop() {
                 this.update();
                 this.draw();
-                requestAnimationFrame(() => this.gameLoop());
+                GameUI.requestFrame(this.loopFrame || (this.loopFrame = this.gameLoop.bind(this)));
             }
         }
 

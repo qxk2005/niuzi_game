@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>坚果保龄大赛 · 5岁小英雄专属超级神作</title>
   <style>
     * {
@@ -436,8 +436,10 @@
       50% { transform: scale(0.85) translate(4px, 4px); }
     }
   </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="14">
 
   <!-- 主游戏画布 -->
   <canvas id="gameCanvas"></canvas>
@@ -488,7 +490,7 @@
   <div class="bottom-guide-bar">
     <div class="guide-box" id="guideBox">
       <span id="guideIcon">👉</span>
-      <span id="guideText">把鼠标移到草坪上，点击草坪发射坚果，撞倒所有僵尸！</span>
+      <span id="guideText">先选坚果，再点目标跑道发射，撞倒所有僵尸！</span>
       <div class="guide-speak-btn" onclick="speakCurrentGuide()" title="朗读指引">📢</div>
     </div>
   </div>
@@ -891,7 +893,7 @@
         spawnInterval: 2800,
         zombiesPool: ['NORMAL', 'CONE', 'FLAG'],
         graves: [],
-        guideText: '🎳 欢迎来到坚果保龄大赛！把鼠标移到跑道上点击，发射坚果把僵尸全部打倒！',
+        guideText: '🎳 欢迎来到坚果保龄大赛！先选坚果，再点目标跑道，发射坚果把僵尸全部打倒！',
         specialEvent: null
       },
       // 第2关：手绘图3，3行草坪，加入需要撞击3次的墓碑
@@ -1010,8 +1012,8 @@
 
     // 初始化窗口大小
     function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      canvas.width = 1000;
+      canvas.height = 600;
       updateGridLayout();
     }
     window.addEventListener('resize', resizeCanvas);
@@ -1023,10 +1025,10 @@
       gridLayout.width = canvas.width - gridLayout.left - 40;
       
       // 垂直居中草坪
-      const availableHeight = canvas.height - 230; // 避开顶部栏与底部栏
+      const availableHeight = canvas.height - 60; // 避开顶部栏与底部栏
       gridLayout.rowHeight = Math.min(105, Math.floor(availableHeight / rows));
       gridLayout.height = gridLayout.rowHeight * rows;
-      gridLayout.top = 150 + Math.max(10, Math.floor((availableHeight - gridLayout.height) / 2));
+      gridLayout.top = 30 + Math.max(0, Math.floor((availableHeight - gridLayout.height) / 2));
 
       // 更新推草车位置
       mowers.forEach(m => {
@@ -1483,7 +1485,7 @@
         // 检查关卡目标是否达成
         if (kills >= currentConfig.targetKills && !levelCompleted) {
           levelCompleted = true;
-          setTimeout(() => { triggerVictory(); }, 1200);
+          GameUI.setTimeout(() => { triggerVictory(); }, 1200);
         }
       }
 
@@ -1895,7 +1897,7 @@
 
     function spawnLittleNutSquad(row) {
       for (let i = 0; i < 3; i++) {
-        setTimeout(() => {
+        GameUI.setTimeout(() => {
           const b = new NutBall('NORMAL', row);
           b.radius = 16;
           b.vx = 9.5;
@@ -1995,7 +1997,7 @@
 
     // 玩家点击草坪发射坚果球 或 种下助阵植物
     function launchNutAtRow(row) {
-      if (conveyorQueue.length === 0) return;
+      if (levelCompleted || conveyorQueue.length === 0) return;
       if (row < 0 || row >= gridLayout.rows) return;
 
       const itemKey = conveyorQueue.splice(selectedNutIndex, 1)[0];
@@ -2075,6 +2077,18 @@
 
       // 重新布局草坪网格
       updateGridLayout();
+      const laneControls = document.getElementById('lane-controls') || document.createElement('div');
+      laneControls.id = 'lane-controls';
+      laneControls.className = 'lane-controls';
+      laneControls.setAttribute('aria-label', '选择发射跑道');
+      laneControls.replaceChildren();
+      for (let row = 0; row < currentConfig.rows; row++) {
+        const lane = document.createElement('button');
+        lane.textContent = `🎳 第${row + 1}行`;
+        lane.onclick = () => { sound.init(); launchNutAtRow(row); };
+        laneControls.append(lane);
+      }
+      document.querySelector('.bottom-guide-bar').prepend(laneControls);
 
       // 初始化墓碑
       graves = currentConfig.graves.map(g => ({ ...g, active: true }));
@@ -2368,13 +2382,16 @@
       // 渲染场景
       drawGameScene();
 
-      requestAnimationFrame(gameLoop);
+      GameUI.requestFrame(gameLoop);
     }
 
     /* ==========================================================================
        10. 交互事件绑定 (鼠标/触摸点选发射坚果)
        ========================================================================== */
     function updateHoveredRow(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      clientX = (clientX - rect.left) * canvas.width / rect.width;
+      clientY = (clientY - rect.top) * canvas.height / rect.height;
       mousePos.x = clientX;
       mousePos.y = clientY;
       isMouseOnCanvas = (clientX >= gridLayout.left && clientX <= canvas.width &&
@@ -2386,31 +2403,21 @@
       }
     }
 
-    canvas.addEventListener('mousemove', (e) => {
+    canvas.addEventListener('pointermove', (e) => {
       updateHoveredRow(e.clientX, e.clientY);
     });
 
-    canvas.addEventListener('mouseleave', () => {
+    canvas.addEventListener('pointerleave', () => {
       isMouseOnCanvas = false;
     });
 
-    canvas.addEventListener('click', (e) => {
+    canvas.addEventListener('pointerdown', (e) => {
       sound.init();
       updateHoveredRow(e.clientX, e.clientY);
       if (isMouseOnCanvas) {
         launchNutAtRow(hoveredRow);
       }
     });
-
-    // 移动端触摸支持
-    canvas.addEventListener('touchstart', (e) => {
-      sound.init();
-      const t = e.touches[0];
-      updateHoveredRow(t.clientX, t.clientY);
-      if (isMouseOnCanvas) {
-        launchNutAtRow(hoveredRow);
-      }
-    }, { passive: true });
 
     /* ==========================================================================
        11. 辅助功能与弹窗模态框控制
@@ -2437,9 +2444,9 @@
 
     function toggleFullscreen() {
       if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
+        if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
       } else {
-        if (document.exitFullscreen) document.exitFullscreen();
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
       }
     }
 
@@ -2447,7 +2454,7 @@
     window.addEventListener('load', () => {
       resizeCanvas();
       loadLevel(0);
-      requestAnimationFrame(gameLoop);
+      GameUI.requestFrame(gameLoop);
     });
   </script>
 </body>

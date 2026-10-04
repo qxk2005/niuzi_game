@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>森林救援大冒险 · 5岁小勇士专属版</title>
   <style>
     * {
@@ -308,8 +308,10 @@
       transform: scale(1.08);
     }
   </style>
+  <link rel="stylesheet" href="assets/game-ui.css">
+  <script src="assets/game-ui.js"></script>
 </head>
-<body>
+<body data-game="5">
 
   <div id="game-container">
     <canvas id="gameCanvas"></canvas>
@@ -550,7 +552,7 @@
       const speechText = document.getElementById('speech-text');
       speechText.innerText = text;
       speechBox.classList.add('active');
-      setTimeout(() => { speechBox.classList.remove('active'); }, 3500);
+      GameUI.setTimeout(() => { speechBox.classList.remove('active'); }, 3500);
 
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -744,19 +746,24 @@
     // Touch D-Pad Logic
     const dpad = document.getElementById('dpad');
     const dpadStick = document.getElementById('dpad-stick');
-    let isDpadTouching = false;
-
+    let dpadPointer = null;
     dpad.addEventListener('pointerdown', e => {
-      isDpadTouching = true;
-      updateDpad(e);
+      if (dpadPointer !== null) return;
+      e.preventDefault(); dpadPointer = e.pointerId;
+      dpad.setPointerCapture(e.pointerId); updateDpad(e);
     });
-    window.addEventListener('pointermove', e => {
-      if (isDpadTouching) updateDpad(e);
+    dpad.addEventListener('pointermove', e => {
+      if (e.pointerId === dpadPointer) updateDpad(e);
     });
-    window.addEventListener('pointerup', () => {
-      isDpadTouching = false;
-      joystickVector = { x: 0, y: 0 };
+    function releaseDpad() {
+      dpadPointer = null; joystickVector = { x: 0, y: 0 };
       dpadStick.style.transform = 'translate(0px, 0px)';
+    }
+    dpad.addEventListener('pointerup', e => { if (e.pointerId === dpadPointer) releaseDpad(); });
+    dpad.addEventListener('pointercancel', releaseDpad);
+    dpad.addEventListener('lostpointercapture', releaseDpad);
+    window.addEventListener('niuzi:release-input', () => {
+      releaseDpad(); Object.keys(keyState).forEach(k => keyState[k] = false);
     });
 
     function updateDpad(e) {
@@ -978,7 +985,7 @@
             aiCompanion.active = true;
             aiCompanion.x = player.x - 100;
             aiCompanion.y = player.y - 100;
-            setTimeout(() => {
+            GameUI.setTimeout(() => {
               player.isTrapped = false;
               aiCompanion.active = false;
               createParticles(player.x, player.y, '#76ff03', 20);
@@ -1285,13 +1292,13 @@
     function gameLoop() {
       update();
       render();
-      requestAnimationFrame(gameLoop);
+      GameUI.requestFrame(gameLoop);
     }
 
     // Handle Window Resize
     function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
