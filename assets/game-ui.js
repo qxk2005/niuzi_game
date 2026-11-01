@@ -103,7 +103,71 @@
     }
     window.dispatchEvent(new Event('niuzi:release-input'));
   }
-  window.GameUI = { requestFrame, cancelFrame, point, home,
+  // ---- iPhone / Safari support -------------------------------------------
+  // Safari reports intermediate sizes while rotating or when a foldable screen
+  // changes resolution; the final size often arrives only via visualViewport or
+  // a later layout pass. Re-check for a few frames and re-dispatch `resize` so
+  // every game re-measures with the settled size.
+  const viewportSize = () => {
+    const vv = window.visualViewport;
+    return [document.documentElement.clientWidth, document.documentElement.clientHeight,
+      Math.round(vv ? vv.width * vv.scale : window.innerWidth), Math.round(vv ? vv.height * vv.scale : window.innerHeight)].join('x');
+  };
+  let lastViewport = viewportSize(), settleTimers = [], dispatching = false;
+  function settleViewport() {
+    settleTimers.forEach(clearTimeout);
+    settleTimers = [80, 250, 600, 1000].map(delay => setTimeout(() => {
+      const size = viewportSize();
+      if (size === lastViewport) return;
+      lastViewport = size; dispatching = true;
+      try { window.dispatchEvent(new Event('resize')); } finally { dispatching = false; }
+    }, delay));
+  }
+  // Paused games do not render, but resizing a canvas clears it. Keep the frozen
+  // scene visible by restoring a scaled snapshot after the game's resize handler.
+  window.addEventListener('resize', () => {
+    if (!dispatching) { lastViewport = viewportSize(); settleViewport(); }
+    if (!paused()) return;
+    const snapshots = [...document.querySelectorAll('canvas')].filter(c => c.width && c.height).map(c => {
+      const copy = document.createElement('canvas'); copy.width = c.width; copy.height = c.height;
+      try { copy.getContext('2d').drawImage(c, 0, 0); } catch { return null; }
+      return { c, copy, w: c.width, h: c.height };
+    }).filter(Boolean);
+    setTimeout(() => snapshots.forEach(({ c, copy, w, h }) => {
+      const g = c.getContext('2d'); if (!g) return;
+      g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(copy, 0, 0, w, h, 0, 0, c.width, c.height); g.restore();
+    }), 0);
+  });
+  window.addEventListener('orientationchange', settleViewport);
+  window.screen?.orientation?.addEventListener?.('change', settleViewport);
+  window.visualViewport?.addEventListener('resize', settleViewport);
+  // iOS Safari ignores user-scalable=no; block pinch-zoom so two-handed play
+  // (joystick + action button) never zooms the page.
+  for (const type of ['gesturestart', 'gesturechange']) document.addEventListener(type, e => e.preventDefault(), { passive: false });
+  // iOS starts Web Audio suspended and can leave it "interrupted" after calls or
+  // app switches. Any tap while playing resumes it.
+  const unlockAudio = () => {
+    if (paused()) return;
+    for (const context of audioContexts) {
+      if (context.state === 'suspended' || context.state === 'interrupted') context.resume().catch(() => {});
+    }
+  };
+  for (const type of ['touchend', 'pointerup', 'keydown']) document.addEventListener(type, unlockAudio, { passive: true });
+  // Fullscreen: embedded games ask the lobby (which owns the whole screen);
+  // standalone pages use the (webkit-prefixed) API or an immersive fallback.
+  const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+  function toggleFullscreen() {
+    if (embedded) { parent.postMessage({ type: 'niuzi:fullscreen' }, location.origin === 'null' ? '*' : location.origin); return; }
+    const root = document.documentElement;
+    if (fsElement()) { (document.exitFullscreen || document.webkitExitFullscreen)?.call(document); return; }
+    if (root.classList.contains('immersive')) { root.classList.remove('immersive'); window.dispatchEvent(new Event('resize')); return; }
+    const request = root.requestFullscreen || root.webkitRequestFullscreen;
+    const fallback = () => { root.classList.add('immersive'); window.dispatchEvent(new Event('resize')); };
+    if (!request) { fallback(); return; }
+    try { const result = request.call(root); if (result?.catch) result.catch(fallback); } catch { fallback(); }
+  }
+  for (const type of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(type, settleViewport);
+  window.GameUI = { requestFrame, cancelFrame, point, home, toggleFullscreen,
     setTimeout: (fn, delay, ...args) => timer(fn, delay, false, args),
     setInterval: (fn, delay, ...args) => timer(fn, delay, true, args),
     clearTimeout: clearTimer, clearInterval: clearTimer,
@@ -116,7 +180,7 @@
   document.addEventListener('visibilitychange', syncPause);
   const blockPausedInput = e => {
     if (e.key === 'Escape') return;
-    if (paused() && !e.target.closest?.('.game-nav,.touch-help')) {
+    if (paused() && !e.target.closest?.('.game-nav,.touch-help,.immersive-exit')) {
       e.preventDefault(); e.stopImmediatePropagation();
     }
   };
@@ -128,16 +192,19 @@
     const id = Number(document.body.dataset.game);
     if (!embedded) {
       const nav = document.createElement('nav'); nav.className = 'game-nav'; nav.setAttribute('aria-label', '游戏工具栏');
-      nav.innerHTML = '<button id="game-home">‹ 游戏大厅</button><span>牛子的游戏库</span><button id="game-pause" aria-pressed="false">Ⅱ 暂停</button><button id="game-help">? 玩法</button>';
+      nav.innerHTML = '<button id="game-home">‹ 游戏大厅</button><span>牛子的游戏库</span><button id="game-pause" aria-pressed="false">Ⅱ 暂停</button><button id="game-help">? 玩法</button><button id="game-fullscreen" aria-label="切换全屏">⛶</button>';
       document.body.prepend(nav);
       nav.querySelector('#game-home').onclick = home;
       nav.querySelector('#game-pause').onclick = () => { manualPause = !manualPause; syncPause(); };
       nav.querySelector('#game-help').onclick = openHelp;
+      nav.querySelector('#game-fullscreen').onclick = toggleFullscreen;
+      const exit = document.createElement('button'); exit.className = 'immersive-exit'; exit.textContent = '⤡'; exit.setAttribute('aria-label', '退出全屏');
+      exit.onclick = toggleFullscreen; document.body.append(exit);
     }
     help = document.createElement('dialog'); help.className = 'touch-help';
     const heading = document.createElement('h2'); heading.textContent = '动动手指，开始冒险';
     const text = document.createElement('p'); text.textContent = hints[id];
-    const tip = document.createElement('p'); tip.className = 'help-tip'; tip.textContent = '手机竖屏也能玩，横屏能看见更宽的战场。平板横竖屏均可操作。';
+    const tip = document.createElement('p'); tip.className = 'help-tip'; tip.textContent = '手机竖屏也能玩，横屏能看见更宽的战场。折叠屏展开、合上或旋转时，画面会自动重新适配。';
     const close = document.createElement('button'); close.textContent = '知道啦，继续玩'; close.onclick = () => help.close();
     help.append(heading, text, tip, close); document.body.append(help);
     help.addEventListener('close', () => { helpOpen = false; syncPause(); });

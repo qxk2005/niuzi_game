@@ -6,7 +6,7 @@
   "description": "牛子的创意网页游戏库",
   "scripts": {
     "test": "node tests/static.mjs && node tests/runtime.mjs",
-    "test:browser": "node tests/browser.mjs"
+    "test:browser": "node tests/browser.mjs && node tests/iphone.mjs"
   },
   "devDependencies": { "playwright": "1.62.1" }
 }

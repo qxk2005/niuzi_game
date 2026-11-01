@@ -1012,8 +1012,8 @@
 
     // 初始化窗口大小
     function resizeCanvas() {
-      canvas.width = 1000;
-      canvas.height = 600;
+      if (canvas.width !== 1000) canvas.width = 1000;
+      if (canvas.height !== 600) canvas.height = 600;
       updateGridLayout();
     }
     window.addEventListener('resize', resizeCanvas);
@@ -2443,6 +2443,7 @@
     }
 
     function toggleFullscreen() {
+      if (window.GameUI?.toggleFullscreen) { GameUI.toggleFullscreen(); return; }
       if (!document.fullscreenElement) {
         if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
       } else {

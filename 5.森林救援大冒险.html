@@ -569,6 +569,7 @@
     // ==========================================
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+    let viewW = 0, viewH = 0; // logical CSS-pixel size of the view (bitmap is scaled for Retina)
 
     const MAP_WIDTH = 2600;
     const MAP_HEIGHT = 2600;
@@ -967,8 +968,8 @@
       }
 
       // Camera follow player smoothly
-      camera.x = player.x - canvas.width / 2;
-      camera.y = player.y - canvas.height / 2;
+      camera.x = player.x - viewW / 2;
+      camera.y = player.y - viewH / 2;
 
       // Net Traps Triggering
       netTraps.forEach(trap => {
@@ -1297,8 +1298,13 @@
 
     // Handle Window Resize
     function resizeCanvas() {
-      canvas.width = canvas.parentElement.clientWidth;
-      canvas.height = canvas.parentElement.clientHeight;
+      const w = canvas.parentElement.clientWidth, h = canvas.parentElement.clientHeight, dpr = Math.min(window.devicePixelRatio || 1, 2);
+      if (w === viewW && h === viewH && canvas.width === Math.round(w * dpr)) return;
+      viewW = w; viewH = h;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+      ctx.setTransform(canvas.width / Math.max(1, w), 0, 0, canvas.height / Math.max(1, h), 0, 0);
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();

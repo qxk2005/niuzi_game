@@ -62,7 +62,7 @@
   }
   function closeGame() {
     clearTimeout(loadTimer); clearTimeout(messageTimer); frame.src = 'about:blank'; window.speechSynthesis?.cancel();
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    exitFullscreen();
     if (player.open) player.close(); document.body.style.overflow = ''; $('player-message').hidden = true;
     lastFocus?.focus(); selected = null;
   }
@@ -74,17 +74,45 @@
   $('player-close').onclick = closeGame; $('player-pause').onclick = () => setPause(!paused);
   $('player-resume').onclick = () => setPause(false); $('player-help').onclick = () => post('niuzi:help');
   $('player-restart').onclick = () => { setPause(false); loading(); frame.contentWindow.location.reload(); };
-  function showMessage(text) { $('player-message').textContent = text; $('player-message').hidden = false; clearTimeout(messageTimer); messageTimer = setTimeout(() => $('player-message').hidden = true,4000); }
-  $('player-fullscreen').onclick = async () => {
+  function showMessage(text) { $('player-message').textContent = text; $('player-message').hidden = false; clearTimeout(messageTimer); messageTimer = setTimeout(() => $('player-message').hidden = true,Math.max(4000,text.length * 120)); }
+  // iPhone Safari has no element fullscreen API (iPad only has the webkit-prefixed
+  // one), so fall back to an immersive mode: the toolbar folds away and the game
+  // gets the whole screen, with a small handle to bring the toolbar back.
+  const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const standalone = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
+  const iOS = /iP(hone|od|ad)/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) || /iPhone|iPod/.test(navigator.userAgent);
+  function syncFullscreen() {
+    const on = !!fsElement() || player.classList.contains('immersive');
+    $('player-fullscreen').setAttribute('aria-pressed', String(on));
+    $('player-fullscreen').innerHTML = on ? '⤡ <span>退出全屏</span>' : '⛶ <span>全屏</span>';
+  }
+  function setImmersive(on) { player.classList.toggle('immersive', on); syncFullscreen(); }
+  function exitFullscreen() {
+    if (fsElement()) (document.exitFullscreen || document.webkitExitFullscreen)?.call(document)?.catch?.(() => {});
+    setImmersive(false);
+  }
+  async function toggleFullscreen() {
+    if (fsElement() || player.classList.contains('immersive')) { exitFullscreen(); return; }
+    const request = player.requestFullscreen || player.webkitRequestFullscreen;
     try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else if (player.requestFullscreen) await player.requestFullscreen();
-      else showMessage('已使用整屏游戏视图，横屏可以看见更宽的战场。');
-    } catch { showMessage('当前浏览器不支持全屏，横屏也能舒适游玩。'); }
-  };
+      if (!request) throw new Error('unsupported');
+      await request.call(player);
+      // Some WebKit builds resolve without entering fullscreen.
+      if (!fsElement()) throw new Error('not entered');
+    } catch {
+      setImmersive(true);
+      if (iOS && !standalone && !read('niuzi:a2hs-tip', false)) {
+        save('niuzi:a2hs-tip', true);
+        showMessage('已进入全屏游戏模式。想彻底隐藏 Safari 地址栏：点「分享」→「添加到主屏幕」，从桌面图标打开。');
+      }
+    }
+  }
+  $('player-fullscreen').onclick = toggleFullscreen; $('player-exit-immersive').onclick = exitFullscreen;
+  for (const type of ['fullscreenchange','webkitfullscreenchange']) document.addEventListener(type, syncFullscreen);
   window.addEventListener('message',e => {
     if (e.origin !== location.origin || e.source !== frame.contentWindow) return;
     if (e.data?.type === 'niuzi:home') closeGame();
+    if (e.data?.type === 'niuzi:fullscreen') toggleFullscreen();
   });
   let voice = false;
   $('welcome-sound').onclick = () => {

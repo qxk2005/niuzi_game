@@ -145,10 +145,19 @@ canvas.width = W; canvas.height = H;
 
 function resizeCanvas(){
   const r = W/H;
-  let cw = window.innerWidth, ch = (window.innerHeight - (window.parent === window ? 54 : 0));
+  const nav = document.querySelector('.game-nav');
+  const top = nav && getComputedStyle(nav).display !== 'none' ? nav.getBoundingClientRect().bottom : 0;
+  const cs = getComputedStyle(document.body);
+  const left = parseFloat(cs.paddingLeft) || 0, right = parseFloat(cs.paddingRight) || 0;
+  const bottom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')) || 0;
+  const availW = Math.max(1, document.documentElement.clientWidth - left - right);
+  const availH = Math.max(1, document.documentElement.clientHeight - top - bottom);
+  let cw = availW, ch = availH;
   if(cw/ch > r){ cw = ch*r; } else { ch = cw/r; }
   canvas.style.width = cw+'px';
   canvas.style.height = ch+'px';
+  canvas.style.left = (left + availW/2)+'px';
+  canvas.style.top = (top + availH/2)+'px';
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();

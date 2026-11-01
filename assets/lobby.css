@@ -10,3 +10,11 @@
 .hero-art { min-width:0; overflow:hidden; }
 @media(min-width:601px) and (max-width:1000px) { .hero { grid-template-columns:1fr 1fr; } .hero h1{font-size:42px} .hero-art{transform:none} .world-tile{width:230px;height:210px} .toy{width:96px;height:96px;font-size:44px;line-height:78px} .toy-block{right:0}.toy-food{left:0}.orbit{width:280px}.orbit-two{width:300px} }
 @media(max-width:600px) { .hero-art { overflow:visible; } }
+/* iPhone Safari: notch/Dynamic Island + home indicator never cover the game. */
+.game-player{height:100vh;height:100dvh;overscroll-behavior:contain}
+.player-stage{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.game-player:-webkit-full-screen{width:100vw;height:100dvh}
+.player-exit-immersive{display:none}
+.game-player.immersive .player-toolbar{display:none}
+.game-player.immersive .player-stage{padding-top:env(safe-area-inset-top,0px)}
+.game-player.immersive .player-exit-immersive{display:grid;place-items:center;position:absolute;z-index:6;top:50%;right:max(4px,env(safe-area-inset-right));width:40px;height:48px;padding:0;transform:translateY(-50%);border:1px solid #ffffff40;border-radius:14px;background:#10172bb0;color:#fff;font-size:20px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
