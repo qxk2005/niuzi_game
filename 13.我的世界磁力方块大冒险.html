@@ -736,8 +736,8 @@
 
     // 调整画布尺寸
     function resizeCanvas() {
-      canvas.width = 1000;
-      canvas.height = 600;
+      if (canvas.width !== 1000) canvas.width = 1000;
+      if (canvas.height !== 600) canvas.height = 600;
       updateLayoutPositions();
     }
     window.addEventListener('resize', resizeCanvas);

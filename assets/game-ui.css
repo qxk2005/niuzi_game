@@ -77,7 +77,7 @@ body[data-game="14"] .conveyor-belt { min-width:0; flex:1; height:86px; touch-ac
 body[data-game="14"] :is(.sketch-modal-content,.victory-content) { max-height:88dvh; overflow:auto; padding:20px; }
 body[data-game="14"] .sketch-gallery { grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
 /* Life games keep a comfortable, scrollable touch dashboard. */
-body:is([data-game="1"],[data-game="2"]) { color-scheme:light; height:auto; min-height:100dvh; padding:calc(var(--nav-height) + var(--safe-top) + 12px) 12px max(20px,var(--safe-bottom)); justify-content:flex-start; overflow-y:auto; }
+body:is([data-game="1"],[data-game="2"]) { color-scheme:light; height:auto; min-height:100dvh; padding:calc(var(--nav-height) + var(--safe-top) + 12px) max(12px,env(safe-area-inset-right)) max(20px,var(--safe-bottom)) max(12px,env(safe-area-inset-left)); justify-content:flex-start; overflow-y:auto; }
 body[data-game="1"] .game-container { padding:16px; gap:14px; }
 body[data-game="1"] .top-bar { flex-wrap:wrap; gap:10px; padding:0; }
 body[data-game="1"] .game-title { font-size:clamp(20px,4vw,28px); }
@@ -170,7 +170,6 @@ body[data-game="13"] .start-play-btn { font-size:clamp(18px,3vw,26px); padding:1
 body[data-game="13"] .start-logo { font-size:clamp(44px,9vw,72px); }
 body[data-game="14"] .guide-box { display:grid; grid-template-columns:auto 1fr auto; gap:10px; text-align:left; }
 body[data-game="14"] .guide-speak-btn { width:44px; height:44px; }
-body[data-game="4"] canvas { top:calc(50% + var(--nav-height) / 2); }
 @media(max-width:700px) {
  body[data-game="14"] .top-bar { padding:10px 12px; }
  body[data-game="14"] .top-left { gap:6px; }
@@ -205,3 +204,12 @@ body[data-game="2"] [style*="width: 300px"] { max-width:100%; }
 @media(pointer:coarse) { .lane-controls { display:flex; } }
 body[data-game="6"] .card-slot { flex-shrink:0; min-width:88px; min-height:100px; }
 body[data-game="6"] .cards-container { scrollbar-width:thin; gap:10px; }
+/* ---- iPhone Safari: no page zoom/selection while playing, immersive mode, safe areas. ---- */
+body[data-game] { touch-action:manipulation; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+body[data-game] :is(input,textarea,[contenteditable]) { -webkit-user-select:text; user-select:text; }
+.immersive-exit { display:none; }
+html.immersive { --nav-height:0px; }
+html.immersive .game-nav { display:none; }
+html.immersive .immersive-exit { display:grid; place-items:center; position:fixed; z-index:10001; top:50%; right:max(4px,env(safe-area-inset-right)); width:40px; height:48px; transform:translateY(-50%); border:1px solid #ffffff40; border-radius:14px; background:#10172bb0; color:#fff; font-size:20px; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+/* Standalone pages in landscape: keep the notch / Dynamic Island off the controls. */
+html:not(.embedded) body[data-game]:not([data-game="1"],[data-game="2"]) { padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px); }

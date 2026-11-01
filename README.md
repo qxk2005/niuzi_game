@@ -22,6 +22,13 @@ python3 -m http.server 8000
 - 手机竖屏可以游玩，横屏有更宽的战场。游戏画布和 HTML 操作区分别适配，旋转时保留逻辑画布坐标。
 - 暂停冻结动画、游戏计时器和已播放的合成音效。关闭游戏会卸载 iframe，结束该游戏的运行。
 
+## iPhone / Safari / 折叠屏
+
+- **全屏**：iPhone 上的 Safari 不提供网页元素全屏接口。点「⛶ 全屏」会进入沉浸模式，工具栏收起，游戏占满整屏。右侧的「⤡」小按钮可以退出。iPad 和电脑使用系统全屏。
+- **彻底隐藏地址栏**：在 Safari 中点「分享」→「添加到主屏幕」，然后从桌面图标打开，就是没有浏览器界面的全屏 App 模式。
+- **折叠 / 旋转**：屏幕展开、合上或旋转后，游戏会在几帧内重新测量最终尺寸。暂停时画面也不会变空白。
+- 刘海、灵动岛和底部横条都会留出安全区。双指缩放和长按选字已屏蔽。iOS 来电或切换后台后，再点一下屏幕就能恢复音效。
+
 ## 游戏目录
 
 | 类别 | 游戏 |
@@ -48,6 +55,7 @@ python3 -m http.server 8000
 ```bash
 npm ci
 npm test
+npm run test:browser   # 含 iPhone 折叠屏/全屏回退检查 tests/iphone.mjs
 npx playwright install chromium
 npm run test:browser
 ```

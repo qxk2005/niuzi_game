@@ -554,20 +554,27 @@
     let offsetX = 0;
     let offsetY = 0;
 
+    // Logical (CSS-pixel) view size; the bitmap is scaled by devicePixelRatio for sharp iPhone screens.
+    let viewW = 0, viewH = 0;
     function updateTileMetrics() {
-      if (!canvas.width || !canvas.height) return;
-      TILE_SIZE = Math.min(canvas.width / mapCols, canvas.height / mapRows);
-      offsetX = (canvas.width - mapCols * TILE_SIZE) / 2;
-      offsetY = (canvas.height - mapRows * TILE_SIZE) / 2;
+      if (!viewW || !viewH) return;
+      TILE_SIZE = Math.min(viewW / mapCols, viewH / mapRows);
+      offsetX = (viewW - mapCols * TILE_SIZE) / 2;
+      offsetY = (viewH - mapRows * TILE_SIZE) / 2;
     }
 
     let entitiesReady = false;
     function resizeCanvas() {
       const parent = canvas.parentElement;
       if (parent) {
+        const w = parent.clientWidth, h = parent.clientHeight, dpr = Math.min(window.devicePixelRatio || 1, 2);
+        if (w === viewW && h === viewH && canvas.width === Math.round(w * dpr)) return;
         const oldTile = TILE_SIZE, oldX = offsetX, oldY = offsetY;
-        canvas.width = parent.clientWidth;
-        canvas.height = parent.clientHeight;
+        viewW = w; viewH = h;
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+        canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+        ctx.setTransform(canvas.width / Math.max(1, w), 0, 0, canvas.height / Math.max(1, h), 0, 0);
         updateTileMetrics();
         if (entitiesReady) {
           const ratio = TILE_SIZE / oldTile;
@@ -758,8 +765,8 @@
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       return {
-        x: (clientX - rect.left) * (canvas.width / rect.width),
-        y: (clientY - rect.top) * (canvas.height / rect.height)
+        x: (clientX - rect.left) * (viewW / rect.width),
+        y: (clientY - rect.top) * (viewH / rect.height)
       };
     }
 
